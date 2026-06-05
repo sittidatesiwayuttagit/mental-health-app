@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบคัดกรองสุขภาพจิตชุมชน</title>
+    
+    <!-- ดึงระบบ LINE LIFF SDK -->
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+    <!-- ตกแต่งหน้าตาแอปให้สวยงาม เหมาะกับ iPad (จิ้มง่าย ปุ่มใหญ่) -->
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .form-group {
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #34495e;
+        }
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        input[type="text"]:focus, textarea:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+        .radio-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 5px;
+        }
+        .radio-label {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border: 2px solid #ecdcdc;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: normal;
+            transition: all 0.2s;
+        }
+        .radio-group input[type="radio"] {
+            display: none; /* ซ่อนปุ่มกลมๆ เล็กๆ */
+        }
+        /* เมื่อกดเลือก ปุ่มจะเปลี่ยนเป็นสีฟ้าเด่นชัด */
+        .radio-group input[type="radio"]:checked + .radio-label {
+            background: #e3f2fd;
+            border-color: #2196f3;
+            color: #0d47a1;
+            font-weight: bold;
+        }
+        .btn-submit {
+            width: 100%;
+            background-color: #2ecc71;
+            color: white;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+        .btn-submit:hover {
+            background-color: #27ae60;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📋 แบบประเมินสุขภาพจิตชุมชน (2Q)</h2>
+    <div class="subtitle">หน่วยบริการสาธารณสุขเคลื่อนที่</div>
+
+    <form id="assessmentForm">
+        <!-- 1. กรอกรหัส HN -->
+        <div class="form-group">
+            <label for="hnCode">รหัสผู้ป่วย / HN *</label>
+            <input type="text" id="hnCode" placeholder="กรอกรหัสอ้างอิง (เช่น HN69001)" required>
+        </div>
+
+        <!-- 2. คำถามข้อที่ 1 -->
+        <div class="form-group">
+            <label>1. ใน 2 สัปดาห์ที่ผ่านมา รวมทั้งวันนี้ ท่านมีอาการหดหู่ เศร้า หรือท้อแท้สิ้นหวังหรือไม่?</label>
+            <div class="radio-group">
+                <input type="radio" id="q1_no" name="q1" value="ไม่มี" required>
+                <label for="q1_no" class="radio-label">ไม่มี</label>
+
+                <input type="radio" id="q1_yes" name="q1" value="มี">
+                <label for="q1_yes" class="radio-label">มี</label>
+            </div>
+        </div>
+
+        <!-- 3. คำถามข้อที่ 2 -->
+        <div class="form-group">
+            <label>2. ใน 2 สัปดาห์ที่ผ่านมา รวมทั้งวันนี้ ท่านมีอาการเบื่อ ทำอะไรก็ไม่เพลิดเพลินหรือไม่?</label>
+            <div class="radio-group">
+                <input type="radio" id="q2_no" name="q2" value="ไม่มี" required>
+                <label for="q2_no" class="radio-label">ไม่มี</label>
+
+                <input type="radio" id="q2_yes" name="q2" value="มี">
+                <label for="q2_yes" class="radio-label">มี</label>
+            </div>
+        </div>
+
+        <!-- 4. บันทึกเพิ่มเติม -->
+        <div class="form-group">
+            <label for="note">บันทึกเพิ่มเติม / อาการสำคัญ</label>
+            <textarea id="note" rows="3" placeholder="ระบุข้อมูลเพิ่มเติม (ถ้ามี)"></textarea>
+        </div>
+
+        <!-- ปุ่มกดส่งข้อมูล -->
+        <button type="submit" class="btn-submit">💾 บันทึกและส่งรายงานให้หัวหน้า</button>
+    </form>
+</div>
+
+<script>
+    // ==========================================
+    // 🛠️ จุดใส่รหัสกุญแจของคุณ (ตามขั้นตอนในรูปคู่มือ)
+    // ==========================================
+    const MESSAGING_API_TOKEN = 'vQk54LXyk7D2Il3BISTRmnzJ4mps/CpaJsYmIxpq3cNqpAxTSdtv1Eq74qfcRNgRYKWkdgbnaB06cuJDRD9OgZ+ioJj5LuxA3pRlr7PWltpfhlXdAVQgTf1lKt9SOAUWAfDPKrU1Jhj2laQUM9bQRAdB04t89/1O/w1cDnyilFU='; // ใส่ Channel Access Token ของคุณ
+    const LIFF_ID = 'วาง LIFF ID ตรงนี้';             // ใส่ LIFF ID ของคุณ
+    // ==========================================
+
+    // เริ่มการทำงานของ LINE LIFF เมื่อเปิดหน้าเว็บ
+    liff.init({ liffId: LIFF_ID })
+        .then(() => {
+            console.log("LINE LIFF เชี่อมต่อสำเร็จ");
+            if (!liff.isLoggedIn()) {
+                liff.login(); // บังคับล็อกอินไลน์
+            }
+        })
+        .catch((err) => {
+            console.error("LIFF มีปัญหาขัดข้อง:", err);
+        });
+
+    // ระบบทำงานเมื่อผู้ใช้งานกดปุ่ม "บันทึกและส่งรายงาน"
+    document.getElementById('assessmentForm').addEventListener('submit', function(e) {
+        e.preventDefault(); // ป้องกันหน้าจอรีโหลด
+
+        // ดึงค่าข้อมูลจากฟอร์มที่กรอก
+        const hn = document.getElementById('hnCode').value;
+        const q1 = document.querySelector('input[name="q1"]:checked').value;
+        const q2 = document.querySelector('input[name="q2"]:checked').value;
+        const note = document.getElementById('note').value || '-';
+
+        // ประเมินผลเบื้องต้นตามหลักการแพทย์ (ถ้ามี "มี" แม้แต่ข้อเดียว = เสี่ยง)
+        let summaryResult = "ปกติ";
+        if (q1 === "มี" || q2 === "มี") {
+            summaryResult = "🚨 มีความเสี่ยงโรคซึมเศร้า (ควรประเมิน 9Q ต่อ)";
+        }
+
+        // จัดหน้าตาข้อความที่จะส่งเข้ากลุ่มไลน์หัวหน้า
+        const textMessage = `📌 รายงานผลประเมินสุขภาพจิต\n` +
+                            `• รหัส HN: ${hn}\n` +
+                            `• ข้อ 1 (เศร้า ท้อแท้): ${q1}\n` +
+                            `• ข้อ 2 (เบื่อ ไม่อยากทำอะไร): ${q2}\n` +
+                            `• สรุปผล: ${summaryResult}\n` +
+                            `• หมายเหตุ: ${note}`;
+
+        // สั่งให้ LINE LIFF ส่งข้อความนี้เข้าไปในแชทกลุ่มทันที
+        liff.sendMessages([{
+            type: 'text',
+            text: textMessage
+        }])
+        .then(() => {
+            alert('บันทึกข้อมูลและส่งรายงานเข้ากลุ่มไลน์เรียบร้อยแล้วครับ!');
+            liff.closeWindow(); // ปิดหน้าต่างแอปอัตโนมัติ
+        })
+        .catch((err) => {
+            alert('เกิดข้อผิดพลาดในการส่งข้อความ: ' + err);
+        });
+    });
+</script>
+
+</body>
+</html>
