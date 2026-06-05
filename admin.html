@@ -3,37 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบแดชบอร์ดคนดูแล - รพ.สต.</title>
+    <title>ระบบแดชบอร์ดคนดูแล - รพ.สต.บ้านทองหลาง</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f1f5f9; color: #1e293b; margin: 0; padding: 20px; }
         .admin-card { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
         
-        /* สไตล์สำหรับการแบ่งหน้าจอการทำงาน (Step) */
         .step { display: none; }
         .step.active { display: block; }
         
         .header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; }
-        .search-container { display: flex; gap: 10px; margin-bottom: 25px; }
         
-        /* สไตล์ฟอร์มและอินพุต */
-        .form-group { margin-bottom: 20px; }
-        label { display: block; font-weight: bold; margin-bottom: 8px; color: #475569; }
-        input[type="text"], input[type="password"] { width: 100%; padding: 12px; border: 2px solid #cbd5e1; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
+        /* สไตล์โซนค้นหาและจัดเรียงแบบแถวคู่ */
+        .search-container { background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 12px; margin-bottom: 25px; }
+        .inputs-row { display: flex; gap: 10px; margin-bottom: 12px; }
+        .controls-row { display: flex; gap: 10px; align-items: center; }
+        
+        input[type="text"], input[type="number"], input[type="password"], select { 
+            padding: 12px; border: 2px solid #cbd5e1; border-radius: 10px; font-size: 16px; box-sizing: border-box;
+        }
+        input[type="text"] { flex: 1; }
+        input[type="number"] { width: 160px; }
+        select { flex: 1; background-color: white; cursor: pointer; }
         
         /* ปุ่มสั่งการ */
-        .btn-refresh, .btn-search, .btn-login { padding: 12px 20px; border: none; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; color: white; }
-        .btn-refresh { background-color: #3b82f6; }
+        .btn-refresh, .btn-search, .btn-login { padding: 12px 20px; border: none; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; color: white; white-space: nowrap; }
+        .btn-refresh { background-color: #64748b; }
         .btn-search { background-color: #10b981; }
         .btn-login { background-color: #3b82f6; width: 100%; padding: 15px; font-size: 16px; margin-top: 10px; }
         
-        .loading { text-align: center; color: #64748b; font-style: italic; }
+        .loading { text-align: center; color: #64748b; font-style: italic; margin: 20px 0; }
         .patient-history { margin-top: 25px; }
-        .history-card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 15px; margin-bottom: 15px; background-color: #f8fafc; }
-        .history-header { display: flex; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 8px; font-weight: bold; color: #64748b; }
+        .history-card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 15px; margin-bottom: 15px; background-color: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .history-header { display: flex; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 8px; font-weight: bold; color: #64748b; font-size: 14px; }
         .info-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; }
         .danger { color: #ef4444; font-weight: bold; }
-        .trend-chart-container { margin-top: 30px; display: none; }
+        .trend-chart-container { margin-top: 30px; background: #fafafa; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; display: none; }
     </style>
 </head>
 <body>
@@ -45,12 +50,12 @@
             <h2>🔐 ระบบยืนยันตัวตนผู้ดูแลข้อมูล (Admin)</h2>
             <p>กรุณากรอกสิทธิ์เข้าใช้งานเพื่อเข้าถึงระบบค้นหาและประวัติสุขภาพจิตผู้ป่วย</p>
         </div>
-        <div class="form-group">
-            <label for="adminUsername">Username</label>
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label style="display:block; font-weight:bold; margin-bottom:5px;">Username</label>
             <input type="text" id="adminUsername" placeholder="ระบุ Username ผู้ดูแลระบบ">
         </div>
-        <div class="form-group">
-            <label for="adminPassword">Password</label>
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label style="display:block; font-weight:bold; margin-bottom:5px;">Password</label>
             <input type="password" id="adminPassword" placeholder="ระบุ Password ผู้ดูแลระบบ">
         </div>
         <button class="btn-login" onclick="verifyAdminAuth()">🔓 เข้าสู่ระบบแดชบอร์ด</button>
@@ -60,12 +65,26 @@
         <h2>📊 แดชบอร์ดดูข้อมูลสุขภาพจิต</h2>
         
         <div class="search-container">
-            <input type="text" id="searchInput" placeholder="กรอกชื่อ-สกุล ผู้ป่วยเพื่อค้นหา...">
-            <button class="btn-search" onclick="loadData(true)">🔍 ค้นหา</button>
-            <button class="btn-refresh" onclick="loadData(false)">🔄 แสดงทั้งหมด/รีเฟรช</button>
+            <div class="inputs-row">
+                <input type="text" id="searchInput" oninput="processData()" placeholder="🔍 พิมพ์ชื่อ-นามสกุลผู้ป่วยเพื่อค้นหา...">
+                <input type="number" id="ageInput" oninput="processData()" placeholder="🔢 พิมพ์อายุเพื่อค้นหา..." min="1" max="120">
+            </div>
+            <div class="controls-row">
+                <label style="font-weight: bold; color: #475569; white-space: nowrap;">🔃 วิธีเรียงข้อมูล:</label>
+                <select id="sortSelect" onchange="processData()">
+                    <option value="timeNewOld">🕒 เวลาตรวจล่าสุด ➡️ เก่าสุด (ค่าเริ่มต้น)</option>
+                    <option value="timeOldNew">🕒 เวลาตรวจเก่าสุด ➡️ ล่าสุด</option>
+                    <option value="nameAZ">🔤 ชื่อผู้ป่วย: ก ➡️ ฮ</option>
+                    <option value="nameZA">🔤 ชื่อผู้ป่วย: ฮ ➡️ ก</option>
+                    <option value="ageMaxMin">👴 อายุผู้รับตรวจ: มาก ➡️ น้อย</option>
+                    <option value="ageMinMax">👶 อายุผู้รับตรวจ: น้อย ➡️ มาก</option>
+                </select>
+                <button class="btn-search" onclick="processData()">🔍 ค้นหา</button>
+                <button class="btn-refresh" onclick="fetchData()">🔄 รีเฟรชฐานข้อมูล</button>
+            </div>
         </div>
         
-        <div id="loadingText" class="loading" style="display:none;">กำลังโหลดข้อมูล...</div>
+        <div id="loadingText" class="loading" style="display:none;">กำลังดึงข้อมูลล่าสุดจาก Google Sheet...</div>
 
         <div id="trendChartContainer" class="trend-chart-container">
             <canvas id="trendChart"></canvas>
@@ -77,42 +96,40 @@
 </div>
 
 <script>
-    // 🔗 ฝังลิงก์แอปสคริปต์หลังบ้านของจริงให้เรียบร้อยครับ
+    // ลิงก์เชื่อมโยงฐานข้อมูลแอปสคริปต์หลังบ้านของจริง
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzcRlhZ2PqUfkrlTBUWDlLZcLsOOCnBBhbit2yJEIdJF4v2ZYXolvuY1dSQn11X8TNhdQ/exec';
     
-    // บัญชีผู้ดูแลระบบ (สามารถแก้ไขจับคู่ตัวซ้ายตัวขวาตามต้องการได้เลยครับ)
+    // บัญชีผู้ดูแลระบบ
     const adminUsers = {
         "admin1": "pass1234",
         "รพสตโนนสว่าง": "health2026"
     };
 
-    let allData = [];
+    let allData = []; // ถังเก็บข้อมูลดิบทั้งหมดที่ดึงมาจากคลาวด์ครั้งเดียว
     let trendChartObj = null; 
 
-    // ฟังก์ชันสลับหน้าต่างการทำงาน
     function changeStep(stepId) {
         document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
         document.getElementById(stepId).classList.add('active');
     }
 
-    // ฟังก์ชันตรวจสอบสิทธิ์ล็อกอิน
+    // ระบบล็อกอินพาสเวิร์ด
     function verifyAdminAuth() {
         const u = document.getElementById('adminUsername').value.trim();
         const p = document.getElementById('adminPassword').value;
 
         if (adminUsers[u] && adminUsers[u] === p) {
-            changeStep('dashboardStep'); // สลับไปหน้าจอหลัก
-            loadData(false);             // ดึงข้อมูลทั้งหมดขึ้นมาแสดงทันทีเมื่อผ่าน
+            changeStep('dashboardStep'); 
+            fetchData(); // ดึงข้อมูลก้อนใหญ่จากคลาวด์มาเก็บในเครื่องรอบแรก
         } else {
-            alert("❌ Username หรือ Password ไม่ถูกต้อง! ไม่สามารถเข้าถึงข้อมูลความลับผู้ป่วยได้");
+            alert("❌ Username หรือ Password ไม่ถูกต้อง!");
         }
     }
 
-    // ฟังก์ชันหลักดึงและจัดระเบียบข้อมูลผู้ป่วย
-    function loadData(isSearch) {
+    // ฟังก์ชันยิง Fetch ดึงข้อมูลจากคลาวด์ (ทำตอนเริ่ม หรือตอนกดรีเฟรชเท่านั้น)
+    function fetchData() {
         const loading = document.getElementById('loadingText');
         const historyDiv = document.getElementById('patientHistory');
-        const searchInput = document.getElementById('searchInput').value.trim().toLowerCase();
         const chartContainer = document.getElementById('trendChartContainer');
 
         loading.style.display = 'block';
@@ -124,62 +141,96 @@
             .then(data => {
                 allData = data;
                 loading.style.display = 'none';
-
-                let filteredData = allData;
-                if(isSearch && searchInput) {
-                    filteredData = allData.filter(item => item.patientName.toLowerCase().includes(searchInput));
-                }
-
-                // เรียงข้อมูลตามวันที่ (ใหม่ไปเก่า)
-                filteredData.sort((a, b) => {
-                    const dateA = parseTimestamp(a.timestamp);
-                    const dateB = parseTimestamp(b.timestamp);
-                    return dateB - dateA;
-                });
-
-                if(filteredData.length === 0) {
-                    historyDiv.innerHTML = '<p style="text-align:center; color:#64748b;">❌ ไม่พบข้อมูลผู้ป่วยที่ค้นหา</p>';
-                    return;
-                }
-
-                // แสดงกราฟเฉพาะเมื่อค้นหารายคนเจาะจงสำเร็จ
-                if(isSearch && searchInput) {
-                    filteredDataGrouped = groupDataByPatient(filteredData);
-                    if (Object.keys(filteredDataGrouped).length === 1) { 
-                        showChart(Object.values(filteredDataGrouped)[0]);
-                    }
-                }
-
-                // วนลูปแสดงการ์ดประวัติข้อมูลรายบุคคลแบบแยกคอลัมน์ชัดเจน
-                filteredData.forEach(item => {
-                    let card = document.createElement('div');
-                    card.className = 'history-card';
-                    let q9s = item.q9Score ? item.q9Score : '-(ไม่มี)-';
-                    let q8r = item.q8Result ? item.q8Result : '-(ไม่มี)-';
-                    
-                    card.innerHTML = `
-                        <div class="history-header">
-                            <span>วันที่ประเมิน: ${item.timestamp}</span>
-                            <span>แบบประเมินหลัก: ${item.assessmentType}</span>
-                        </div>
-                        <div class="info-row"><span>ชื่อผู้ป่วย:</span> <span><b>${item.patientName}</b> (หมู่บ้าน: ${item.villageNo})</span></div>
-                        <div class="info-row"><span>ข้อมูลทั่วไป:</span> <span>อายุ ${item.patientAge} ปี | เพศ ${item.patientGender}</span></div>
-                        <div class="info-row"><span>ผู้ประเมิน (อสม.):</span> <span>${item.vhmName}</span></div>
-                        <div class="info-row"><span>ผลประเมิน 2Q:</span> <span class="${item.q2Result.includes('เสี่ยง') ? 'danger' : ''}">${item.q2Result}</span></div>
-                        <div class="info-row"><span>คะแนนคอลัมน์ 9Q:</span> <span>${q9s}</span></div>
-                        <div class="info-row"><span>ผลประเมินคอลัมน์ 8Q:</span> <span>${q8r}</span></div>
-                        <div class="info-row"><span>หมายเหตุผู้ส่ง:</span> <span>${item.comment || '-(ว่าง)-'}</span></div>
-                    `;
-                    historyDiv.appendChild(card);
-                });
+                processData(); // นำข้อมูลมาประมวลผลการกรองและจัดเรียงทันที
             })
             .catch(err => {
                 loading.style.display = 'none';
-                historyDiv.innerHTML = '<p style="text-align:center; color:#ef4444;">❌ เกิดข้อผิดพลาดในการโหลดข้อมูล</p>';
+                historyDiv.innerHTML = '<p style="text-align:center; color:#ef4444;">❌ เกิดข้อผิดพลาดในการโหลดข้อมูลภายนอก</p>';
                 console.error(err);
             });
     }
 
+    // 🔥 หัวใจหลัก: ฟังก์ชันคัดกรองและสลับการเรียงลำดับข้อมูลในเครื่องแบบทันทีทันใด
+    function processData() {
+        const historyDiv = document.getElementById('patientHistory');
+        const chartContainer = document.getElementById('trendChartContainer');
+
+        historyDiv.innerHTML = '';
+        chartContainer.style.display = 'none';
+
+        if (allData.length === 0) return;
+
+        // นำข้อมูลดิบมาโคลนใส่ถังจำลองเพื่อทำการสับเปลี่ยนตัวแปร
+        let filteredData = [...allData];
+
+        // 1. ระบบคัดกรองตัวอักษร "ชื่อผู้ป่วย"
+        const nameSearch = document.getElementById('searchInput').value.trim().toLowerCase();
+        if (nameSearch) {
+            filteredData = filteredData.filter(item => item.patientName.toLowerCase().includes(nameSearch));
+        }
+
+        // 2. ระบบคัดกรองจับคู่ตัวเลข "อายุผู้ป่วย"
+        const ageSearch = document.getElementById('ageInput').value.trim();
+        if (ageSearch) {
+            filteredData = filteredData.filter(item => parseInt(item.patientAge) === parseInt(ageSearch));
+        }
+
+        // 3. ระบบสลับโหมดจัดเรียงลำดับข้อมูลตามที่ผู้ใช้เลือก (Sorting)
+        const sortType = document.getElementById('sortSelect').value;
+        filteredData.sort((a, b) => {
+            if (sortType === 'timeNewOld') {
+                return parseTimestamp(b.timestamp) - parseTimestamp(a.timestamp); // ล่าสุดไปเก่าสุด
+            } else if (sortType === 'timeOldNew') {
+                return parseTimestamp(a.timestamp) - parseTimestamp(b.timestamp); // เก่าสุดไปล่าสุด
+            } else if (sortType === 'nameAZ') {
+                return a.patientName.localeCompare(b.patientName, 'th');         // ชื่อ: ก -> ฮ
+            } else if (sortType === 'nameZA') {
+                return b.patientName.localeCompare(a.patientName, 'th');         // ชื่อ: ฮ -> ก
+            } else if (sortType === 'ageMaxMin') {
+                return parseInt(b.patientAge) - parseInt(a.patientAge);          // อายุ: มาก -> น้อย
+            } else if (sortType === 'ageMinMax') {
+                return parseInt(a.patientAge) - parseInt(b.patientAge);          // อายุ: น้อย -> มาก
+            }
+            return 0;
+        });
+
+        // หากคัดกรองทับซ้อนแล้วไม่เหลือรายชื่อใครเลย
+        if (filteredData.length === 0) {
+            historyDiv.innerHTML = '<p style="text-align:center; color:#64748b; padding:20px;">❌ ไม่พบข้อมูลประวัติผู้ป่วยตามเงื่อนไขหรืออายุที่คุณเลือกค้นหา</p>';
+            return;
+        }
+
+        // 4. แสดงกราฟสถิติแนวโน้ม (ระบบจะคำนวณอัตโนมัติเมื่อผลการเสิร์ชบีบจนเหลือผู้ป่วยเพียงคนเดียว)
+        let filteredDataGrouped = groupDataByPatient(filteredData);
+        if (Object.keys(filteredDataGrouped).length === 1) { 
+            showChart(Object.values(filteredDataGrouped)[0]);
+        }
+
+        // 5. สั่งเรนเดอร์ลูปวาดการ์ดข้อมูลลงบนหน้าต่าง iPad
+        filteredData.forEach(item => {
+            let card = document.createElement('div');
+            card.className = 'history-card';
+            let q9s = item.q9Score ? item.q9Score : '-(ไม่มี)-';
+            let q8r = item.q8Result ? item.q8Result : '-(ไม่มี)-';
+            
+            card.innerHTML = `
+                <div class="history-header">
+                    <span>วันที่ประเมิน: ${item.timestamp}</span>
+                    <span>แบบประเมินหลัก: ${item.assessmentType}</span>
+                </div>
+                <div class="info-row"><span>ชื่อผู้ป่วย:</span> <span><b>${item.patientName}</b> (หมู่บ้าน: ${item.villageNo})</span></div>
+                <div class="info-row"><span>ข้อมูลทั่วไป:</span> <span>อายุ ${item.patientAge} ปี | เพศ ${item.patientGender}</span></div>
+                <div class="info-row"><span>ผู้ประเมิน (อสม.):</span> <span>${item.vhmName}</span></div>
+                <div class="info-row"><span>ผลประเมิน 2Q:</span> <span class="${item.q2Result.includes('เสี่ยง') ? 'danger' : ''}">${item.q2Result}</span></div>
+                <div class="info-row"><span>คะแนนคอลัมน์ 9Q:</span> <span>${q9s}</span></div>
+                <div class="info-row"><span>ผลประเมินคอลัมน์ 8Q:</span> <span>${q8r}</span></div>
+                <div class="info-row"><span>หมายเหตุผู้ส่ง:</span> <span>${item.comment || '-(ว่าง)-'}</span></div>
+            `;
+            historyDiv.appendChild(card);
+        });
+    }
+
+    // ฟังก์ชันแปลงข้อความ String วันที่จาก Google ให้กลายเป็นวัตถุ Date Object เพื่อใช้คำนวณบวกลบเรียงลำดับเวลา
     function parseTimestamp(timestampStr) {
         const parts = timestampStr.match(/(\d+)/g);
         return new Date(parts[2], parts[1]-1, parts[0], parts[3], parts[4]); 
@@ -193,6 +244,7 @@
         }, {});
     }
 
+    // ระบบวาดกราฟแนวโน้ม
     function showChart(patientData) {
         const chartContainer = document.getElementById('trendChartContainer');
         chartContainer.style.display = 'block';
@@ -205,18 +257,18 @@
                                    .sort((a, b) => a.x - b.x); 
 
         if(chartData.length === 0) {
-            chartContainer.innerHTML = '<p style="text-align:center; color:#64748b; padding:10px;">⚠️ ผู้ป่วยคนนี้ยังมีเฉพาะข้อมูลคัดกรองทั่วไป (ยังไม่มีประวัติคะแนนแบบ 9Q เพื่อนำมาพล็อตแสดงกราฟแนวโน้มได้)</p>';
+            chartContainer.innerHTML = '<p style="text-align:center; color:#64748b; padding:5px; font-size:13px;">⚠️ ผู้ป่วยคนนี้มีประวัติในระบบ แต่ยังไม่มีบันทึกผลคะแนนแบบทดสอบ 9Q จึงไม่สามารถวาดกราฟแนวโน้มระดับจิตใจได้</p>';
             return;
         }
 
+        chartContainer.innerHTML = '<canvas id="trendChart"></canvas>';
         const ctx = document.getElementById('trendChart').getContext('2d');
-        if (trendChartObj) { trendChartObj.destroy(); }
 
         trendChartObj = new Chart(ctx, {
             type: 'line',
             data: {
                 datasets: [{
-                    label: `กราฟแนวโน้มคะแนน 9Q ของคุณ ${patientData[0].patientName}`,
+                    label: `กราฟแนวโน้มสถิติคะแนน 9Q ของคุณ ${patientData[0].patientName}`,
                     data: chartData,
                     borderColor: '#3b82f6',
                     backgroundColor: 'rgba(59, 130, 246, 0.1)',
@@ -229,11 +281,11 @@
                     x: {
                         type: 'time', 
                         time: { unit: 'day', displayFormats: { day: 'dd/MM' } },
-                        title: { display: true, text: 'วันที่ประเมิน' }
+                        title: { display: true, text: 'วันที่ตรวจประเมิน' }
                     },
                     y: {
                         beginAtZero: true,
-                        title: { display: true, text: 'ระดับคะแนน 9Q' },
+                        title: { display: true, text: 'คะแนนสะสม 9Q' },
                         suggestedMax: 27 
                     }
                 }
