@@ -337,12 +337,12 @@
         chartContainer.style.display = 'block';
         
         // กรองดึงเฉพาะรอบประเมินที่มีคะแนน 9Q และเรียงเวลาจากเก่าไปใหม่ (จากซ้ายไปขวา) สำหรับทำเส้นกราฟ
-        const chartData = patientData.filter(item => item.assessmentType === '9Q' && item.q9Score)
-                                   .map(item => ({ x: parseTimestamp(item.timestamp), y: parseInt(item.q9Score.replace(/\D/g,'')) || 0 }))
+        const chartData = patientData.filter(item => item.assessmentType === '2Q' && item.q2Result)
+                                   .map(item => ({ x: parseTimestamp(item.timestamp), y: parseInt(item.q2Result.replace(/\D/g,'')) || 0 }))
                                    .sort((a, b) => a.x - b.x);
         
         if(chartData.length === 0) { 
-            chartContainer.innerHTML = '<p style="text-align:center; color:#64748b; padding:15px; font-size:14px; margin:0;">⚠️ ผู้ป่วยรายนี้มีประวัติในคลาวด์ แต่ยังไม่มีคะแนนการทดสอบแบบละเอียด (9Q) ย้อนหลังเพื่อนำมาวาดกราฟสถิติได้</p>'; 
+            chartContainer.innerHTML = '<p style="text-align:center; color:#64748b; padding:15px; font-size:14px; margin:0;">⚠️ ผู้ป่วยรายนี้มีประวัติในคลาวด์ แต่ยังไม่มีคะแนนการทดสอบ 2Q ย้อนหลังเพื่อนำมาวาดกราฟสถิติได้</p>'; 
             return; 
         }
         
@@ -353,7 +353,7 @@
             type: 'line', 
             data: { 
                 datasets: [{ 
-                    label: `กราฟแนวโน้มคะแนนสถิติ 9Q`, 
+                    label: `กราฟแนวโน้มคะแนนสถิติ 2Q`, 
                     data: chartData, 
                     borderColor: '#3b82f6', 
                     backgroundColor: 'rgba(59, 130, 246, 0.1)', 
