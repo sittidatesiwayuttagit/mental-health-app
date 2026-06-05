@@ -66,6 +66,7 @@
 
 <div class="admin-card">
 
+    <!-- ================= ส่วนที่ 1: หน้าล็อกอินยืนยันตัวตนผู้ดูแล ================= -->
     <div id="loginStep" class="step active">
         <div class="header">
             <h2>🔐 ระบบยืนยันตัวตนผู้ดูแลข้อมูล (Admin)</h2>
@@ -86,6 +87,7 @@
         </p>
     </div>
 
+    <!-- ================= หน้าพิเศษ: กู้คืนและเปลี่ยนรหัสผ่านผู้ดูแลระบบ ================= -->
     <div id="resetAdminStep" class="step">
         <div class="header">
             <h2>🔄 ตั้งรหัสผ่านแอดมินใหม่ด้วยตนเอง</h2>
@@ -107,17 +109,21 @@
         <button class="btn-login" style="background-color: #94a3b8; margin-top: 8px;" onclick="changeStep('loginStep')">⬅️ ย้อนกลับหน้าล็อกอิน</button>
     </div>
 
+    <!-- ================= ส่วนที่ 2: หน้าแดชบอร์ดควบคุมหลักเมื่อผ่านการกรอกรหัส ================= -->
     <div id="dashboardStep" class="step">
         
         <div class="admin-info-header">🖥️ ผู้ใช้งานปัจจุบัน: <span id="adminDisplayName" style="color: #3b82f6;">-</span></div>
 
+        <!-- 🎛️ แถบเมนูหลัก -->
         <div class="tabs-bar">
             <button id="tabPatientsBtn" class="tab-btn active" onclick="switchTab('patientsTab')">📋 ข้อมูลผู้ป่วย</button>
             <button id="tabVhmBtn" class="tab-btn" onclick="switchTab('vhmTab')">👥 ข้อมูล อสม.</button>
-            <button id="tabAdminsBtn" class="tab-btn" onclick="switchTab('adminsTab')">👥 ข้อมูลผู้ดูแล</button> </div>
+            <button id="tabAdminsBtn" class="tab-btn" onclick="switchTab('adminsTab')">👥 ข้อมูลผู้ดูแล</button> 
+        </div>
 
         <div id="loadingText" class="loading" style="display:none;">กำลังดึงข้อมูลล่าสุดจาก Google Sheet...</div>
 
+        <!-- 🔹 แถบเนื้อหาที่ 1: จัดการข้อมูลผู้ป่วย -->
         <div id="patientsTab" class="tab-content active">
             <div id="patientListSection">
                 <div class="search-container">
@@ -178,6 +184,7 @@
             </div>
         </div>
 
+        <!-- 🔹 แถบเนื้อหาที่ 2: จัดการระบบ เพิ่ม/แก้ไข/ลบ รายชื่อ อสม. -->
         <div id="vhmTab" class="tab-content">
             <div class="vhm-form-box">
                 <h4 id="formVhmTitle" style="margin-top: 0; color: #3b82f6;">➕ เพิ่ม อสม. รายใหม่เข้าระบบคลาวด์</h4>
@@ -198,6 +205,7 @@
             <div id="vhmList" class="vhm-list-container"></div>
         </div>
 
+        <!-- 🔹 แถบเนื้อหาที่ 3: จัดการระบบ เพิ่ม/แก้ไข/ลบ รายชื่อผู้ดูแลระบบ -->
         <div id="adminsTab" class="tab-content">
             <div class="vhm-form-box" style="border: 2px solid #10b981;">
                 <h4 id="formAdminTitle" style="margin-top: 0; color: #10b981;">➕ เพิ่ม ผู้ดูแลระบบ (Admin) รายใหม่เข้าระบบคลาวด์</h4>
@@ -223,7 +231,7 @@
 </div>
 
 <script>
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxSGSPTC_S4GA9gygpo8dhAcvIostndG6og5jiRrvV6Bm1m1dXxpP1TR6-eE3I5cykuIw/exec';
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyzQUpoo6S8jmhWC7ySXKz3y6u1LF2k27MYRPAijDvz6q9p_nzgR0RfGnfCudK-g4Ib-Q/exec';
     
     let allData = []; 
     let currentSelectedPatientName = ""; 
@@ -276,11 +284,10 @@
             fetchVhmData();
         } else if (tabId === 'adminsTab') {
             document.getElementById('tabAdminsBtn').classList.add('active');
-            fetchAdminData(); // 👈 สลับมาเรียกโหลดรายชื่อแอดมิน
+            fetchAdminData(); 
         }
     }
 
-    // ยิงตรวจสอบสิทธิ์ล็อกอินแอดมินผ่านคลาวด์
     function verifyAdminAuth() {
         const u = document.getElementById('adminUsername').value.trim();
         const p = document.getElementById('adminPassword').value;
@@ -294,7 +301,6 @@
             .then(res => {
                 btn.innerText = "🔓 เข้าสู่ระบบแดชบอร์ด";
                 if (res.success) {
-                    // 🔄 บันทึกชื่อแอดมินลงกล่องหัวข้อแดชบอร์ดด่วน
                     document.getElementById('adminDisplayName').innerText = res.name;
                     changeStep('dashboardStep'); 
                     fetchPatientData(); 
@@ -617,18 +623,16 @@
 
 
     // ==========================================
-    // 👥 โซนระบบจัดการข้อมูลรายชื่อผู้ดูแลระบบ (Admin) (เพิ่มใหม่ถอดด้าม)
+    // 👥 โซนระบบจัดการข้อมูลรายชื่อผู้ดูแลระบบ (Admin)
     // ==========================================
     
-    // ดึงรายชื่อแอดมินจากคลาวด์แท็บ "แอดมิน"
+    // 🔄 แก้ไขจุดบกพร่อง: ลบโค้ดซ้ำซ้อนออก เพื่อดึงรายชื่อแอดมินตรงตัวผ่านแอคชันที่ถูกต้อง
     function fetchAdminData() {
         const loading = document.getElementById('loadingText');
         const listDiv = document.getElementById('adminList');
         loading.style.display = 'block'; listDiv.innerHTML = '';
 
-        // ฝั่งระบบใช้ฐานข้อมูลกุญแจเดียวกับ Code.gs แผ่นงานแอดมิน
-        fetch(`${GOOGLE_SCRIPT_URL}?action=getVhmList`) // ส่งผ่านระบบค้นหาเดิม แต่ยิงไปรับแยก
-        fetch(`${GOOGLE_SCRIPT_URL}?action=getAdminList`) // เรียกแอคชันจัดการแอดมินตรงตัว
+        fetch(`${GOOGLE_SCRIPT_URL}?action=getAdminList`) 
             .then(res => { if (!res.ok) throw new Error("HTTP Status " + res.status); return res.text(); })
             .then(text => {
                 try {
@@ -636,7 +640,7 @@
                     if(data.length === 0) { listDiv.innerHTML = '<p style="text-align:center; color:#64748b;">❌ ไม่พบข้อมูลรายชื่อผู้ดูแลระบบ</p>'; return; }
                     data.forEach(adm => {
                         let card = document.createElement('div'); card.className = 'vhm-table-row';
-                        card.style.borderLeft = "4px solid #10b981"; // ตัดเส้นขอบเขียวให้แยกหมวดง่าย
+                        card.style.borderLeft = "4px solid #10b981"; 
                         card.innerHTML = `
                             <div class="vhm-row-header"><span style="color:#10b981;">ชื่อผู้ดูแล: <b>${adm.name}</b></span><span>Username: ${adm.username}</span></div>
                             <div class="info-row"><span>รหัสเข้าใช้งาน (Password):</span> <span>${adm.password}</span></div>
@@ -653,7 +657,6 @@
             .catch(err => { loading.style.display = 'none'; alert("❌ ดึงข้อมูลผู้ดูแลระบบไม่ได้: " + err.message); });
     }
 
-    // สั่งบันทึกข้อมูลเพิ่ม/แก้ไขผู้ดูแลระบบขึ้นชีตคลาวด์
     function saveAdminData() {
         const mode = document.getElementById('adminFormMode').value;
         const u = document.getElementById('adminUsernameInput').value.trim();
@@ -665,7 +668,6 @@
 
         const loading = document.getElementById('loadingText'); loading.style.display = 'block';
 
-        // เพิ่มคำสั่งแอคชัน saveAdmin ลงระบบหลังบ้าน Google Apps Script โยงตรงแท็บแอดมิน
         fetch(`${GOOGLE_SCRIPT_URL}?action=saveAdmin&mode=${mode}&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}&name=${encodeURIComponent(n)}&secretKey=${encodeURIComponent(k)}`)
             .then(res => res.json())
             .then(res => {
@@ -680,9 +682,8 @@
             });
     }
 
-    // สั่งลบแอดมินรายบุคคลออกจากคลาวด์
     function deleteAdminData(username) {
-        if(!confirm(`🚨 แจ้งเตือนความปลอดภัยสูงสุด: คุณต้องการลบสิทธิ์เข้าถึงของสิทธิ์แอดมิน Username: "${username}" ใช่หรือไม่? บัญชีนี้จะไม่สามารถเปิดแดชบอร์ดนี้ได้อีกต่อไป`)) return;
+        if(!confirm(`🚨 แจ้งเตือนความปลอดภัยสูงสุด: คุณต้องการลบสิทธิ์เข้าถึงของสิทธิ์แอดมิน Username: "${username}" ใช่หรือไม่?`)) return;
         const loading = document.getElementById('loadingText'); loading.style.display = 'block';
 
         fetch(`${GOOGLE_SCRIPT_URL}?action=deleteAdmin&username=${encodeURIComponent(username)}`)
