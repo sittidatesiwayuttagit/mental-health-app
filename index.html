@@ -37,6 +37,7 @@
 <div class="container">
     <div id="vhmInfoHeader" class="vhm-info-header">ผู้ประเมิน: <span id="vhmDisplayName">-</span></div>
     
+    <!-- ================= หน้า 0: ยืนยันตัวตนเจ้าหน้าที่ ================= -->
     <div id="step0" class="step active">
         <div class="header">
             <h2>🔐 ระบบยืนยันตัวตนเจ้าหน้าที่</h2>
@@ -64,6 +65,7 @@
         </p>
     </div>
 
+    <!-- ================= หน้าพิเศษ: กู้คืนและเปลี่ยนรหัสผ่านด้วยตัวเอง ================= -->
     <div id="stepReset" class="step">
         <div class="header">
             <h2>🔄 ตั้งรหัสผ่านใหม่ด้วยตนเอง</h2>
@@ -82,7 +84,7 @@
         </div>
         <div class="form-group">
             <label for="resetSecretKey">รหัสลับยืนยันตัวตน *</label>
-            <input type="password" id="resetSecretKey" placeholder="กรอกรหัสลับยืนยันสิทธิ์ที่ลงทะเบียนไว้">
+            <input type="password" id="resetSecretKey" placeholder="กรอกรหัสลับยีนยันสิทธิ์ที่ลงทะเบียนไว้">
         </div>
         <div class="form-group">
             <label for="resetNewPassword">ระบุรหัสผ่านใหม่ที่ต้องการ *</label>
@@ -92,6 +94,7 @@
         <button class="btn-nav btn-back" onclick="changeStep(0)">⬅️ ย้อนกลับหน้าล็อกอิน</button>
     </div>
 
+    <!-- ================= หน้า 1: ข้อมูลทั่วไป ================= -->
     <div id="step1" class="step">
         <div class="header">
             <h2>📋 ข้อมูลทั่วไปผู้รับการประเมิน</h2>
@@ -101,7 +104,6 @@
             <label>ชื่อ-นามสกุล ผู้รับตรวจ *</label>
             <input type="text" id="patientName" placeholder="ตัวอย่าง : สุขภาพ จิตดี">
         </div>
-        
         <div class="form-group">
             <label>เพศ *</label>
             <select id="patientGender">
@@ -111,7 +113,6 @@
                 <option value="อื่นๆ">อื่นๆ</option>
             </select>
         </div>
-
         <div class="form-group">
             <label>หมู่บ้าน *</label>
             <select id="villageNo">
@@ -122,10 +123,11 @@
         <button class="btn-nav btn-next" onclick="goToStep2()">ถัดไป ➡️</button>
     </div>
 
+    <!-- ================= หน้า 2: แบบประเมินสุขภาพจิตแบบพ่วงคาสเคด ================= -->
     <div id="step2" class="step">
         <div class="header">
             <h2>🧠 เลือกแบบประเมินสุขภาพจิต</h2>
-            <p>เลือกแบบประเมินหลักเพื่อเริ่มการตอบข้อซักถาม</p>
+            <p>ระบบควบคุมการประเมินตามเกณฑ์สากล (2Q ➡️ 9Q ➡️ 8Q)</p>
         </div>
 
         <select id="assessmentTypeSelect" onchange="switchAssessment()">
@@ -135,8 +137,9 @@
         </select>
         <div id="indicationText" class="indication"></div>
 
-        <div class="sub-questions">
-            <h4>📋 ส่วนที่ 1: ข้อคำถาม 2Q (บังคับทำ)</h4>
+        <!-- 🟦 ส่วนที่ 1: คำถามคัดกรอง 2Q -->
+        <div id="panel2Q" class="sub-questions">
+            <h4>📋 ส่วนที่ 1: ข้อคำถามคัดกรองซึมเศร้า 2Q (บังคับกรอก)</h4>
             <div class="form-group">
                 <label>1. ใน 2 สัปดาห์ที่ผ่านมา รวมทั้งวันนี้ ท่านมีอาการหดหู่ เศร้า หรือท้อแท้สิ้นหวังหรือไม่?</label>
                 <div class="radio-group">
@@ -153,22 +156,33 @@
             </div>
         </div>
 
+        <!-- 🟦 ส่วนที่ 2: ข้อคำถามประเมินซึมเศร้า 9Q แบบจัดเต็มครบชุด -->
         <div id="panel9Q" class="sub-questions" style="display:none;">
-            <h4>📋 ส่วนที่ 2: ข้อคำถามประเมิน 9Q (จำลอง)</h4>
-            <p style="font-size:12px; color:#64748b;">(คะแนน: 0=ไม่มี, 1=บางวัน, 2=บ่อย, 3=ทุกวัน)</p>
-            <div class="form-group"><label>1. เบื่อ ไม่สนใจอยากทำอะไร?</label><select id="q9q1"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
-            <div class="form-group"><label>2. ซึมเศร้า ท้อแท้?</label><select id="q9q2"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
+            <h4>📋 ส่วนที่ 2: ข้อคำถามระดับความรุนแรง 9Q</h4>
+            <p style="font-size:12px; color:#64748b; margin-bottom:12px;">(เกณฑ์: 0=ไม่มีเลย, 1=มีบางวัน 1-7 วัน, 2=มีบ่อย 7-14 วัน, 3=มีทุกวัน เก่ากว่า 14 วัน)</p>
+            <div class="form-group"><label>1. เบื่อ ไม่อยากทำอะไร หรือไม่เพลิดเพลินในการทำกิจกรรม</label><select id="q9q1"><option value="">-- เลือกคำตอบ --</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
+            <div class="form-group"><label>2. ไม่สบายใจ ซึมเศร้า หรือท้อแท้สิ้นหวัง</label><select id="q9q2"><option value="">-- เลือกคำตอบ --</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
+            <div class="form-group"><label>3. หลับยาก หรือหลับๆ ตื่นๆ หรือหลับมากเกินไป</label><select id="q9q3"><option value="">-- เลือกคำตอบ --</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
+            <div class="form-group"><label>4. เหนื่อยง่าย หรือไม่ค่อยมีเรี่ยวแรง</label><select id="q9q4"><option value="">-- เลือกคำตอบ --</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
+            <div class="form-group"><label>5. เบื่ออาหาร หรือกินมากเกินไป</label><select id="q9q5"><option value="">-- เลือกคำตอบ --</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
+            <div class="form-group"><label>6. รู้สึกไม่ดีกับตัวเอง คิดว่าตัวเองล้มเหลว หรือทำให้ตนเองหรือครอบครัวผิดหวัง</label><select id="q9q6"><option value="">-- เลือกคำตอบ --</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
+            <div class="form-group"><label>7. สมาธิไม่ดีเวลาทำอะไร เช่น ดูโทรทัศน์ ฟังวิทยุ หรือทำงานที่ต้องใช้ความตั้งใจ</label><select id="q9q7"><option value="">-- เลือกคำตอบ --</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
+            <div class="form-group"><label>8. พูดหรือทำอะไรช้าลงจนคนอื่นสังเกตเห็นได้ หรือกระสับกระส่ายจนอยู่ไม่สุข</label><select id="q9q8"><option value="">-- เลือกคำตอบ --</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
+            <div class="form-group" style="border: 2px solid #ef4444; padding: 10px; border-radius: 8px;"><label style="color:#b91c1c;">9. คิดทำร้ายตนเอง หรือคิดว่าถ้าตายๆ ไปเสียคงจะดี * (ข้อเฝ้าระวังพิเศษ)</label><select id="q9q9"><option value="">-- เลือกคำตอบ --</option><option value="0">ไม่มีเลย</option><option value="1">มีบางวัน</option><option value="2">มีบ่อยๆ</option><option value="3">มีทุกวัน</option></select></div>
         </div>
 
+        <!-- 🟦 ส่วนที่ 3: ข้อคำถามประเมินความเสี่ยงต่อการฆ่าตัวตาย 8Q ครบชุดและเกณฑ์น้ำหนัก -->
         <div id="panel8Q" class="sub-questions" style="display:none;">
-            <h4>📋 ส่วนที่ 2: ข้อคำถามประเมิน 8Q (จำลอง)</h4>
-            <div class="form-group">
-                <label>1. คิดอยากตาย?</label>
-                <div class="radio-group">
-                    <input type="radio" id="q8q1_no" name="q8q1" value="ไม่มี"><label for="q8q1_no" class="radio-label">ไม่มี</label>
-                    <input type="radio" id="q8q1_yes" name="q8q1" value="มี"><label for="q8q1_yes" class="radio-label">มี</label>
-                </div>
-            </div>
+            <h4>📋 ส่วนที่ 3: แบบประเมินความเสี่ยงต่อการฆ่าตัวตาย 8Q</h4>
+            <p style="font-size:12px; color:#b91c1c; margin-bottom:12px; font-weight:bold;">⚠️ ข้อคำถามเกี่ยวกับความรู้สึกในช่วง 1 เดือนที่ผ่านมา (โปรดเลือก มี หรือ ไม่มี)</p>
+            <div class="form-group"><label>1. คิดอยากตาย หรือคิดว่าตายไปจะดีกว่า</label><select id="q8q1"><option value="">-- เลือกคำตอบ --</option><option value="0">ไม่มี</option><option value="1">มี</option></select></div>
+            <div class="form-group"><label>2. คิดอยากทำร้ายตัวเอง หรือทำให้ตัวเองตาย</label><select id="q8q2"><option value="">-- เลือกคำตอบ --</option><option value="0">ไม่มี</option><option value="2">มี</option></select></div>
+            <div class="form-group"><label>3. พยายามทำร้ายตัวเอง หรือพยายามฆ่าตัวตาย</label><select id="q8q3"><option value="">-- เลือกคำตอบ --</option><option value="0">ไม่มี</option><option value="6">มี</option></select></div>
+            <div class="form-group"><label>4. เคยพยายามทำร้ายตัวเอง หรือพยายามฆ่าตัวตายในอดีต (ตลอดช่วงชีวิต)</label><select id="q8q4"><option value="">-- เลือกคำตอบ --</option><option value="0">ไม่มี</option><option value="4">มี</option></select></div>
+            <div class="form-group"><label>5. คิดฆ่าตัวตาย โดยมีการวางแผนไว้เรียบร้อยแล้ว</label><select id="q8q5"><option value="">-- เลือกคำตอบ --</option><option value="0">ไม่มี</option><option value="8">มี</option></select></div>
+            <div class="form-group"><label>6. มีความตั้งใจจริงที่จะฆ่าตัวตาย</label><select id="q8q6"><option value="">-- เลือกคำตอบ --</option><option value="0">ไม่มี</option><option value="9">มี</option></select></div>
+            <div class="form-group"><label>7. มีความมั่นใจว่าจะทำได้สำเร็จ</label><select id="q8q7"><option value="">-- เลือกคำตอบ --</option><option value="0">ไม่มี</option><option value="10">มี</option></select></div>
+            <div class="form-group"><label>8. มีปัญหาเรื่องการควบคุมตนเองไม่ได้ จนคิดหรือพยายามฆ่าตัวตาย</label><select id="q8q8"><option value="">-- เลือกคำตอบ --</option><option value="0">ไม่มี</option><option value="12">มี</option></select></div>
         </div>
 
         <div class="form-group" style="margin-top:20px;">
@@ -180,6 +194,7 @@
         <button class="btn-nav btn-back" onclick="changeStep(1)">⬅️ ย้อนกลับ</button>
     </div>
 
+    <!-- ================= หน้า 3: หน้าตรวจสอบข้อมูลสรุปก่อนบันทึกคลาวด์ ================= -->
     <div id="step3" class="step">
         <div class="header"><h2>🔍 ตรวจสอบความถูกต้อง</h2></div>
         <div class="summary-box">
@@ -189,21 +204,21 @@
             <div class="summary-item"><span>หมู่บ้าน:</span> <span id="smVillage">-</span></div>
         </div>
         <div class="summary-box">
-            <h4>📊 ผลการคัดกรอง</h4>
-            <div class="summary-item"><span>แบบประเมินหลัก:</span> <span id="smType">-</span></div>
-            <div class="summary-item"><span>ผลประเมิน 2Q:</span> <span id="smQ2Result">-</span></div>
-            <div class="summary-item"><span>คะแนน 9Q:</span> <span id="smQ9Score">-(ไม่ได้ประเมิน)-</span></div>
-            <div class="summary-item"><span>ผลประเมิน 8Q:</span> <span id="smQ8Result">-(ไม่ได้ประเมิน)-</span></div>
-            <div class="summary-item"><span>หมายเหตุ:</span> <span id="smComment">-</span></div>
+            <h4>📊 ผลการคัดกรองแยกหัวข้อ</h4>
+            <div class="summary-item"><span>เครื่องมือส่งข้อมูลหลัก:</span> <span id="smType">-</span></div>
+            <div class="summary-item"><span>ผลประเมินด่วน 2Q:</span> <span id="smQ2Result">-</span></div>
+            <div class="summary-item"><span>คะแนนสรุป 9Q:</span> <span id="smQ9Score">-(ไม่ได้ประเมิน)-</span></div>
+            <div class="summary-item"><span>คะแนนสรุป 8Q:</span> <span id="smQ8Result">-(ไม่ได้ประเมิน)-</span></div>
+            <div class="summary-item"><span>หมายเหตุผู้คัดกรอง:</span> <span id="smComment">-</span></div>
         </div>
-        <button class="btn-nav btn-submit" onclick="submitData()">📤 ส่งข้อมูล</button>
+        <button class="btn-nav btn-submit" onclick="submitData()">📤 ส่งข้อมูลบันทึกคลาวด์</button>
         <button class="btn-nav btn-back" onclick="changeStep(2)">⬅️ ย้อนกลับแก้ไข</button>
     </div>
 </div>
 
 <script>
     const LIFF_ID = '2010303347-dja2J8TA'; 
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwa8hxqyti1K9T0HsN0E_6d51jOLSuKTggUkGkekiZVF44AqlXUZDhJDUaEfZ4__RO8-Q/exec';
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyBE_ubBDlAPaYVrymH7duX9YLA8FvIwFtzFopztFov0Tl5niIUrPXmw8Gru8fe2Eeicw/exec';
 
     let currentVhmName = "";
 
@@ -215,17 +230,15 @@
         window.scrollTo(0, 0);
     }
 
-    // 🔐 หน้า 0: ปรับปรุงระบบยืนยันสิทธิ์ผสมผสาน รองรับทั้ง อสม. และ แอดมิน
     function verifyAuth() {
         const u = document.getElementById('vhmUsername').value.trim();
         const p = document.getElementById('vhmPassword').value;
-        const role = document.getElementById('userRole').value; // 🔄 ดึงค่าตำแหน่งที่เลือก
+        const role = document.getElementById('userRole').value;
         const btn = document.getElementById('btnLoginText');
 
         if(!u || !p) { alert("⚠️ กรุณากรอกข้อมูลให้ครบถ้วน"); return; }
         btn.innerText = "⏳ กำลังเชื่อมต่อฐานข้อมูลคลาวด์...";
         
-        // 🔄 เลือกรันสิทธิ์แอคชันตามตำแหน่ง: ถ้าเป็นแอดมินวิ่งไปหา checkAdminLogin ถ้าเป็น อสม วิ่งหา checkLogin
         let actionType = (role === 'admin') ? 'checkAdminLogin' : 'checkLogin';
         
         fetch(`${GOOGLE_SCRIPT_URL}?action=${actionType}&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}`)
@@ -239,7 +252,6 @@
                     btn.innerText = "🔓 เข้าสู่ระบบ";
                     if(res.success) {
                         currentVhmName = res.name;
-                        // แสดงผลให้ชัดเจนว่าล็อกอินในสิทธิ์ใด
                         let roleTitle = (role === 'admin') ? 'ผู้ดูแลระบบ' : 'อสม.';
                         document.getElementById('vhmDisplayName').innerText = `${currentVhmName} (${roleTitle})`;
                         document.getElementById('vhmInfoHeader').style.display = "block";
@@ -258,12 +270,11 @@
             });
     }
 
-    // 🔄 ปรับปรุงระบบลืมรหัสผ่านผสม: เปลี่ยนรหัสได้ทั้ง อสม. และ แอดมินโยงตรงคลาวด์
     function handleResetPassword() {
         const u = document.getElementById('resetUsername').value.trim();
         const key = document.getElementById('resetSecretKey').value.trim();
         const newP = document.getElementById('resetNewPassword').value;
-        const role = document.getElementById('resetUserRole').value; // 🔄 ดึงค่าตำแหน่งกู้รหัส
+        const role = document.getElementById('resetUserRole').value;
         const btn = document.getElementById('btnResetText');
 
         if(!u || !key || !newP) { alert("⚠️ กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง"); return; }
@@ -271,7 +282,6 @@
 
         btn.innerText = "⏳ กำลังบันทึกรหัสผ่านใหม่...";
 
-        // 🔄 เลือกรันสิทธิ์ตามตำแหน่ง: ถ้าแอดมินใช้ resetAdminPassword ถ้า อสม ใช้ resetPassword
         let actionType = (role === 'admin') ? 'resetAdminPassword' : 'resetPassword';
 
         fetch(`${GOOGLE_SCRIPT_URL}?action=${actionType}&username=${encodeURIComponent(u)}&secretKey=${encodeURIComponent(key)}&newPassword=${encodeURIComponent(newP)}`)
@@ -287,7 +297,7 @@
                         alert("🎉 อัปเดตรหัสผ่านใหม่ลงตารางคลาวด์เรียบร้อย! สามารถนำรหัสใหม่ไปใช้เข้าสู่ระบบได้ทันทีครับ");
                         document.getElementById('vhmUsername').value = u;
                         document.getElementById('vhmPassword').value = "";
-                        document.getElementById('userRole').value = role; // สลับตำแหน่งรอให้ตรงฟอร์ม
+                        document.getElementById('userRole').value = role; 
                         changeStep(0);
                     } else {
                         alert("❌ " + res.message);
@@ -304,9 +314,7 @@
     }
 
     function goToStep2() {
-        if(!document.getElementById('patientName').value.trim() || 
-           !document.getElementById('patientGender').value || 
-           !document.getElementById('villageNo').value) {
+        if(!document.getElementById('patientName').value.trim() || !document.getElementById('patientGender').value || !document.getElementById('villageNo').value) {
             alert("⚠️ กรุณากรอกข้อมูลทั่วไปให้ครบทุกข้อ");
             return;
         }
@@ -314,47 +322,101 @@
         changeStep(2);
     }
 
+    // 🔄 คำนวณขยายแผงมุมมองฟอร์ม: ถ้าเป็น 8Q จะสั่งเปิดแผงทั้ง 2Q, 9Q และ 8Q เรียงลงมาให้กรอกพร้อมกัน
     function switchAssessment() {
         const type = document.getElementById('assessmentTypeSelect').value;
         const inText = document.getElementById('indicationText');
-        document.getElementById('panel9Q').style.display = (type === '9Q') ? 'block' : 'none';
-        document.getElementById('panel8Q').style.display = (type === '8Q') ? 'block' : 'none';
-        inText.innerText = (type === '2Q') ? '💡 ใช้คัดกรองความเสี่ยงซึมเศร้าเบื้องต้น' : (type === '9Q') ? '💡 ใช้ประเมินระดับเมื่อพบความเสี่ยงจาก 2Q' : '💡 ใช้ประเมินความเสี่ยงต่อการฆ่าตัวตาย';
+        
+        if (type === '2Q') {
+            document.getElementById('panel9Q').style.display = 'none';
+            document.getElementById('panel8Q').style.display = 'none';
+            inText.innerText = '💡 ใช้คัดกรองความเสี่ยงซึมเศร้าเบื้องต้น';
+        } else if (type === '9Q') {
+            document.getElementById('panel9Q').style.display = 'block';
+            document.getElementById('panel8Q').style.display = 'none';
+            inText.innerText = '💡 ใช้ประเมินระดับโรคซึมเศร้าเมื่อพบความเสี่ยงจาก 2Q';
+        } else if (type === '8Q') {
+            document.getElementById('panel9Q').style.display = 'block';
+            document.getElementById('panel8Q').style.display = 'block';
+            inText.innerText = '⚠️ บังคับกรอกข้อมูลข้ามขั้นเพื่อหาความเสี่ยงในการฆ่าตัวตายเชิงลึก (2Q + 9Q + 8Q)';
+        }
     }
 
+    // 🔥 แกนคัดกรองคุมเกณฑ์: ตรวจจับคะแนน 9Q >= 7 หรือ ข้อ 9 มีอาการเพื่อบังคับทำ 8Q ห้ามข้ามสิทธิ์
     function goToStep3() {
         const q2q1 = document.querySelector('input[name="q2q1"]:checked');
         const q2q2 = document.querySelector('input[name="q2q2"]:checked');
-        if(!q2q1 || !q2q2) { alert("⚠️ กรุณาทำแบบคัดกรอง 2Q ให้ครบ"); return; }
+        if(!q2q1 || !q2q2) { alert("⚠️ กรุณาทำแบบคัดกรอง 2Q ให้ครบถ้วน"); return; }
         
         const type = document.getElementById('assessmentTypeSelect').value;
         const q2Res = (q2q1.value === "มี" || q2q2.value === "มี") ? "🚨 มีความเสี่ยง" : "🟢 ปกติ";
 
+        // เกณฑ์ขั้นที่ 1: ตรวจพบความเสี่ยง 2Q แต่ยังใช้หัวข้อ 2Q -> บังคับสลับทำ 9Q
         if (q2Res === "🚨 มีความเสี่ยง" && type === "2Q") {
-            alert("🚨 ผู้รับตรวจมีความเสี่ยงจากแบบคัดกรอง 2Q! ระบบขอปฏิเสธการส่งข้อมูล และบังคับให้ทำแบบประเมิน 9Q ต่อเพื่อวิเคราะห์ระดับความรุนแรง กรุณากรอกหัวข้อ 9Q ด้านล่างให้ครบถ้วนครับ");
+            alert("🚨 ผู้รับตรวจมีความเสี่ยงจากผล 2Q! ระบบบังคับให้ทำแบบประเมิน 9Q ต่อเพื่อตรวจสอบความรุนแรง กรุณากรอกแบบสอบถามหัวข้อ 9Q ที่เพิ่มขึ้นมาด้านล่างครับ");
             document.getElementById('assessmentTypeSelect').value = "9Q"; 
             switchAssessment(); 
             return; 
         }
-        
+
+        let score9Q = 0;
+        let q9Value = 0;
+
+        // ถ้าหน้าต่างทำงานอยู่ในหมวด 9Q หรือ 8Q บังคับตรวจสอบความครบถ้วนของ 9Q ก่อนขยับหน้า
+        if (type === '9Q' || type === '8Q') {
+            for (let i = 1; i <= 9; i++) {
+                const val = document.getElementById(`q9q${i}`).value;
+                if (val === "") {
+                    alert(`⚠️ กรุณากรอกแบบประเมิน 9Q ข้อที่ ${i} ให้เรียบร้อยก่อนครับ`);
+                    return;
+                }
+                score9Q += parseInt(val);
+                if (i === 9) q9Value = parseInt(val); // แกะคะแนนข้อ 9 ออกมาวินิจฉัยด่วน
+            }
+        }
+
+        // 🚨 เกณฑ์ขั้นที่ 2 [เงื่อนไขใหม่]: คะแนนรวม 9Q >= 7 หรือ ข้อ 9 > 0 (คิดทำร้ายตัวเอง) แต่ยังไม่ทำ 8Q -> บังคับล็อกห้ามข้ามหน้า
+        if ((score9Q >= 7 || q9Value > 0) && type !== '8Q') {
+            alert(`🚨 ผลการประเมินวิกฤต! (คะแนนรวม 9Q = ${score9Q} คะแนน หรือ มีภาวะคิดทำร้ายตัวเองในข้อ 9)\n\nระบบตามหลักสาธารณสุขบังคับล็อกฟอร์ม ไม่ยอมให้ส่งข้อมูล และต้องทำแบบประเมินความเสี่ยงฆ่าตัวตาย 8Q เพิ่มเติมทันทีเพื่อป้องกันเหตุร้าย กรุณากรอกแผงข้อคำถาม 8Q ด้านล่างให้ครบถ้วนครับ`);
+            document.getElementById('assessmentTypeSelect').value = "8Q";
+            switchAssessment();
+            return;
+        }
+
+        let score8Q = 0;
+        // ถ้าหน้าต่างถูกยกระดับมาถึง 8Q บังคับเช็กความสะอาดเรียบร้อยของข้อสอบ 8Q ทั้ง 8 ข้อ
+        if (type === '8Q') {
+            for (let i = 1; i <= 8; i++) {
+                const val = document.getElementById(`q8q${i}`).value;
+                if (val === "") {
+                    alert(`⚠️ กรุณากรอกแบบประเมินสถิติความเสี่ยง 8Q ข้อที่ ${i} ให้ครบถ้วนครับ`);
+                    return;
+                }
+                score8Q += parseInt(val);
+            }
+        }
+
+        // นำค่าทั้งหมดไปลงพิมพ์กระจายลงหน้ากระดาน Step 3 ตรวจสอบความถูกต้อง
         document.getElementById('smName').innerText = document.getElementById('patientName').value;
         document.getElementById('smGender').innerText = document.getElementById('patientGender').value;
         document.getElementById('smVillage').innerText = document.getElementById('villageNo').value;
-        document.getElementById('smType').innerText = "แบบประเมิน " + type;
+        document.getElementById('smType').innerText = "แบบประเมินผสมระดับ " + type;
         document.getElementById('smQ2Result').innerText = q2Res;
 
-        if(type === '9Q') {
-            let score9Q = parseInt(document.getElementById('q9q1').value) + parseInt(document.getElementById('q9q2').value);
-            document.getElementById('smQ9Score').innerText = score9Q + " คะแนน (จำลอง)";
-            document.getElementById('smQ8Result').innerText = "-(ไม่ได้ประเมิน)-";
-        } else if(type === '8Q') {
-            const q8q1 = document.querySelector('input[name="q8q1"]:checked');
-            document.getElementById('smQ8Result').innerText = q8q1 ? `คิดอยากตาย: ${q8q1.value}` : "-(ไม่ได้กรอก)-";
-            document.getElementById('smQ9Score').innerText = "-(ไม่ได้ประเมิน)-";
+        if (type === '9Q' || type === '8Q') {
+            let severity9Q = (score9Q >= 19) ? "รุนแรงมาก" : (score9Q >= 14) ? "รุนแรงปานกลาง" : (score9Q >= 7) ? "น้อย" : "ปกติ";
+            document.getElementById('smQ9Score').innerText = `${score9Q} คะแนน (${severity9Q})`;
         } else {
             document.getElementById('smQ9Score').innerText = "-(ไม่ได้ประเมิน)-";
+        }
+
+        if (type === '8Q') {
+            let severity8Q = (score8Q >= 17) ? "🚨 รุนแรงมาก" : (score8Q >= 9) ? "🟡 ปานกลาง" : (score8Q >= 1) ? "🟢 น้อย" : "🟢 ไม่มีพฤติกรรมเสี่ยง";
+            document.getElementById('smQ8Result').innerText = `${score8Q} คะแนน (${severity8Q})`;
+        } else {
             document.getElementById('smQ8Result').innerText = "-(ไม่ได้ประเมิน)-";
         }
+
         document.getElementById('smComment').innerText = document.getElementById('comment').value.trim() || "-(ว่าง)-";
         changeStep(3);
     }
@@ -369,13 +431,13 @@
             villageNo: document.getElementById('villageNo').value, 
             assessmentType: type,
             q2Result: document.getElementById('smQ2Result').innerText,
-            q9Score: (type === '9Q') ? document.getElementById('smQ9Score').innerText : '',
+            q9Score: (type === '9Q' || type === '8Q') ? document.getElementById('smQ9Score').innerText : '',
             q8Result: (type === '8Q') ? document.getElementById('smQ8Result').innerText : '',
             comment: document.getElementById('comment').value
         });
         fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: sendData })
-        .then(() => { alert('🎉 บันทึกสำเร็จครับ!'); liff.closeWindow(); })
-        .catch(error => { alert('❌ เกิดข้อผิดพลาด'); console.error(error); });
+        .then(() => { alert('🎉 ส่งรายงานและเกณฑ์การล็อกคัดกรองขึ้นระบบคลาวด์ รพ.สต. สำเร็จเรียบร้อยครับ!'); liff.closeWindow(); })
+        .catch(error => { alert('❌ เกิดข้อผิดพลาดในเครือข่าย'); console.error(error); });
     }
 </script>
 </body>
