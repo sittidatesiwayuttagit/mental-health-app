@@ -46,14 +46,24 @@
         .history-header, .vhm-row-header { display: flex; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 8px; font-weight: bold; color: #64748b; font-size: 14px; }
         .info-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; }
         .danger { color: #ef4444; font-weight: bold; }
-        .trend-chart-container { margin-top: 30px; background: #fafafa; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; display: none; }
+        .trend-chart-container { margin-top: 15px; background: #fafafa; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; display: none; }
+
+        /* 🔥 สไตล์แถบปุ่มรายชื่อผู้ป่วยที่เพิ่มเข้ามาใหม่ */
+        .patient-row-card {
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 16px 20px; background: white; border: 1px solid #e2e8f0; 
+            border-radius: 12px; margin-bottom: 10px; cursor: pointer; 
+            transition: all 0.2s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.01);
+        }
+        .patient-row-card:hover { background-color: #f0f7ff; border-color: #3b82f6; }
+        .patient-row-name { font-size: 16px; font-weight: bold; color: #1e293b; }
+        .patient-row-age { color: #64748b; font-size: 14px; margin-left: 10px; background: #f1f5f9; padding: 4px 10px; border-radius: 20px; }
     </style>
 </head>
 <body>
 
 <div class="admin-card">
 
-    <!-- ================= ส่วนที่ 1: หน้าล็อกอินยืนยันตัวตนผู้ดูแล ================= -->
     <div id="loginStep" class="step active">
         <div class="header">
             <h2>🔐 ระบบยืนยันตัวตนผู้ดูแลข้อมูล (Admin)</h2>
@@ -70,10 +80,8 @@
         <button class="btn-login" onclick="verifyAdminAuth()">🔓 เข้าสู่ระบบแดชบอร์ด</button>
     </div>
 
-    <!-- ================= ส่วนที่ 2: หน้าแดชบอร์ดควบคุมหลักเมื่อผ่านการกรอกรหัส ================= -->
     <div id="dashboardStep" class="step">
         
-        <!-- 🎛️ แถบเมนูสำหรับสลับหน้าจอการใช้งาน -->
         <div class="tabs-bar">
             <button id="tabPatientsBtn" class="tab-btn active" onclick="switchTab('patientsTab')">📋 ข้อมูลผู้ป่วย</button>
             <button id="tabVhmBtn" class="tab-btn" onclick="switchTab('vhmTab')">👥 ข้อมูล อสม.</button>
@@ -81,36 +89,54 @@
 
         <div id="loadingText" class="loading" style="display:none;">กำลังดึงข้อมูลล่าสุดจาก Google Sheet...</div>
 
-        <!-- 🔹 แถบเนื้อหาที่ 1: จัดการข้อมูลผู้ป่วย (คงระบบการกรองสถิติและพล็อตการ์ดแบบเดิมไว้) -->
         <div id="patientsTab" class="tab-content active">
-            <div class="search-container">
-                <div class="inputs-row">
-                    <input type="text" id="searchInput" oninput="processData()" placeholder="🔍 พิมพ์ชื่อ-นามสกุลผู้ป่วยเพื่อค้นหา...">
-                    <input type="number" id="ageInput" oninput="processData()" placeholder="🔢 พิมพ์อายุเพื่อค้นหา..." min="1" max="120">
+            
+            <div id="patientListSection">
+                <div class="search-container">
+                    <div class="inputs-row">
+                        <input type="text" id="searchInput" oninput="processData()" placeholder="🔍 พิมพ์ชื่อ-นามสกุลผู้ป่วยเพื่อค้นหา...">
+                        <input type="number" id="ageInput" oninput="processData()" placeholder="🔢 พิมพ์อายุเพื่อค้นหา..." min="1" max="120">
+                    </div>
+                    <div class="controls-row">
+                        <label style="font-weight: bold; color: #475569; white-space: nowrap;">🔃 วิธีเรียงข้อมูล:</label>
+                        <select id="sortSelect" onchange="processData()">
+                            <option value="timeNewOld">🕒 เวลาตรวจล่าสุด ➡️ เก่าสุด</option>
+                            <option value="timeOldNew">🕒 เวลาตรวจเก่าสุด ➡️ ล่าสุด</option>
+                            <option value="nameAZ">🔤 ชื่อผู้ป่วย: ก ➡️ ฮ</option>
+                            <option value="nameZA">🔤 ชื่อผู้ป่วย: ฮ ➡️ ก</option>
+                            <option value="ageMaxMin">👴 อายุผู้รับตรวจ: มาก ➡️ น้อย</option>
+                            <option value="ageMinMax">👶 อายุผู้รับตรวจ: น้อย ➡️ มาก</option>
+                        </select>
+                        <button class="btn-search" onclick="processData()">🔍 ค้นหา</button>
+                        <button class="btn-refresh" onclick="fetchPatientData()">🔄 รีเฟรช</button>
+                    </div>
                 </div>
-                <div class="controls-row">
-                    <label style="font-weight: bold; color: #475569; white-space: nowrap;">🔃 วิธีเรียงข้อมูล:</label>
-                    <select id="sortSelect" onchange="processData()">
-                        <option value="timeNewOld">🕒 เวลาตรวจล่าสุด ➡️ เก่าสุด</option>
-                        <option value="timeOldNew">🕒 เวลาตรวจเก่าสุด ➡️ ล่าสุด</option>
-                        <option value="nameAZ">🔤 ชื่อผู้ป่วย: ก ➡️ ฮ</option>
-                        <option value="nameZA">🔤 ชื่อผู้ป่วย: ฮ ➡️ ก</option>
-                        <option value="ageMaxMin">👴 อายุผู้รับตรวจ: มาก ➡️ น้อย</option>
-                        <option value="ageMinMax">👶 อายุผู้รับตรวจ: น้อย ➡️ มาก</option>
-                    </select>
-                    <button class="btn-search" onclick="processData()">🔍 ค้นหา</button>
-                    <button class="btn-refresh" onclick="fetchPatientData()">🔄 รีเฟรช</button>
-                </div>
+                
+                <div id="patientListView"></div>
             </div>
-            <div id="trendChartContainer" class="trend-chart-container"><canvas id="trendChart"></canvas></div>
-            <div id="patientHistory" class="patient-history"></div>
+
+            <div id="patientDetailSection" style="display: none;">
+                <button class="btn-refresh" onclick="backToPatientList()" style="margin-bottom: 20px; background-color: #475569; display: inline-flex; align-items: center; gap: 5px;">⬅️ กลับไปหน้าประวัติรายชื่อ</button>
+                
+                <div id="patientDetailHeader" style="background: #eff6ff; padding: 20px; border-radius: 14px; margin-bottom: 20px; border: 1px solid #bfdbfe;">
+                    <h3 id="detPatientName" style="margin: 0 0 8px 0; color: #1d4ed8;">👤 ชื่อผู้ป่วย: -</h3>
+                    <p id="detPatientMeta" style="margin: 0; color: #4b5563; font-size: 15px;">ข้อมูลพื้นฐาน: อายุ - ปี | เพศ - | ที่อยู่: -</p>
+                </div>
+
+                <div id="trendChartContainer" class="trend-chart-container" style="display: block; margin-bottom: 25px;">
+                    <canvas id="trendChart"></canvas>
+                </div>
+
+                <h3 style="color: #334155; border-left: 4px solid #3b82f6; padding-left: 10px; margin-bottom: 15px;">📋 ประวัติการบันทึกประเมินสุขภาพจิตทั้งหมด</h3>
+                <div id="patientHistoryCards"></div>
+            </div>
+
         </div>
 
-        <!-- 🔹 แถบเนื้อหาที่ 2: จัดการระบบ เพิ่ม/แก้ไข/ลบ รายชื่อ อสม. โยงตรงเข้าตารางคลาวด์ -->
         <div id="vhmTab" class="tab-content">
             <div class="vhm-form-box">
                 <h4 id="formVhmTitle" style="margin-top: 0; color: #3b82f6;">➕ เพิ่ม อสม. รายใหม่เข้าระบบคลาวด์</h4>
-                <input type="hidden" id="vhmFormMode" value="add"> <!-- ซ่อนเพื่อเช็กสถานะการเซฟ -->
+                <input type="hidden" id="vhmFormMode" value="add"> 
                 
                 <div class="inputs-row">
                     <input type="text" id="vhmUsernameInput" placeholder="Username (ภาษาอังกฤษ)">
@@ -134,8 +160,7 @@
 </div>
 
 <script>
-    // การเชื่อมโยงลิงก์ระบบสคริปต์หลังบ้านของคุณตามสิทธิ์เดิม
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzCxHbTjCEIRaU3JRpphYYYShu7VtzBIyj-x4qC0tqixUSa2nTSbavefHHQu7L6ZMP2FQ/exec';
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzCxHbTjCEIRaU3JRpphYYShu7VtzBIyj-x4qC0tqixUSa2nTSbavefHHQu7L6ZMP2FQ/exec';
     
     const adminUsers = {
         "admin1": "pass1234",
@@ -150,7 +175,6 @@
         document.getElementById(stepId).classList.add('active');
     }
 
-    // ฟังก์ชันสลับเมนูแท็บหน้าจอหลัก
     function switchTab(tabId) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -177,11 +201,16 @@
     }
 
     // ==========================================
-    // 👤 โซนระบบจัดการคนไข้ / ผู้รับตรวจ (เหมือนเดิม)
+    // 👤 โซนระบบจัดการคนไข้ / ผู้รับตรวจ
     // ==========================================
     function fetchPatientData() {
         const loading = document.getElementById('loadingText');
         loading.style.display = 'block';
+        
+        // บังคับสลับกลับมาโชว์หน้าต่างรายชื่อสรุปก่อนเสมอเมื่อโหลดข้อมูลใหม่
+        document.getElementById('patientListSection').style.display = 'block';
+        document.getElementById('patientDetailSection').style.display = 'none';
+
         fetch(GOOGLE_SCRIPT_URL)
             .then(res => res.json())
             .then(data => {
@@ -191,11 +220,10 @@
             });
     }
 
+    // 🔥 ประมวลผลคัดกรองกรองข้อมูลและสร้างรายชื่อย่อ (แสดงแค่ชื่อ นามสกุล และอายุ)
     function processData() {
-        const historyDiv = document.getElementById('patientHistory');
-        const chartContainer = document.getElementById('trendChartContainer');
-        historyDiv.innerHTML = '';
-        chartContainer.style.display = 'none';
+        const listViewDiv = document.getElementById('patientListView');
+        listViewDiv.innerHTML = '';
         if (allData.length === 0) return;
 
         let filteredData = [...allData];
@@ -216,43 +244,139 @@
             return 0;
         });
 
-        let filteredDataGrouped = groupDataByPatient(filteredData);
-        if (Object.keys(filteredDataGrouped).length === 1) showChart(Object.values(filteredDataGrouped)[0]);
+        // จัดกลุ่มผู้ป่วยซ้ำเพื่อดึงเอารายชื่อที่ไม่ซ้ำกันออกมาเรียงแสดงผลในหน้าแรก
+        let uniquePatients = [];
+        let seenNames = new Set();
 
         filteredData.forEach(item => {
-            let card = document.createElement('div');
-            card.className = 'history-card';
-            card.innerHTML = `
-                <div class="history-header"><span>วันที่ประเมิน: ${item.timestamp}</span><span>แบบประเมินหลัก: ${item.assessmentType}</span></div>
-                <div class="info-row"><span>ชื่อผู้ป่วย:</span> <span><b>${item.patientName}</b> (หมู่บ้าน: ${item.villageNo})</span></div>
-                <div class="info-row"><span>ข้อมูลทั่วไป:</span> <span>อายุ ${item.patientAge} ปี | เพศ ${item.patientGender}</span></div>
-                <div class="info-row"><span>ผู้ประเมิน (อสม.):</span> <span>${item.vhmName}</span></div>
-                <div class="info-row"><span>ผลประเมิน 2Q:</span> <span class="${item.q2Result.includes('เสี่ยง') ? 'danger' : ''}">${item.q2Result}</span></div>
-                <div class="info-row"><span>คะแนนคอลัมน์ 9Q:</span> <span>${item.q9Score || '-(ไม่มี)-'}</span></div>
-                <div class="info-row"><span>ผลประเมินคอลัมน์ 8Q:</span> <span>${item.q8Result || '-(ไม่มี)-'}</span></div>
-                <div class="info-row"><span>หมายเหตุผู้ส่ง:</span> <span>${item.comment || '-(ว่าง)-'}</span></div>
+            if (!seenNames.has(item.patientName)) {
+                seenNames.add(item.patientName);
+                uniquePatients.push({
+                    name: item.patientName,
+                    age: item.patientAge
+                });
+            }
+        });
+
+        if (uniquePatients.length === 0) {
+            listViewDiv.innerHTML = '<p style="text-align:center; color:#64748b; padding:20px;">❌ ไม่พบรายชื่อผู้ป่วยตามรหัสเงื่อนไขการค้นหา</p>';
+            return;
+        }
+
+        // วาดการ์ดปุ่มรายชื่อย่อสำหรับคลิกผ่าน iPad
+        uniquePatients.forEach(p => {
+            let rowCard = document.createElement('div');
+            rowCard.className = 'patient-row-card';
+            rowCard.setAttribute('onclick', `showPatientDetail("${p.name.replace(/"/g, '&quot;')}")`);
+            rowCard.innerHTML = `
+                <div>
+                    <span class="patient-row-name">👤 ${p.name}</span>
+                    <span class="patient-row-age">อายุ: ${p.age} ปี</span>
+                </div>
+                <span style="color: #3b82f6; font-weight: bold; font-size: 14px;">คลิกดูข้อมูลเชิงลึก ➡️</span>
             `;
-            historyDiv.appendChild(card);
+            listViewDiv.appendChild(rowCard);
         });
     }
 
-    function parseTimestamp(tStr) { const parts = tStr.match(/(\d+)/g); return new Date(parts[2], parts[1]-1, parts[0], parts[3], parts[4]); }
-    function groupDataByPatient(data) { return data.reduce((g, item) => { if(!g[item.patientName]) { g[item.patientName] = []; } g[item.patientName].push(item); return g; }, {}); }
+    // 🔥 ฟังก์ชันเจาะลึกแสดงผลข้อมูลประวัติทั้งหมดรายคน + กราฟแนวโน้มเมื่อกดเลือกชื่อ
+    function showPatientDetail(patientName) {
+        document.getElementById('patientListSection').style.display = 'none';
+        document.getElementById('patientDetailSection').style.display = 'block';
 
-    function showChart(pData) {
+        const historyCardsDiv = document.getElementById('patientHistoryCards');
+        historyCardsDiv.innerHTML = '';
+
+        // กวาดข้อมูลดิบทั้งหมดที่จับคู่ตรงกับชื่อผู้ป่วยคนนี้
+        let patientRecords = allData.filter(item => item.patientName === patientName);
+        
+        // เรียงประวัติจาก ใหม่ไปเก่า สำหรับการเรนเดอร์การ์ดรายละเอียดด้านล่าง
+        patientRecords.sort((a, b) => parseTimestamp(b.timestamp) - parseTimestamp(a.timestamp));
+
+        if (patientRecords.length === 0) return;
+
+        // ดึงข้อมูลฐานข้อมูลส่วนตัวรอบล่าสุดมาหยอดลงในส่วน Header บล็อกน้ำเงิน
+        let latestRecord = patientRecords[0];
+        document.getElementById('detPatientName').innerText = `👤 ชื่อผู้ป่วย: คุณ ${latestRecord.patientName}`;
+        document.getElementById('detPatientMeta').innerText = `ข้อมูลทั่วไป: อายุ ${latestRecord.patientAge} ปี | เพศ: ${latestRecord.patientGender} | พิกัดพื้นที่: ${latestRecord.villageNo}`;
+
+        // สั่งพล็อตกราฟแนวโน้มสถิติจิตใจของผู้ป่วยคนนี้
+        showChart(patientRecords);
+
+        // วาดการ์ดรายละเอียดผลการตรวจคัดกรองย้อนหลังทั้งหมดของบุคคลนี้
+        patientRecords.forEach(item => {
+            let card = document.createElement('div');
+            card.className = 'history-card';
+            card.innerHTML = `
+                <div class="history-header">
+                    <span>📅 วันที่-เวลาประเมิน: ${item.timestamp}</span>
+                    <span>เครื่องมือหลัก: ${item.assessmentType}</span>
+                </div>
+                <div class="info-row"><span>ผู้คัดกรองลงพื้นที่ (อสม.):</span> <span><b>${item.vhmName}</b></span></div>
+                <div class="info-row"><span>ผลคัดกรองด่วน 2Q:</span> <span class="${item.q2Result.includes('เสี่ยง') ? 'danger' : ''}">${item.q2Result}</span></div>
+                <div class="info-row"><span>คะแนนคอลัมน์ 9Q:</span> <span>${item.q9Score || '-(ไม่ได้ประเมิน)-'}</span></div>
+                <div class="info-row"><span>ผลประเมินคอลัมน์ 8Q:</span> <span>${item.q8Result || '-(ไม่ได้ประเมิน)-'}</span></div>
+                <div class="info-row"><span>หมายเหตุ อสม. เพิ่มเติม:</span> <span>${item.comment || '-(ว่าง)-'}</span></div>
+            `;
+            historyCardsDiv.appendChild(card);
+        });
+    }
+
+    // ฟังก์ชันย้อนกลับหน้าหลัก
+    function backToPatientList() {
+        document.getElementById('patientListSection').style.display = 'block';
+        document.getElementById('patientDetailSection').style.display = 'none';
+        processData(); // อัปเดตรายชื่อหน้ารวมใหม่อีกครั้งเพื่อความสดใหม่
+    }
+
+    function parseTimestamp(tStr) { const parts = tStr.match(/(\d+)/g); return new Date(parts[2], parts[1]-1, parts[0], parts[3], parts[4]); }
+
+    // ฟังก์ชันสร้างกราฟแนวโน้มด้วย Chart.js
+    function showChart(patientData) {
         const chartContainer = document.getElementById('trendChartContainer');
         chartContainer.style.display = 'block';
-        const chartData = pData.filter(item => item.assessmentType === '9Q' && item.q9Score).map(item => ({ x: parseTimestamp(item.timestamp), y: parseInt(item.q9Score.replace(/\D/g,'')) || 0 })).sort((a, b) => a.x - b.x);
-        if(chartData.length === 0) { chartContainer.innerHTML = '<p style="text-align:center; color:#64748b; padding:5px;">⚠️ ผู้ป่วยคนนี้ยังไม่มีสถิติคะแนน 9Q</p>'; return; }
+        
+        // กรองดึงเฉพาะรอบประเมินที่มีคะแนน 9Q และเรียงเวลาจากเก่าไปใหม่ (จากซ้ายไปขวา) สำหรับทำเส้นกราฟ
+        const chartData = patientData.filter(item => item.assessmentType === '9Q' && item.q9Score)
+                                   .map(item => ({ x: parseTimestamp(item.timestamp), y: parseInt(item.q9Score.replace(/\D/g,'')) || 0 }))
+                                   .sort((a, b) => a.x - b.x);
+        
+        if(chartData.length === 0) { 
+            chartContainer.innerHTML = '<p style="text-align:center; color:#64748b; padding:15px; font-size:14px; margin:0;">⚠️ ผู้ป่วยรายนี้มีประวัติในคลาวด์ แต่ยังไม่มีคะแนนการทดสอบแบบละเอียด (9Q) ย้อนหลังเพื่อนำมาวาดกราฟสถิติได้</p>'; 
+            return; 
+        }
+        
         chartContainer.innerHTML = '<canvas id="trendChart"></canvas>';
-        new Chart(document.getElementById('trendChart').getContext('2d'), { type: 'line', data: { datasets: [{ label: `กราฟแนวโน้มคะแนน 9Q ของคุณ ${pData[0].patientName}`, data: chartData, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', fill: true, tension: 0.1 }] }, options: { scales: { x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'dd/MM' } } }, y: { beginAtZero: true, suggestedMax: 27 } } } });
+        const ctx = document.getElementById('trendChart').getContext('2d');
+
+        new Chart(ctx, { 
+            type: 'line', 
+            data: { 
+                datasets: [{ 
+                    label: `กราฟแนวโน้มคะแนนสถิติ 9Q`, 
+                    data: chartData, 
+                    borderColor: '#3b82f6', 
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)', 
+                    fill: true, 
+                    tension: 0.1,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }] 
+            }, 
+            options: { 
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { 
+                    x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'dd/MM' } }, title: { display: true, text: 'วันเวลาที่บันทึก' } }, 
+                    y: { beginAtZero: true, suggestedMax: 27, title: { display: true, text: 'คะแนน 9Q' } } 
+                } 
+            } 
+        });
     }
 
     // ==========================================
-    // 👥 โซนระบบจัดการข้อมูลรายชื่อ อสม. (เพิ่มฟีเจอร์ใหม่)
+    // 👥 โซนระบบจัดการข้อมูลรายชื่อ อสม.
     // ==========================================
-    
-    // ดึงรายชื่อ อสม. จากชีตแท็บ "อสม"
     function fetchVhmData() {
         const loading = document.getElementById('loadingText');
         const listDiv = document.getElementById('vhmList');
@@ -282,7 +406,6 @@
             });
     }
 
-    // ฟังก์ชันสั่งส่งข้อมูลเพิ่มหรืออัปเดตทับไปที่ฐานข้อมูล
     function saveVhmData() {
         const mode = document.getElementById('vhmFormMode').value;
         const u = document.getElementById('vhmUsernameInput').value.trim();
@@ -301,17 +424,16 @@
                 loading.style.display = 'none';
                 if(res.success) {
                     alert("🎉 บันทึกปรับปรุงข้อมูล อสม. บนฐานข้อมูล Google Sheet สำเร็จ!");
-                    cancelVhmEditMode(); // ล้างแบบฟอร์มกลับค่าเริ่มต้น
-                    fetchVhmData();      // โหลดตารางแสดงใหม่
+                    cancelVhmEditMode(); 
+                    fetchVhmData();      
                 } else {
                     alert("❌ ข้อผิดพลาด: " + res.message);
                 }
             });
     }
 
-    // ฟังก์ชันสั่งลบ อสม. รายบุคคลออกจากคลาวด์
     function deleteVhmData(username) {
-        if(!confirm(`🚨 คุณแน่ใจใช่ไหมว่าต้องการลบ Username: "${username}" ออกจากฐานข้อมูลระบบ? อสม. ท่านนี้จะไม่สามารถล็อกอินได้อีกต่อไป`)) return;
+        if(!confirm(`🚨 คุณแน่ใจใช่ไหมว่าต้องการลบ Username: "${username}" ออกจากฐานข้อมูลระบบ?`)) return;
         
         const loading = document.getElementById('loadingText');
         loading.style.display = 'block';
@@ -329,13 +451,12 @@
             });
     }
 
-    // เมื่อกดปุ่มแก้ไข ย้ายข้อมูลไปใส่ฟอร์มด้านบนเพื่อเตรียมอัปเดต
     function enableVhmEditMode(username, password, name, secretKey) {
         document.getElementById('formVhmTitle').innerText = `✏️ กำลังแก้ไขข้อมูลของ อสม. (${username})`;
         document.getElementById('vhmFormMode').value = "edit";
         
         document.getElementById('vhmUsernameInput').value = username;
-        document.getElementById('vhmUsernameInput').disabled = true; // บล็อกช่อง Username ห้ามเปลี่ยนเพราะใช้เป็น ID คีย์หลัก
+        document.getElementById('vhmUsernameInput').disabled = true; 
         document.getElementById('vhmPasswordInput').value = password;
         document.getElementById('vhmNameInput').value = name;
         document.getElementById('vhmSecretKeyInput').value = secretKey;
@@ -344,7 +465,6 @@
         window.scrollTo(0, 0);
     }
 
-    // ล้างฟอร์มเคลียร์ค่ากลับสู่โหมดเพิ่มรายชื่อปกติ
     function cancelVhmEditMode() {
         document.getElementById('formVhmTitle').innerText = "➕ เพิ่ม อสม. รายใหม่เข้าระบบคลาวด์";
         document.getElementById('vhmFormMode').value = "add";
