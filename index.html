@@ -50,7 +50,32 @@
             <label for="vhmPassword">Password</label>
             <input type="password" id="vhmPassword" placeholder="ระบุ Password ของคุณ">
         </div>
-        <button class="btn-nav btn-next" onclick="verifyAuth()">🔓 เข้าสู่ระบบ</button>
+        <button class="btn-nav btn-next" id="btnLoginText" onclick="verifyAuth()">🔓 เข้าสู่ระบบ</button>
+        
+        <p style="text-align:center; margin-top:15px; font-size:14px;">
+            <a href="#" onclick="changeStep('Reset')" style="color:#3b82f6; font-weight:bold; text-decoration:none;">🔑 ลืมรหัสผ่าน? ตั้งรหัสใหม่ที่นี่</a>
+        </p>
+    </div>
+
+    <div id="stepReset" class="step">
+        <div class="header">
+            <h2>🔄 ตั้งรหัสผ่านใหม่ด้วยตนเอง</h2>
+            <p>ระบบจะตรวจสอบความถูกต้องจากรหัสลับเพื่อยืนยันตัวตนของคุณ</p>
+        </div>
+        <div class="form-group">
+            <label for="resetUsername">Username ของคุณ *</label>
+            <input type="text" id="resetUsername" placeholder="กรอก Username เดิมของคุณ">
+        </div>
+        <div class="form-group">
+            <label for="resetSecretKey">รหัสลับยืนยันตัวตน *</label>
+            <input type="password" id="resetSecretKey" placeholder="กรอกรหัสลับ (เลขท้ายบัตรหรือเบอร์โทรที่ลงทะเบียนไว้)">
+        </div>
+        <div class="form-group">
+            <label for="resetNewPassword">ระบุรหัสผ่านใหม่ที่ต้องการ *</label>
+            <input type="password" id="resetNewPassword" placeholder="ตั้งรหัสผ่านใหม่">
+        </div>
+        <button class="btn-nav btn-submit" id="btnResetText" onclick="handleResetPassword()">💾 บันทึกและเปลี่ยนรหัสผ่าน</button>
+        <button class="btn-nav btn-back" onclick="changeStep(0)">⬅️ ย้อนกลับหน้าล็อกอิน</button>
     </div>
 
     <div id="step1" class="step">
@@ -60,12 +85,13 @@
         </div>
         <div class="form-group">
             <label>ชื่อ-นามสกุล ผู้รับตรวจ *</label>
-            <input type="text" id="patientName" placeholder="ตัวอย่าง:จิตดี ดีจิต">
+            <input type="text" id="patientName" placeholder=ตัวอย่าง : สุขภาพ จิตดี">
         </div>
         <div class="form-group">
             <label>อายุ (ปี) *</label>
             <input type="number" id="patientAge" placeholder="ระบุอายุเป็นตัวเลข" min="1" max="120">
         </div>
+        
         <div class="form-group">
             <label>เพศ *</label>
             <select id="patientGender">
@@ -74,7 +100,8 @@
                 <option value="หญิง">หญิง</option>
                 <option value="อื่นๆ">อื่นๆ</option>
             </select>
-    </div>
+        </div>
+
         <div class="form-group">
             <label>หมู่บ้าน *</label>
             <select id="villageNo">
@@ -166,107 +193,9 @@
 </div>
 
 <script>
-    // 🔗 ระบบฝังไอดีกุญแจและลิงก์เชื่อมต่อฐานข้อมูลเรียบร้อยแล้วครับ
     const LIFF_ID = '2010303347-dja2J8TA'; 
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzcRlhZ2PqUfkrlTBUWDlLZcLsOOCnBBhbit2yJEIdJF4v2ZYXolvuY1dSQn11X8TNhdQ/exec';
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzcElfzuPPKHs1omffjEOdGa9ih98l0_lLo5-21TvLYo7Az68o9a03ugNuN-dmAsd3Nog/exec';
 
-    // รายชื่อ อสม. จำลอง (ปรับเพิ่มขยายจำนวนคน/เปลี่ยนรหัสผ่านตรงนี้ได้เลยครับ)
-    const vhmUsers = {
-        "user1": { pass: "pass1", name: "สมใจ ดีงาม" },
-        "user2": { pass: "pass2", name: "ศักดิ์ดา ร่มเย็น" }
-    };
     let currentVhmName = "";
 
-    liff.init({ liffId: LIFF_ID }).then(() => { console.log("LIFF Ready"); });
-
-    function changeStep(step) {
-        document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
-        document.getElementById('step' + step).classList.add('active');
-        window.scrollTo(0, 0);
-    }
-
-    // หน้า 0: ตรวจรหัสผ่าน
-    function verifyAuth() {
-        const u = document.getElementById('vhmUsername').value;
-        const p = document.getElementById('vhmPassword').value;
-        if(vhmUsers[u] && vhmUsers[u].pass === p) {
-            currentVhmName = vhmUsers[u].name;
-            document.getElementById('vhmDisplayName').innerText = currentVhmName;
-            document.getElementById('vhmInfoHeader').style.display = "block";
-            changeStep(1);
-        } else {
-            alert("❌ Username หรือ Password ไม่ถูกต้อง");
-        }
-    }
-
-    // หน้า 1 -> 2: บังคับกรอกครบ
-    function goToStep2() {
-        if(!document.getElementById('patientName').value.trim() || !document.getElementById('patientAge').value || 
-           !document.getElementById('patientGender').value || !document.getElementById('villageNo').value) {
-            alert("⚠️ กรุณากรอกข้อมูลทั่วไปให้ครบทุกข้อ");
-            return;
-        }
-        switchAssessment(); 
-        changeStep(2);
-    }
-
-    // หน้า 2: เลือกประเภทประเมิน
-    function switchAssessment() {
-        const type = document.getElementById('assessmentTypeSelect').value;
-        const inText = document.getElementById('indicationText');
-        document.getElementById('panel9Q').style.display = (type === '9Q') ? 'block' : 'none';
-        document.getElementById('panel8Q').style.display = (type === '8Q') ? 'block' : 'none';
-        inText.innerText = (type === '2Q') ? '💡 ใช้คัดกรองความเสี่ยงซึมเศร้าเบื้องต้น' : (type === '9Q') ? '💡 ใช้ประเมินระดับเมื่อพบความเสี่ยงจาก 2Q' : '💡 ใช้ประเมินความเสี่ยงต่อการฆ่าตัวตาย';
-    }
-
-    // หน้า 2 -> 3: สรุป
-    function goToStep3() {
-        const q2q1 = document.querySelector('input[name="q2q1"]:checked');
-        const q2q2 = document.querySelector('input[name="q2q2"]:checked');
-        if(!q2q1 || !q2q2) { alert("⚠️ กรุณาทำแบบคัดกรอง 2Q ให้ครบ"); return; }
-        
-        document.getElementById('smName').innerText = document.getElementById('patientName').value;
-        document.getElementById('smAge').innerText = document.getElementById('patientAge').value + " ปี";
-        document.getElementById('smGender').innerText = document.getElementById('patientGender').value;
-        document.getElementById('smVillage').innerText = document.getElementById('villageNo').value;
-        const type = document.getElementById('assessmentTypeSelect').value;
-        document.getElementById('smType').innerText = "แบบประเมิน " + type;
-        const q2Res = (q2q1.value === "มี" || q2q2.value === "มี") ? "🚨 มีความเสี่ยง" : "🟢 ปกติ";
-        document.getElementById('smQ2Result').innerText = q2Res;
-
-        if(type === '9Q') {
-            let score9Q = parseInt(document.getElementById('q9q1').value) + parseInt(document.getElementById('q9q2').value);
-            document.getElementById('smQ9Score').innerText = score9Q + " คะแนน (จำลอง)";
-            document.getElementById('smQ8Result').innerText = "-(ไม่ได้ประเมิน)-";
-        } else if(type === '8Q') {
-            const q8q1 = document.querySelector('input[name="q8q1"]:checked');
-            document.getElementById('smQ8Result').innerText = q8q1 ? `คิดอยากตาย: ${q8q1.value}` : "-(ไม่ได้กรอก)-";
-            document.getElementById('smQ9Score').innerText = "-(ไม่ได้ประเมิน)-";
-        } else {
-            document.getElementById('smQ9Score').innerText = "-(ไม่ได้ประเมิน)-";
-            document.getElementById('smQ8Result').innerText = "-(ไม่ได้ประเมิน)-";
-        }
-        document.getElementById('smComment').innerText = document.getElementById('comment').value.trim() || "-(ว่าง)-";
-        changeStep(3);
-    }
-
-    // หน้า 3: ส่งข้อมูล
-    function submitData() {
-        const type = document.getElementById('assessmentTypeSelect').value;
-        const sendData = new URLSearchParams({
-            vhmName: currentVhmName, patientName: document.getElementById('patientName').value,
-            patientAge: document.getElementById('patientAge').value,
-            patientGender: document.getElementById('patientGender').value,
-            villageNo: document.getElementById('villageNo').value, assessmentType: type,
-            q2Result: document.getElementById('smQ2Result').innerText,
-            q9Score: (type === '9Q') ? document.getElementById('smQ9Score').innerText : '',
-            q8Result: (type === '8Q') ? document.getElementById('smQ8Result').innerText : '',
-            comment: document.getElementById('comment').value
-        });
-        fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: sendData })
-        .then(() => { alert('🎉 บันทึกสำเร็จครับ!'); liff.closeWindow(); })
-        .catch(error => { alert('❌ เกิดข้อผิดพลาด'); console.error(error); });
-    }
-</script>
-</body>
-</html>
+    liff.init({ liffId: LIFF_ID }).then(() => { console.log("LIFF Ready
