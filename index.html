@@ -39,8 +39,15 @@
     
     <div id="step0" class="step active">
         <div class="header">
-            <h2>🔐 ระบบยืนยันตัวตน อสม.</h2>
-            <p>กรุณากรอก Username และ Password ของคุณ</p>
+            <h2>🔐 ระบบยืนยันตัวตนเจ้าหน้าที่</h2>
+            <p>กรุณาเลือกประเภทผู้ใช้งานและกรอกรหัสผ่านของคุณ</p>
+        </div>
+        <div class="form-group">
+            <label for="userRole">ประเภทผู้ใช้งาน *</label>
+            <select id="userRole">
+                <option value="vhm">อสม. (VHM)</option>
+                <option value="admin">ผู้ดูแลระบบ (Admin)</option>
+            </select>
         </div>
         <div class="form-group">
             <label for="vhmUsername">Username</label>
@@ -60,7 +67,14 @@
     <div id="stepReset" class="step">
         <div class="header">
             <h2>🔄 ตั้งรหัสผ่านใหม่ด้วยตนเอง</h2>
-            <p>ระบบจะตรวจสอบความถูกต้องจากรหัสลับเพื่อยืนยันตัวตนของคุณ</p>
+            <p>ระบบจะตรวจสอบความถูกต้องจากรหัสลับบนตารางคลาวด์เพื่อยืนยันตัวตน</p>
+        </div>
+        <div class="form-group">
+            <label for="resetUserRole">ประเภทผู้ใช้งาน *</label>
+            <select id="resetUserRole">
+                <option value="vhm">อสม. (VHM)</option>
+                <option value="admin">ผู้ดูแลระบบ (Admin)</option>
+            </select>
         </div>
         <div class="form-group">
             <label for="resetUsername">Username ของคุณ *</label>
@@ -68,7 +82,7 @@
         </div>
         <div class="form-group">
             <label for="resetSecretKey">รหัสลับยืนยันตัวตน *</label>
-            <input type="password" id="resetSecretKey" placeholder="กรอกรหัสลับ">
+            <input type="password" id="resetSecretKey" placeholder="กรอกรหัสลับยืนยันสิทธิ์ที่ลงทะเบียนไว้">
         </div>
         <div class="form-group">
             <label for="resetNewPassword">ระบุรหัสผ่านใหม่ที่ต้องการ *</label>
@@ -189,7 +203,7 @@
 
 <script>
     const LIFF_ID = '2010303347-dja2J8TA'; 
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxRfyf4LfNaYXM7uQZtrnfuwWA9FoQxudBEQrSeySjLV_cRf3irQ_lemyW5EuNNBrQcbA/exec';
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwa8hxqyti1K9T0HsN0E_6d51jOLSuKTggUkGkekiZVF44AqlXUZDhJDUaEfZ4__RO8-Q/exec';
 
     let currentVhmName = "";
 
@@ -201,15 +215,20 @@
         window.scrollTo(0, 0);
     }
 
+    // 🔐 หน้า 0: ปรับปรุงระบบยืนยันสิทธิ์ผสมผสาน รองรับทั้ง อสม. และ แอดมิน
     function verifyAuth() {
         const u = document.getElementById('vhmUsername').value.trim();
         const p = document.getElementById('vhmPassword').value;
+        const role = document.getElementById('userRole').value; // 🔄 ดึงค่าตำแหน่งที่เลือก
         const btn = document.getElementById('btnLoginText');
 
         if(!u || !p) { alert("⚠️ กรุณากรอกข้อมูลให้ครบถ้วน"); return; }
         btn.innerText = "⏳ กำลังเชื่อมต่อฐานข้อมูลคลาวด์...";
         
-        fetch(`${GOOGLE_SCRIPT_URL}?action=checkLogin&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}`)
+        // 🔄 เลือกรันสิทธิ์แอคชันตามตำแหน่ง: ถ้าเป็นแอดมินวิ่งไปหา checkAdminLogin ถ้าเป็น อสม วิ่งหา checkLogin
+        let actionType = (role === 'admin') ? 'checkAdminLogin' : 'checkLogin';
+        
+        fetch(`${GOOGLE_SCRIPT_URL}?action=${actionType}&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}`)
             .then(res => {
                 if (!res.ok) throw new Error("HTTP Status " + res.status);
                 return res.text(); 
@@ -220,7 +239,9 @@
                     btn.innerText = "🔓 เข้าสู่ระบบ";
                     if(res.success) {
                         currentVhmName = res.name;
-                        document.getElementById('vhmDisplayName').innerText = currentVhmName;
+                        // แสดงผลให้ชัดเจนว่าล็อกอินในสิทธิ์ใด
+                        let roleTitle = (role === 'admin') ? 'ผู้ดูแลระบบ' : 'อสม.';
+                        document.getElementById('vhmDisplayName').innerText = `${currentVhmName} (${roleTitle})`;
                         document.getElementById('vhmInfoHeader').style.display = "block";
                         changeStep(1);
                     } else {
@@ -228,19 +249,21 @@
                     }
                 } catch(parseError) {
                     btn.innerText = "🔓 เข้าสู่ระบบ";
-                    alert("❌ Google Apps Script คืนข้อมูลกลับมาผิดพลาด!\n(แนวทางแก้: ตรวจสอบว่าแผ่นงานใน Google Sheet ชื่อ 'อสม' หรือยัง? หรือกดยอมรับสิทธิ์บัญชีในระบบ Apps Script แล้วหรือยัง)\n\nข้อความจากเซิร์ฟเวอร์ย่อ: " + text.substring(0, 150));
+                    alert("❌ คืนข้อมูลกลับมาผิดพลาด! ตรวจเช็กชื่อแท็บแผ่นงาน หรือกดยอมรับสิทธิ์ Apps Script อีกครั้งครับ");
                 }
             })
             .catch(err => {
                 btn.innerText = "🔓 เข้าสู่ระบบ";
-                alert("❌ ระบบถูกบล็อกการเชื่อมต่อ (CORS Error)\n(แนวทางแก้: ตอนกด Deploy รหัสใหม่ใน Apps Script ลืมตั้งค่าช่วงล่างสุดเป็น 'Anyone' หรือเปล่าครับ ลองรีเช็กอีกรอบ)\n\nรายละเอียด: " + err.message);
+                alert("❌ ระบบถูกบล็อกการเชื่อมต่อ (CORS Error): " + err.message);
             });
     }
 
+    // 🔄 ปรับปรุงระบบลืมรหัสผ่านผสม: เปลี่ยนรหัสได้ทั้ง อสม. และ แอดมินโยงตรงคลาวด์
     function handleResetPassword() {
         const u = document.getElementById('resetUsername').value.trim();
         const key = document.getElementById('resetSecretKey').value.trim();
         const newP = document.getElementById('resetNewPassword').value;
+        const role = document.getElementById('resetUserRole').value; // 🔄 ดึงค่าตำแหน่งกู้รหัส
         const btn = document.getElementById('btnResetText');
 
         if(!u || !key || !newP) { alert("⚠️ กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง"); return; }
@@ -248,7 +271,10 @@
 
         btn.innerText = "⏳ กำลังบันทึกรหัสผ่านใหม่...";
 
-        fetch(`${GOOGLE_SCRIPT_URL}?action=resetPassword&username=${encodeURIComponent(u)}&secretKey=${encodeURIComponent(key)}&newPassword=${encodeURIComponent(newP)}`)
+        // 🔄 เลือกรันสิทธิ์ตามตำแหน่ง: ถ้าแอดมินใช้ resetAdminPassword ถ้า อสม ใช้ resetPassword
+        let actionType = (role === 'admin') ? 'resetAdminPassword' : 'resetPassword';
+
+        fetch(`${GOOGLE_SCRIPT_URL}?action=${actionType}&username=${encodeURIComponent(u)}&secretKey=${encodeURIComponent(key)}&newPassword=${encodeURIComponent(newP)}`)
             .then(res => {
                 if (!res.ok) throw new Error("HTTP Status " + res.status);
                 return res.text();
@@ -258,16 +284,17 @@
                     const res = JSON.parse(text);
                     btn.innerText = "💾 บันทึกและเปลี่ยนรหัสผ่าน";
                     if(res.success) {
-                        alert("🎉 อัปเดตรหัสผ่านใหม่ลงคลาวด์เรียบร้อย! สามารถใช้รหัสผ่านใหม่ล็อกอินได้ทันทีครับ");
+                        alert("🎉 อัปเดตรหัสผ่านใหม่ลงตารางคลาวด์เรียบร้อย! สามารถนำรหัสใหม่ไปใช้เข้าสู่ระบบได้ทันทีครับ");
                         document.getElementById('vhmUsername').value = u;
                         document.getElementById('vhmPassword').value = "";
+                        document.getElementById('userRole').value = role; // สลับตำแหน่งรอให้ตรงฟอร์ม
                         changeStep(0);
                     } else {
                         alert("❌ " + res.message);
                     }
                 } catch(e) {
                     btn.innerText = "💾 บันทึกและเปลี่ยนรหัสผ่าน";
-                    alert("❌ Google Apps Script ปฏิเสธการบันทึกรหัสผ่านใหม่:\n" + text.substring(0, 150));
+                    alert("❌ Google Apps Script ปฏิเสธการบันทึกรหัสผ่านใหม่");
                 }
             })
             .catch(err => {
@@ -295,7 +322,6 @@
         inText.innerText = (type === '2Q') ? '💡 ใช้คัดกรองความเสี่ยงซึมเศร้าเบื้องต้น' : (type === '9Q') ? '💡 ใช้ประเมินระดับเมื่อพบความเสี่ยงจาก 2Q' : '💡 ใช้ประเมินความเสี่ยงต่อการฆ่าตัวตาย';
     }
 
-    // 🔥 ปรับปรุงฟังก์ชันตรวจสอบ: ล็อกระบบไม่ให้ข้ามหน้าเมื่อพบความเสี่ยง 2Q แต่ยังใช้แบบทดสอบแค่ 2Q
     function goToStep3() {
         const q2q1 = document.querySelector('input[name="q2q1"]:checked');
         const q2q2 = document.querySelector('input[name="q2q2"]:checked');
@@ -304,12 +330,11 @@
         const type = document.getElementById('assessmentTypeSelect').value;
         const q2Res = (q2q1.value === "มี" || q2q2.value === "มี") ? "🚨 มีความเสี่ยง" : "🟢 ปกติ";
 
-        // 🔄 ระบบตรวจจับความเสี่ยงพ่วงเงื่อนไขบังคับทำ 9Q
         if (q2Res === "🚨 มีความเสี่ยง" && type === "2Q") {
             alert("🚨 ผู้รับตรวจมีความเสี่ยงจากแบบคัดกรอง 2Q! ระบบขอปฏิเสธการส่งข้อมูล และบังคับให้ทำแบบประเมิน 9Q ต่อเพื่อวิเคราะห์ระดับความรุนแรง กรุณากรอกหัวข้อ 9Q ด้านล่างให้ครบถ้วนครับ");
-            document.getElementById('assessmentTypeSelect').value = "9Q"; // สั่งสลับ Dropdown ไปที่ 9Q อัตโนมัติ
-            switchAssessment(); // สั่งเปิดแผงคำถามข้อ 9Q ทันที
-            return; // 🛑 บล็อกสั่งหยุดประมวลผล ไม่ยอมให้ข้ามไปหน้าสรุป
+            document.getElementById('assessmentTypeSelect').value = "9Q"; 
+            switchAssessment(); 
+            return; 
         }
         
         document.getElementById('smName').innerText = document.getElementById('patientName').value;
