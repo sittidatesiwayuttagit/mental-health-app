@@ -157,55 +157,76 @@
     // ==========================================
     const MESSAGING_API_TOKEN = 'vQk54LXyk7D2Il3BISTRmnzJ4mps/CpaJsYmIxpq3cNqpAxTSdtv1Eq74qfcRNgRYKWkdgbnaB06cuJDRD9OgZ+ioJj5LuxA3pRlr7PWltpfhlXdAVQgTf1lKt9SOAUWAfDPKrU1Jhj2laQUM9bQRAdB04t89/1O/w1cDnyilFU='; // ใส่ Channel Access Token ของคุณ
     const LIFF_ID = '2010303347-dja2J8TA';             // ใส่ LIFF ID ของคุณ
-    // ==========================================
+    const GROUP_ID = 'C8dcd1af7c2008c7f41effc6126b121cd';           
+    // ===================================================
 
-    // เริ่มการทำงานของ LINE LIFF เมื่อเปิดหน้าเว็บ
+    // เริ่มการทำงานระบบ LINE LIFF
     liff.init({ liffId: LIFF_ID })
         .then(() => {
-            console.log("LINE LIFF เชี่อมต่อสำเร็จ");
-            if (!liff.isLoggedIn()) {
-                liff.login(); // บังคับล็อกอินไลน์
-            }
+            console.log("LINE LIFF เชื่อมต่อเรียบร้อย");
         })
         .catch((err) => {
-            console.error("LIFF มีปัญหาขัดข้อง:", err);
+            console.error("LIFF เกิดข้อผิดพลาด:", err);
         });
 
-    // ระบบทำงานเมื่อผู้ใช้งานกดปุ่ม "บันทึกและส่งรายงาน"
-    document.getElementById('assessmentForm').addEventListener('submit', function(e) {
-        e.preventDefault(); // ป้องกันหน้าจอรีโหลด
+    // ระบบทำงานเมื่อกดส่งฟอร์ม
+    document.getElementById('screeningForm').addEventListener('submit', function(e) {
+        e.preventDefault();
 
-        // ดึงค่าข้อมูลจากฟอร์มที่กรอก
-        const hn = document.getElementById('hnCode').value;
+        // ดึงค่าจากฟอร์ม
+        const vhm = document.getElementById('vhmName').value;
+        const patient = document.getElementById('patientName').value;
+        const village = document.getElementById('villageNo').value;
         const q1 = document.querySelector('input[name="q1"]:checked').value;
         const q2 = document.querySelector('input[name="q2"]:checked').value;
-        const note = document.getElementById('note').value || '-';
+        const comment = document.getElementById('comment').value || 'ไม่มี';
 
-        // ประเมินผลเบื้องต้นตามหลักการแพทย์ (ถ้ามี "มี" แม้แต่ข้อเดียว = เสี่ยง)
-        let summaryResult = "ปกติ";
+        // ประเมินผล 2Q
+        let finalResult = "🟢 ปกติ";
         if (q1 === "มี" || q2 === "มี") {
-            summaryResult = "🚨 มีความเสี่ยงโรคซึมเศร้า (ควรประเมิน 9Q ต่อ)";
+            finalResult = "🚨 มีความเสี่ยงโรคซึมเศร้า (ส่งต่อเจ้าหน้าที่ตรวจ 9Q)";
         }
 
-        // จัดหน้าตาข้อความที่จะส่งเข้ากลุ่มไลน์หัวหน้า
-        const textMessage = `📌 รายงานผลประเมินสุขภาพจิต\n` +
-                            `• รหัส HN: ${hn}\n` +
-                            `• ข้อ 1 (เศร้า ท้อแท้): ${q1}\n` +
-                            `• ข้อ 2 (เบื่อ ไม่อยากทำอะไร): ${q2}\n` +
-                            `• สรุปผล: ${summaryResult}\n` +
-                            `• หมายเหตุ: ${note}`;
+        // จัดข้อความเพื่อส่งเข้ากลุ่ม LINE
+        const reportTemplate = `📢 รายงานผลคัดกรองสุขภาพจิต (2Q)\n` +
+                               `• ผู้ส่งรายงาน: อสม. ${vhm}\n` +
+                               `• ชื่อผู้รับตรวจ: ${patient} (${village})\n` +
+                               `• ข้อ 1 (หดหู่ เศร้า ท้อแท้): ${q1}\n` +
+                               `• ข้อ 2 (เบื่อ ไม่อยากทำอะไร): ${q2}\n` +
+                               `• สรุปผลประเมิน: ${finalResult}\n` +
+                               `• หมายเหตุ: ${comment}`;
 
-        // สั่งให้ LINE LIFF ส่งข้อความนี้เข้าไปในแชทกลุ่มทันที
-        liff.sendMessages([{
-            type: 'text',
-            text: textMessage
-        }])
-        .then(() => {
-            alert('บันทึกข้อมูลและส่งรายงานเข้ากลุ่มไลน์เรียบร้อยแล้วครับ!');
-            liff.closeWindow(); // ปิดหน้าต่างแอปอัตโนมัติ
+        // โครงสร้างข้อความแบบส่งตรงเข้ากลุ่มไลน์ผ่านเบื้องหลัง (Messaging API Push Message)
+        const payload = {
+            to: GROUP_ID,
+            messages: [
+                {
+                    type: 'text',
+                    text: reportTemplate
+                }
+            ]
+        };
+
+        // ส่งข้อมูลหา LINE ผ่าน Proxy เพื่อป้องกันปัญหา CORS บนบราวเซอร์หน้าบ้าน
+        fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent('https://api.line.me/v2/bot/message/push')}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${MESSAGING_API_TOKEN}`
+            },
+            body: JSON.stringify(payload)
         })
-        .catch((err) => {
-            alert('เกิดข้อผิดพลาดในการส่งข้อความ: ' + err);
+        .then(response => {
+            if(response.ok) {
+                alert('ส่งรายงานเข้ากลุ่มไลน์ รพ.สต. เรียบร้อยแล้วครับ!');
+                liff.closeWindow(); // ปิดหน้าต่างแอปทันทีเมื่อส่งเสร็จ
+            } else {
+                alert('ส่งข้อมูลไม่สำเร็จ กรุณาเช็กความถูกต้องของ Token หรือ Group ID อีกครั้ง');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('เกิดข้อผิดพลาดในการเชื่อมต่อระบบเครือข่าย');
         });
     });
 </script>
