@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบแดชบอร์ดคนดูแล - รพ.สต.บ้านทองหลาง</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f1f5f9; color: #1e293b; margin: 0; padding: 20px; }
         .admin-card { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
@@ -46,9 +45,8 @@
         .history-header, .vhm-row-header { display: flex; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 8px; font-weight: bold; color: #64748b; font-size: 14px; }
         .info-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; }
         .danger { color: #ef4444; font-weight: bold; }
-        .trend-chart-container { margin-top: 15px; background: #fafafa; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; display: none; }
 
-        /* 🔥 สไตล์แถบปุ่มรายชื่อผู้ป่วยที่เพิ่มเข้ามาใหม่ */
+        /* สไตล์แถบปุ่มรายชื่อผู้ป่วย */
         .patient-row-card {
             display: flex; justify-content: space-between; align-items: center; 
             padding: 16px 20px; background: white; border: 1px solid #e2e8f0; 
@@ -123,10 +121,6 @@
                     <p id="detPatientMeta" style="margin: 0; color: #4b5563; font-size: 15px;">ข้อมูลพื้นฐาน: อายุ - ปี | เพศ - | ที่อยู่: -</p>
                 </div>
 
-                <div id="trendChartContainer" class="trend-chart-container" style="display: block; margin-bottom: 25px;">
-                    <canvas id="trendChart"></canvas>
-                </div>
-
                 <h3 style="color: #334155; border-left: 4px solid #3b82f6; padding-left: 10px; margin-bottom: 15px;">📋 ประวัติการบันทึกประเมินสุขภาพจิตทั้งหมด</h3>
                 <div id="patientHistoryCards"></div>
             </div>
@@ -168,7 +162,6 @@
     };
 
     let allData = []; 
-    let trendChartObj = null; 
 
     function changeStep(stepId) {
         document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
@@ -207,7 +200,6 @@
         const loading = document.getElementById('loadingText');
         loading.style.display = 'block';
         
-        // บังคับสลับกลับมาโชว์หน้าต่างรายชื่อสรุปก่อนเสมอเมื่อโหลดข้อมูลใหม่
         document.getElementById('patientListSection').style.display = 'block';
         document.getElementById('patientDetailSection').style.display = 'none';
 
@@ -220,7 +212,6 @@
             });
     }
 
-    // 🔥 ประมวลผลคัดกรองกรองข้อมูลและสร้างรายชื่อย่อ (แสดงแค่ชื่อ นามสกุล และอายุ)
     function processData() {
         const listViewDiv = document.getElementById('patientListView');
         listViewDiv.innerHTML = '';
@@ -244,7 +235,6 @@
             return 0;
         });
 
-        // จัดกลุ่มผู้ป่วยซ้ำเพื่อดึงเอารายชื่อที่ไม่ซ้ำกันออกมาเรียงแสดงผลในหน้าแรก
         let uniquePatients = [];
         let seenNames = new Set();
 
@@ -263,7 +253,6 @@
             return;
         }
 
-        // วาดการ์ดปุ่มรายชื่อย่อสำหรับคลิกผ่าน iPad
         uniquePatients.forEach(p => {
             let rowCard = document.createElement('div');
             rowCard.className = 'patient-row-card';
@@ -279,7 +268,6 @@
         });
     }
 
-    // 🔥 ฟังก์ชันเจาะลึกแสดงผลข้อมูลประวัติทั้งหมดรายคน + กราฟแนวโน้มเมื่อกดเลือกชื่อ
     function showPatientDetail(patientName) {
         document.getElementById('patientListSection').style.display = 'none';
         document.getElementById('patientDetailSection').style.display = 'block';
@@ -287,23 +275,15 @@
         const historyCardsDiv = document.getElementById('patientHistoryCards');
         historyCardsDiv.innerHTML = '';
 
-        // กวาดข้อมูลดิบทั้งหมดที่จับคู่ตรงกับชื่อผู้ป่วยคนนี้
         let patientRecords = allData.filter(item => item.patientName === patientName);
-        
-        // เรียงประวัติจาก ใหม่ไปเก่า สำหรับการเรนเดอร์การ์ดรายละเอียดด้านล่าง
         patientRecords.sort((a, b) => parseTimestamp(b.timestamp) - parseTimestamp(a.timestamp));
 
         if (patientRecords.length === 0) return;
 
-        // ดึงข้อมูลฐานข้อมูลส่วนตัวรอบล่าสุดมาหยอดลงในส่วน Header บล็อกน้ำเงิน
         let latestRecord = patientRecords[0];
         document.getElementById('detPatientName').innerText = `👤 ชื่อผู้ป่วย: คุณ ${latestRecord.patientName}`;
         document.getElementById('detPatientMeta').innerText = `ข้อมูลทั่วไป: อายุ ${latestRecord.patientAge} ปี | เพศ: ${latestRecord.patientGender} | พิกัดพื้นที่: ${latestRecord.villageNo}`;
 
-        // สั่งพล็อตกราฟแนวโน้มสถิติจิตใจของผู้ป่วยคนนี้
-        showChart(patientRecords);
-
-        // วาดการ์ดรายละเอียดผลการตรวจคัดกรองย้อนหลังทั้งหมดของบุคคลนี้
         patientRecords.forEach(item => {
             let card = document.createElement('div');
             card.className = 'history-card';
@@ -322,57 +302,13 @@
         });
     }
 
-    // ฟังก์ชันย้อนกลับหน้าหลัก
     function backToPatientList() {
         document.getElementById('patientListSection').style.display = 'block';
         document.getElementById('patientDetailSection').style.display = 'none';
-        processData(); // อัปเดตรายชื่อหน้ารวมใหม่อีกครั้งเพื่อความสดใหม่
+        processData(); 
     }
 
     function parseTimestamp(tStr) { const parts = tStr.match(/(\d+)/g); return new Date(parts[2], parts[1]-1, parts[0], parts[3], parts[4]); }
-
-    // ฟังก์ชันสร้างกราฟแนวโน้มด้วย Chart.js
-    function showChart(patientData) {
-        const chartContainer = document.getElementById('trendChartContainer');
-        chartContainer.style.display = 'block';
-        
-        // กรองดึงเฉพาะรอบประเมินที่มีคะแนน 9Q และเรียงเวลาจากเก่าไปใหม่ (จากซ้ายไปขวา) สำหรับทำเส้นกราฟ
-        const chartData = patientData.filter(item => item.assessmentType === '2Q' && item.q2Result)
-                                   .map(item => ({ x: parseTimestamp(item.timestamp), y: parseInt(item.q2Result.replace(/\D/g,'')) || 0 }))
-                                   .sort((a, b) => a.x - b.x);
-        
-        if(chartData.length === 0) { 
-            chartContainer.innerHTML = '<p style="text-align:center; color:#64748b; padding:15px; font-size:14px; margin:0;">⚠️ ผู้ป่วยรายนี้มีประวัติในคลาวด์ แต่ยังไม่มีคะแนนการทดสอบ 2Q ย้อนหลังเพื่อนำมาวาดกราฟสถิติได้</p>'; 
-            return; 
-        }
-        
-        chartContainer.innerHTML = '<canvas id="trendChart"></canvas>';
-        const ctx = document.getElementById('trendChart').getContext('2d');
-
-        new Chart(ctx, { 
-            type: 'line', 
-            data: { 
-                datasets: [{ 
-                    label: `กราฟแนวโน้มคะแนนสถิติ 2Q`, 
-                    data: chartData, 
-                    borderColor: '#3b82f6', 
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)', 
-                    fill: true, 
-                    tension: 0.1,
-                    pointRadius: 5,
-                    pointHoverRadius: 7
-                }] 
-            }, 
-            options: { 
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: { 
-                    x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'dd/MM' } }, title: { display: true, text: 'วันเวลาที่บันทึก' } }, 
-                    y: { beginAtZero: true, suggestedMax: 27, title: { display: true, text: 'คะแนน 9Q' } } 
-                } 
-            } 
-        });
-    }
 
     // ==========================================
     // 👥 โซนระบบจัดการข้อมูลรายชื่อ อสม.
