@@ -13,12 +13,14 @@
         .step.active { display: block; }
         .header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; }
         
+        /* สไตล์แถบเมนู (Tabs Navigation) */
         .tabs-bar { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
         .tab-btn { padding: 12px 25px; border: none; background: #e2e8f0; color: #475569; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
         .tab-btn.active { background: #3b82f6; color: white; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
+        /* สไตล์ระบบค้นหาและฟอร์ม */
         .search-container, .vhm-form-box { background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 12px; margin-bottom: 25px; }
         .inputs-row { display: flex; gap: 10px; margin-bottom: 12px; }
         .controls-row { display: flex; gap: 10px; align-items: center; }
@@ -30,6 +32,7 @@
         input[type="number"] { width: 160px; }
         select { flex: 1; background-color: white; cursor: pointer; }
         
+        /* สไตล์ปุ่ม */
         .btn-refresh, .btn-search, .btn-login, .btn-action { padding: 12px 20px; border: none; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; color: white; white-space: nowrap; }
         .btn-refresh { background-color: #64748b; }
         .btn-search { background-color: #10b981; }
@@ -50,6 +53,7 @@
 
 <div class="admin-card">
 
+    <!-- ================= ส่วนที่ 1: หน้าล็อกอินยืนยันตัวตนผู้ดูแล ================= -->
     <div id="loginStep" class="step active">
         <div class="header">
             <h2>🔐 ระบบยืนยันตัวตนผู้ดูแลข้อมูล (Admin)</h2>
@@ -66,8 +70,10 @@
         <button class="btn-login" onclick="verifyAdminAuth()">🔓 เข้าสู่ระบบแดชบอร์ด</button>
     </div>
 
+    <!-- ================= ส่วนที่ 2: หน้าแดชบอร์ดควบคุมหลักเมื่อผ่านการกรอกรหัส ================= -->
     <div id="dashboardStep" class="step">
         
+        <!-- 🎛️ แถบเมนูสำหรับสลับหน้าจอการใช้งาน -->
         <div class="tabs-bar">
             <button id="tabPatientsBtn" class="tab-btn active" onclick="switchTab('patientsTab')">📋 ข้อมูลผู้ป่วย</button>
             <button id="tabVhmBtn" class="tab-btn" onclick="switchTab('vhmTab')">👥 ข้อมูล อสม.</button>
@@ -75,6 +81,7 @@
 
         <div id="loadingText" class="loading" style="display:none;">กำลังดึงข้อมูลล่าสุดจาก Google Sheet...</div>
 
+        <!-- 🔹 แถบเนื้อหาที่ 1: จัดการข้อมูลผู้ป่วย (คงระบบการกรองสถิติและพล็อตการ์ดแบบเดิมไว้) -->
         <div id="patientsTab" class="tab-content active">
             <div class="search-container">
                 <div class="inputs-row">
@@ -99,10 +106,11 @@
             <div id="patientHistory" class="patient-history"></div>
         </div>
 
+        <!-- 🔹 แถบเนื้อหาที่ 2: จัดการระบบ เพิ่ม/แก้ไข/ลบ รายชื่อ อสม. โยงตรงเข้าตารางคลาวด์ -->
         <div id="vhmTab" class="tab-content">
             <div class="vhm-form-box">
                 <h4 id="formVhmTitle" style="margin-top: 0; color: #3b82f6;">➕ เพิ่ม อสม. รายใหม่เข้าระบบคลาวด์</h4>
-                <input type="hidden" id="vhmFormMode" value="add">
+                <input type="hidden" id="vhmFormMode" value="add"> <!-- ซ่อนเพื่อเช็กสถานะการเซฟ -->
                 
                 <div class="inputs-row">
                     <input type="text" id="vhmUsernameInput" placeholder="Username (ภาษาอังกฤษ)">
@@ -126,7 +134,7 @@
 </div>
 
 <script>
-    // 🔗 อัปเดตลิงก์ชุดใหม่เรียบร้อยแล้วครับ
+    // การเชื่อมโยงลิงก์ระบบสคริปต์หลังบ้านของคุณตามสิทธิ์เดิม
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzCxHbTjCEIRaU3JRpphYYYShu7VtzBIyj-x4qC0tqixUSa2nTSbavefHHQu7L6ZMP2FQ/exec';
     
     const adminUsers = {
@@ -142,6 +150,7 @@
         document.getElementById(stepId).classList.add('active');
     }
 
+    // ฟังก์ชันสลับเมนูแท็บหน้าจอหลัก
     function switchTab(tabId) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -167,6 +176,9 @@
         }
     }
 
+    // ==========================================
+    // 👤 โซนระบบจัดการคนไข้ / ผู้รับตรวจ (เหมือนเดิม)
+    // ==========================================
     function fetchPatientData() {
         const loading = document.getElementById('loadingText');
         loading.style.display = 'block';
@@ -236,6 +248,11 @@
         new Chart(document.getElementById('trendChart').getContext('2d'), { type: 'line', data: { datasets: [{ label: `กราฟแนวโน้มคะแนน 9Q ของคุณ ${pData[0].patientName}`, data: chartData, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', fill: true, tension: 0.1 }] }, options: { scales: { x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'dd/MM' } } }, y: { beginAtZero: true, suggestedMax: 27 } } } });
     }
 
+    // ==========================================
+    // 👥 โซนระบบจัดการข้อมูลรายชื่อ อสม. (เพิ่มฟีเจอร์ใหม่)
+    // ==========================================
+    
+    // ดึงรายชื่อ อสม. จากชีตแท็บ "อสม"
     function fetchVhmData() {
         const loading = document.getElementById('loadingText');
         const listDiv = document.getElementById('vhmList');
@@ -265,6 +282,7 @@
             });
     }
 
+    // ฟังก์ชันสั่งส่งข้อมูลเพิ่มหรืออัปเดตทับไปที่ฐานข้อมูล
     function saveVhmData() {
         const mode = document.getElementById('vhmFormMode').value;
         const u = document.getElementById('vhmUsernameInput').value.trim();
@@ -283,16 +301,17 @@
                 loading.style.display = 'none';
                 if(res.success) {
                     alert("🎉 บันทึกปรับปรุงข้อมูล อสม. บนฐานข้อมูล Google Sheet สำเร็จ!");
-                    cancelVhmEditMode(); 
-                    fetchVhmData();      
+                    cancelVhmEditMode(); // ล้างแบบฟอร์มกลับค่าเริ่มต้น
+                    fetchVhmData();      // โหลดตารางแสดงใหม่
                 } else {
                     alert("❌ ข้อผิดพลาด: " + res.message);
                 }
             });
     }
 
+    // ฟังก์ชันสั่งลบ อสม. รายบุคคลออกจากคลาวด์
     function deleteVhmData(username) {
-        if(!confirm(`🚨 คุณแน่ใจใช่ไหมว่าต้องการลบ Username: "${username}" ออกจากฐานข้อมูลระบบ?`)) return;
+        if(!confirm(`🚨 คุณแน่ใจใช่ไหมว่าต้องการลบ Username: "${username}" ออกจากฐานข้อมูลระบบ? อสม. ท่านนี้จะไม่สามารถล็อกอินได้อีกต่อไป`)) return;
         
         const loading = document.getElementById('loadingText');
         loading.style.display = 'block';
@@ -310,12 +329,13 @@
             });
     }
 
+    // เมื่อกดปุ่มแก้ไข ย้ายข้อมูลไปใส่ฟอร์มด้านบนเพื่อเตรียมอัปเดต
     function enableVhmEditMode(username, password, name, secretKey) {
         document.getElementById('formVhmTitle').innerText = `✏️ กำลังแก้ไขข้อมูลของ อสม. (${username})`;
         document.getElementById('vhmFormMode').value = "edit";
         
         document.getElementById('vhmUsernameInput').value = username;
-        document.getElementById('vhmUsernameInput').disabled = true; 
+        document.getElementById('vhmUsernameInput').disabled = true; // บล็อกช่อง Username ห้ามเปลี่ยนเพราะใช้เป็น ID คีย์หลัก
         document.getElementById('vhmPasswordInput').value = password;
         document.getElementById('vhmNameInput').value = name;
         document.getElementById('vhmSecretKeyInput').value = secretKey;
@@ -324,6 +344,7 @@
         window.scrollTo(0, 0);
     }
 
+    // ล้างฟอร์มเคลียร์ค่ากลับสู่โหมดเพิ่มรายชื่อปกติ
     function cancelVhmEditMode() {
         document.getElementById('formVhmTitle').innerText = "➕ เพิ่ม อสม. รายใหม่เข้าระบบคลาวด์";
         document.getElementById('vhmFormMode').value = "add";
