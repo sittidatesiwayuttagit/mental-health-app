@@ -12,7 +12,7 @@
         .step.active { display: block; }
         .header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; }
         
-        /* สไตล์แถบเมนู */
+        /* สไตล์แถบเมนู (Tabs Navigation) */
         .tabs-bar { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
         .tab-btn { padding: 12px 25px; border: none; background: #e2e8f0; color: #475569; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
         .tab-btn.active { background: #3b82f6; color: white; }
@@ -24,11 +24,12 @@
         .inputs-row { display: flex; gap: 10px; margin-bottom: 12px; }
         .controls-row { display: flex; gap: 10px; align-items: center; }
         
-        input[type="text"], input[type="number"], input[type="password"], select { 
+        input[type="text"], input[type="number"], input[type="password"], input[type="date"], select { 
             padding: 12px; border: 2px solid #cbd5e1; border-radius: 10px; font-size: 16px; box-sizing: border-box;
         }
         input[type="text"] { flex: 1; }
         input[type="number"] { width: 160px; }
+        input[type="date"] { flex: 1; }
         select { flex: 1; background-color: white; cursor: pointer; }
         
         /* สไตล์ปุ่ม */
@@ -46,6 +47,7 @@
         .info-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; }
         .danger { color: #ef4444; font-weight: bold; }
 
+        /* สไตล์แถบปุ่มรายชื่อผู้ป่วย */
         .patient-row-card {
             display: flex; justify-content: space-between; align-items: center; 
             padding: 16px 20px; background: white; border: 1px solid #e2e8f0; 
@@ -117,10 +119,10 @@
                 
                 <div id="patientDetailHeader" style="background: #eff6ff; padding: 20px; border-radius: 14px; margin-bottom: 15px; border: 1px solid #bfdbfe;">
                     <h3 id="detPatientName" style="margin: 0 0 8px 0; color: #1d4ed8;">👤 ชื่อผู้ป่วย: -</h3>
-                    <p id="detPatientMeta" style="margin: 0; color: #4b5563; font-size: 15px;">ข้อมูลพื้นฐาน: อายุ - | เพศ - | ที่อยู่: -</p>
+                    <p id="detPatientMeta" style="margin: 0; color: #4b5563; font-size: 15px;">ข้อมูลพื้นฐาน: อายุคำนวณ - | เพศ - | ที่อยู่: -</p>
                 </div>
 
-                <div class="search-container" style="background-color: #ffffff; border: 2px solid #3b82f6; margin-bottom: 25px;">
+                <div class="search-container" style="background-color: #ffffff; border: 2px solid #3b82f6; margin-bottom: 15px;">
                     <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">📆 จัดการวันเดือนปีเกิดของผู้ป่วย (พ.ศ.)</h4>
                     <div class="inputs-row" style="margin-top: 10px;">
                         <select id="patientBirthDay"><option value="">-- วันที่เกิด --</option></select>
@@ -135,6 +137,15 @@
                     </div>
                     <div style="text-align: right; margin-top: 10px;">
                         <button class="btn-search" onclick="savePatientBirthdate()">💾 บันทึกวันเดือนปีเกิด</button>
+                    </div>
+                </div>
+
+                <div class="search-container" style="background-color: #ffffff; border: 1px solid #cbd5e1; margin-bottom: 25px;">
+                    <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">🔍 ตัวกรอง: เลือกดูประวัติตามวันที่ตรวจ</h4>
+                    <div class="inputs-row" style="margin-top: 10px;">
+                        <input type="date" id="detailDateFilter">
+                        <button class="btn-search" onclick="renderPatientDetail()">🔍 ค้นหาตามวันที่</button>
+                        <button class="btn-refresh" onclick="clearDetailDateFilter()" style="background-color: #64748b;">🔄 แสดงทั้งหมด</button>
                     </div>
                 </div>
 
@@ -171,8 +182,7 @@
 </div>
 
 <script>
-    // ใช้รหัสลิงก์ Web App ล่าสุดของคุณเป๊ะๆ
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxvCiaDAmT9DdTzP1cOIHTgVKkgOZDi1ae1UxjZOsdXl-S9ZkDhTsQdSMw_ylKLJBZNJg/exec';
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzCxHbTjCEIRaU3JRpphYYShu7VtzBIyj-x4qC0tqixUSa2nTSbavefHHQu7L6ZMP2FQ/exec';
     
     const adminUsers = {
         "admin1": "pass1234",
@@ -180,9 +190,11 @@
     };
 
     let allData = []; 
-    let currentSelectedPatientName = ""; // ตัวแปรเก็บจำชื่อคนไข้ที่กำลังเปิดดู
+    // ตัวแปรส่วนกลางสำหรับล็อกประวัติของคนไข้ที่กำลังเปิดดู
+    let currentSelectedPatientName = ""; 
+    let currentSelectedPatientGender = "";
+    let currentSelectedPatientVillage = "";
 
-    // โหลดเสกตัวเลือกวันที่ 1-31 ลงกล่อง Dropdown
     window.onload = () => {
         const daySelect = document.getElementById('patientBirthDay');
         for (let i = 1; i <= 31; i++) {
@@ -192,11 +204,10 @@
         }
     };
 
-    // 🔥 ฟังก์ชันแกนหลัก: คำนวณอายุจาก วัน/เดือน/ปี พ.ศ. อิงปีปัจจุบัน 2026 (พ.ศ. 2569)
     function calculateAge(d, m, yBE) {
         if (!d || !m || !yBE) return "-";
         const yCE = parseInt(yBE) - 543;
-        const today = new Date(); // ปี 2026
+        const today = new Date(); 
         const birthDate = new Date(yCE, parseInt(m) - 1, parseInt(d));
         let age = today.getFullYear() - birthDate.getFullYear();
         const monthDiff = today.getMonth() - birthDate.getMonth();
@@ -206,7 +217,6 @@
         return age >= 0 ? age + " ปี" : "-";
     }
 
-    // ช่วยดึงตัวเลขเลขอายุสำหรับใช้ในระบบกรองค้นหาหรือเรียงลำดับ
     function getNumericAge(item) {
         const ageStr = calculateAge(item.birthDay, item.birthMonth, item.birthYear);
         if (ageStr === "-") return -1;
@@ -270,6 +280,7 @@
             });
     }
 
+    // 🔥 ปรับปรุงระบบคัดกรอง: ยุบการ์ดรายชื่อที่ ชื่อ + เพศ + หมู่ ซ้ำซ้อนกัน
     function processData() {
         const listViewDiv = document.getElementById('patientListView');
         listViewDiv.innerHTML = '';
@@ -279,7 +290,6 @@
         const nameSearch = document.getElementById('searchInput').value.trim().toLowerCase();
         if (nameSearch) filteredData = filteredData.filter(item => item.patientName.toLowerCase().includes(nameSearch));
         
-        // 🔄 เปลี่ยนมาค้นหาเลขอายุจากที่ระบบคำนวณวันเกิดจริง
         const ageSearch = document.getElementById('ageInput').value.trim();
         if (ageSearch) filteredData = filteredData.filter(item => getNumericAge(item) === parseInt(ageSearch));
 
@@ -289,7 +299,6 @@
             if (sortType === 'timeOldNew') return parseTimestamp(a.timestamp) - parseTimestamp(b.timestamp);
             if (sortType === 'nameAZ') return a.patientName.localeCompare(b.patientName, 'th');
             if (sortType === 'nameZA') return b.patientName.localeCompare(a.patientName, 'th');
-            // 🔄 ปรับโหมดเรียงตามอายุให้ใช้ค่าคำนวณจริงแทนข้อมูล อสม.
             if (sortType === 'ageMaxMin') return getNumericAge(b) - getNumericAge(a);
             if (sortType === 'ageMinMax') {
                 let ageA = getNumericAge(a); let ageB = getNumericAge(b);
@@ -300,13 +309,17 @@
         });
 
         let uniquePatients = [];
-        let seenNames = new Set();
+        let seenKeys = new Set(); // 🔄 เปลี่ยนมาใช้ Compound Key (กลุ่มกุญแจผสม) ในการยุบแถวรายชื่อที่ซ้ำ
 
         filteredData.forEach(item => {
-            if (!seenNames.has(item.patientName)) {
-                seenNames.add(item.patientName);
+            // สร้างกุญแจจำแนกแบบละเอียด: "ชื่อ|เพศ|หมู่บ้าน"
+            const compoundKey = `${item.patientName.trim()}|${item.patientGender.trim()}|${item.villageNo.trim()}`;
+            if (!seenKeys.has(compoundKey)) {
+                seenKeys.add(compoundKey);
                 uniquePatients.push({ 
                     name: item.patientName, 
+                    gender: item.patientGender,
+                    village: item.villageNo,
                     day: item.birthDay, 
                     month: item.birthMonth, 
                     year: item.birthYear 
@@ -323,11 +336,13 @@
             let ageText = calculateAge(p.day, p.month, p.year);
             let rowCard = document.createElement('div');
             rowCard.className = 'patient-row-card';
-            rowCard.setAttribute('onclick', `showPatientDetail("${p.name.replace(/"/g, '&quot;')}")`);
+            // ส่งค่าพารามิเตอร์กลุ่มผสม 3 ตัวเพื่อป้องกันการสับสนกรณียุบข้อมูล
+            rowCard.setAttribute('onclick', `showPatientDetail("${p.name.replace(/"/g, '&quot;')}", "${p.gender}", "${p.village}")`);
             rowCard.innerHTML = `
                 <div>
                     <span class="patient-row-name">👤 ${p.name}</span>
-                    <span class="patient-row-age">อายุคำนวณ: ${ageText !== "-" ? ageText : "ยังไม่ระบุข้อมูลวันเกิด"}</span>
+                    <span class="patient-row-age" style="margin-left: 8px;">หมู่บ้าน: ${p.village} | เพศ: ${p.gender}</span>
+                    <span class="patient-row-age">อายุคำนวณ: ${ageText !== "-" ? ageText : "ยังไม่ระบุวันเกิด"}</span>
                 </div>
                 <span style="color: #3b82f6; font-weight: bold; font-size: 14px;">คลิกดูข้อมูลเชิงลึก ➡️</span>
             `;
@@ -335,15 +350,32 @@
         });
     }
 
-    function showPatientDetail(patientName) {
+    // เรียกเปิดหน้ากระดานเมื่อกดจิ้มเลือกชื่อผู้ป่วย
+    function showPatientDetail(patientName, gender, village) {
         currentSelectedPatientName = patientName;
+        currentSelectedPatientGender = gender;
+        currentSelectedPatientVillage = village;
+
+        document.getElementById('detailDateFilter').value = ""; // ล้างค่าตัวเลือกปฏิทินเก่าออกก่อน
+        renderPatientDetail();
+    }
+
+    // 🔥 ระบบเจาะลึกประวัติ: เรียงล่าสุดไว้บนสุด และกรองค้นหาตามวันที่ระบุได้
+    function renderPatientDetail() {
         document.getElementById('patientListSection').style.display = 'none';
         document.getElementById('patientDetailSection').style.display = 'block';
 
         const historyCardsDiv = document.getElementById('patientHistoryCards');
         historyCardsDiv.innerHTML = '';
 
-        let patientRecords = allData.filter(item => item.patientName === patientName);
+        // คัดกรองกวาดข้อมูลประวัติคนไข้คนนี้ โดยดึงจากกุญแจกลุ่มผสมให้ข้อมูลตรงตัวไม่ปนกัน
+        let patientRecords = allData.filter(item => 
+            item.patientName === currentSelectedPatientName && 
+            item.patientGender === currentSelectedPatientGender && 
+            item.villageNo === currentSelectedPatientVillage
+        );
+
+        // 🔄 บังคับจัดเรียงประวัติ: รอบประเมินล่าสุด (ใหม่สุด) ไว้ด้านบนสุด ➡️ เก่าสุดอยู่ล่างสุด
         patientRecords.sort((a, b) => parseTimestamp(b.timestamp) - parseTimestamp(a.timestamp));
 
         if (patientRecords.length === 0) return;
@@ -354,11 +386,26 @@
         document.getElementById('detPatientName').innerText = `👤 ชื่อผู้ป่วย: คุณ ${latestRecord.patientName}`;
         document.getElementById('detPatientMeta').innerText = `ข้อมูลพื้นฐาน: อายุคำนวณ ${ageText !== "-" ? ageText : "ไม่ระบุ"} | เพศ: ${latestRecord.patientGender} | พิกัดพื้นที่: ${latestRecord.villageNo}`;
 
-        // นำข้อมูลวันเดือนปีเกิดที่มีอยู่เดิมมาหยอดลงช่องกรอกให้แอดมินเห็นเพื่อเตรียมแก้ไข
         document.getElementById('patientBirthDay').value = latestRecord.birthDay || "";
         document.getElementById('patientBirthMonth').value = latestRecord.birthMonth || "";
         document.getElementById('patientBirthYear').value = latestRecord.birthYear || "";
 
+        // 🔄 ระบบกรองข้อมูลตามวันที่เลือกดู (ถ้ามีค่าในช่องปฏิทิน)
+        const dateFilterVal = document.getElementById('detailDateFilter').value; // คืนค่าฟอร์แมต "YYYY-MM-DD"
+        if (dateFilterVal) {
+            const parts = dateFilterVal.split('-');
+            const formattedFilterDate = `${parts[2]}/${parts[1]}/${parts[0]}`; // แปลงเป็นฟอร์แมต "dd/MM/yyyy" สำหรับใช้เทียบฐานข้อมูล
+            
+            // กรองเอาเฉพาะข้อมูลแถวที่บันทึกตรงกับวันที่ระบุวันเดียวโดดๆ
+            patientRecords = patientRecords.filter(item => item.timestamp.split(' ')[0] === formattedFilterDate);
+        }
+
+        if (patientRecords.length === 0) {
+            historyCardsDiv.innerHTML = '<p style="text-align:center; color:#64748b; padding:20px;">❌ ไม่พบประวัติการตรวจสุขภาพจิตในวันที่เลือกครับ</p>';
+            return;
+        }
+
+        // วาดแผ่นการ์ดเรียงผลงานลงมาด้านล่าง
         patientRecords.forEach(item => {
             let card = document.createElement('div');
             card.className = 'history-card';
@@ -377,7 +424,12 @@
         });
     }
 
-    // 🔥 ฟังก์ชันยิงข้อมูลบันทึกวันเดือนปีเกิดขึ้นระบบคลาวด์
+    // สั่งล้างช่องวันที่และดึงข้อมูลกลับมาแสดงตามปกติ
+    function clearDetailDateFilter() {
+        document.getElementById('detailDateFilter').value = "";
+        renderPatientDetail();
+    }
+
     function savePatientBirthdate() {
         const d = document.getElementById('patientBirthDay').value;
         const m = document.getElementById('patientBirthMonth').value;
@@ -392,7 +444,7 @@
                 loading.style.display = 'none';
                 if(res.success) {
                     alert("🎉 บันทึกข้อมูลประวัติวันเกิดและคำนวณอายุของผู้ป่วยคนนี้เรียบร้อยครับ!");
-                    fetchPatientData(); // ดึงข้อมูลใหม่เพื่อให้อายุในหน้ารวมอัปเดตทันที
+                    fetchPatientData(); 
                 } else {
                     alert("❌ เกิดข้อผิดพลาดในการบันทึกข้อมูล");
                 }
