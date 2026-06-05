@@ -25,7 +25,7 @@
         .controls-row { display: flex; gap: 10px; align-items: center; }
         
         input[type="text"], input[type="number"], input[type="password"], input[type="date"], select { 
-            padding: 12px; border: 2px solid #cbd5e1; border-radius: 10px; font-size: 16px; box-sizing: border-box;
+            width: 100%; padding: 12px; border: 2px solid #cbd5e1; border-radius: 10px; box-sizing: border-box; font-size: 16px; 
         }
         input[type="text"] { flex: 1; }
         input[type="number"] { width: 160px; }
@@ -76,7 +76,32 @@
             <label style="display:block; font-weight:bold; margin-bottom:5px;">Password</label>
             <input type="password" id="adminPassword" placeholder="ระบุ Password ผู้ดูแลระบบ">
         </div>
-        <button class="btn-login" onclick="verifyAdminAuth()">🔓 เข้าสู่ระบบแดชบอร์ด</button>
+        <button class="btn-login" id="btnAdminLoginText" onclick="verifyAdminAuth()">🔓 เข้าสู่ระบบแดชบอร์ด</button>
+        
+        <p style="text-align:center; margin-top:15px; font-size:14px;">
+            <a href="#" onclick="changeStep('resetAdminStep')" style="color:#3b82f6; font-weight:bold; text-decoration:none;">🔑 ลืมรหัสผ่าน? ตั้งรหัสใหม่ที่นี่</a>
+        </p>
+    </div>
+
+    <div id="resetAdminStep" class="step">
+        <div class="header">
+            <h2>🔄 ตั้งรหัสผ่านแอดมินใหม่ด้วยตนเอง</h2>
+            <p>ระบบจะตรวจสอบความถูกต้องจากรหัสลับบนฐานข้อมูลคลาวด์เพื่อยืนยันตัวตน</p>
+        </div>
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label style="display:block; font-weight:bold; margin-bottom:5px;">Username ของคุณ *</label>
+            <input type="text" id="resetAdminUsername" placeholder="กรอก Username แอดมินของคุณ">
+        </div>
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label style="display:block; font-weight:bold; margin-bottom:5px;">รหัสลับยืนยันตัวตนแอดมิน *</label>
+            <input type="password" id="resetAdminSecretKey" placeholder="กรอกรหัสลับแอดมินที่ลงทะเบียนไว้ใน Sheet">
+        </div>
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label style="display:block; font-weight:bold; margin-bottom:5px;">ระบุรหัสผ่านใหม่ที่ต้องการ *</label>
+            <input type="password" id="resetAdminNewPassword" placeholder="ตั้งรหัสผ่านใหม่">
+        </div>
+        <button class="btn-login" style="background-color: #10b981;" id="btnAdminResetText" onclick="handleAdminResetPassword()">💾 บันทึกและเปลี่ยนรหัสผ่าน</button>
+        <button class="btn-login" style="background-color: #94a3b8; margin-top: 8px;" onclick="changeStep('loginStep')">⬅️ ย้อนกลับหน้าล็อกอิน</button>
     </div>
 
     <div id="dashboardStep" class="step">
@@ -182,15 +207,9 @@
 </div>
 
 <script>
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyzQUpoo6S8jmhWC7ySXKz3y6u1LF2k27MYRPAijDvz6q9p_nzgR0RfGnfCudK-g4Ib-Q/exec';
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwCHEcYZ5s7Ed527DLRxA1G2M61LriCZrngz3g6SA9RafkJRRtblSOZ98f_sIhqQcdlsw/exec';
     
-    const adminUsers = {
-        "admin1": "pass1234",
-        "รพสตโนนสว่าง": "health2026"
-    };
-
     let allData = []; 
-    // ตัวแปรส่วนกลางสำหรับล็อกประวัติของคนไข้ที่กำลังเปิดดู
     let currentSelectedPatientName = ""; 
     let currentSelectedPatientGender = "";
     let currentSelectedPatientVillage = "";
@@ -242,17 +261,66 @@
         }
     }
 
+    // 🔄 ปรับปรุง: ยิงตรวจสอบสิทธิ์ล็อกอินแอดมินผ่านสเปรดชีตออนไลน์ (แท็บ 'แอดมิน')
     function verifyAdminAuth() {
         const u = document.getElementById('adminUsername').value.trim();
         const p = document.getElementById('adminPassword').value;
-        if (adminUsers[u] && adminUsers[u] === p) {
-            changeStep('dashboardStep'); 
-            fetchPatientData(); 
-        } else {
-            alert("❌ Username หรือ Password ไม่ถูกต้อง!");
-        }
+        const btn = document.getElementById('btnAdminLoginText');
+
+        if (!u || !p) { alert("⚠️ กรุณากรอกข้อมูลให้ครบถ้วน"); return; }
+        btn.innerText = "⏳ กำลังตรวจสอบสิทธิ์แอดมิน...";
+
+        fetch(`${GOOGLE_SCRIPT_URL}?action=checkAdminLogin&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}`)
+            .then(res => res.json())
+            .then(res => {
+                btn.innerText = "🔓 เข้าสู่ระบบแดชบอร์ด";
+                if (res.success) {
+                    changeStep('dashboardStep'); 
+                    fetchPatientData(); 
+                } else {
+                    alert("❌ " + res.message);
+                }
+            })
+            .catch(err => {
+                btn.innerText = "🔓 เข้าสู่ระบบแดชบอร์ด";
+                alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูลแอดมินคลาวด์");
+            });
     }
 
+    // 🔄 ฟังก์ชันพิเศษใหม่: ยึดหลักยืนยันตัวตนแอดมินผ่านรหัสลับบนคลาวด์เพื่ออัปเดตรหัสผ่าน
+    function handleAdminResetPassword() {
+        const u = document.getElementById('resetAdminUsername').value.trim();
+        const key = document.getElementById('resetAdminSecretKey').value.trim();
+        const newP = document.getElementById('resetAdminNewPassword').value;
+        const btn = document.getElementById('btnAdminResetText');
+
+        if(!u || !key || !newP) { alert("⚠️ กรุณากรอกข้อมูลดาวจันให้ครบถ้วนทุกช่องครับ"); return; }
+        if(newP.length < 4) { alert("⚠️ เพื่อความปลอดภัย รหัสผ่านใหม่ควรยาว 4 ตัวอักษรขึ้นไป"); return; }
+
+        btn.innerText = "⏳ กำลังบันทึกรหัสผ่านใหม่ลงคลาวด์...";
+
+        fetch(`${GOOGLE_SCRIPT_URL}?action=resetAdminPassword&username=${encodeURIComponent(u)}&secretKey=${encodeURIComponent(key)}&newPassword=${encodeURIComponent(newP)}`)
+            .then(res => res.json())
+            .then(res => {
+                btn.innerText = "💾 บันทึกและเปลี่ยนรหัสผ่าน";
+                if(res.success) {
+                    alert("🎉 รีเซ็ตรหัสผ่านแอดมินบน Google Sheet สำเร็จ! สามารถนำรหัสใหม่ไปใช้ล็อกอินได้ทันทีครับ");
+                    document.getElementById('adminUsername').value = u;
+                    document.getElementById('adminPassword').value = "";
+                    changeStep('loginStep');
+                } else {
+                    alert("❌ " + res.message);
+                }
+            })
+            .catch(err => {
+                btn.innerText = "💾 บันทึกและเปลี่ยนรหัสผ่าน";
+                alert("❌ เกิดข้อผิดพลาดระบบเครือข่าย ไม่สามารถเชื่อมต่อตารางแอดมินได้");
+            });
+    }
+
+    // ==========================================
+    // 👤 โซนระบบจัดการคนไข้ / ผู้รับตรวจ
+    // ==========================================
     function fetchPatientData() {
         const loading = document.getElementById('loadingText');
         loading.style.display = 'block';
@@ -280,7 +348,6 @@
             });
     }
 
-    // 🔥 ปรับปรุงระบบคัดกรอง: ยุบการ์ดรายชื่อที่ ชื่อ + เพศ + หมู่ ซ้ำซ้อนกัน
     function processData() {
         const listViewDiv = document.getElementById('patientListView');
         listViewDiv.innerHTML = '';
@@ -309,10 +376,9 @@
         });
 
         let uniquePatients = [];
-        let seenKeys = new Set(); // 🔄 เปลี่ยนมาใช้ Compound Key (กลุ่มกุญแจผสม) ในการยุบแถวรายชื่อที่ซ้ำ
+        let seenKeys = new Set(); 
 
         filteredData.forEach(item => {
-            // สร้างกุญแจจำแนกแบบละเอียด: "ชื่อ|เพศ|หมู่บ้าน"
             const compoundKey = `${item.patientName.trim()}|${item.patientGender.trim()}|${item.villageNo.trim()}`;
             if (!seenKeys.has(compoundKey)) {
                 seenKeys.add(compoundKey);
@@ -336,7 +402,6 @@
             let ageText = calculateAge(p.day, p.month, p.year);
             let rowCard = document.createElement('div');
             rowCard.className = 'patient-row-card';
-            // ส่งค่าพารามิเตอร์กลุ่มผสม 3 ตัวเพื่อป้องกันการสับสนกรณียุบข้อมูล
             rowCard.setAttribute('onclick', `showPatientDetail("${p.name.replace(/"/g, '&quot;')}", "${p.gender}", "${p.village}")`);
             rowCard.innerHTML = `
                 <div>
@@ -350,17 +415,14 @@
         });
     }
 
-    // เรียกเปิดหน้ากระดานเมื่อกดจิ้มเลือกชื่อผู้ป่วย
     function showPatientDetail(patientName, gender, village) {
         currentSelectedPatientName = patientName;
         currentSelectedPatientGender = gender;
         currentSelectedPatientVillage = village;
-
-        document.getElementById('detailDateFilter').value = ""; // ล้างค่าตัวเลือกปฏิทินเก่าออกก่อน
+        document.getElementById('detailDateFilter').value = ""; 
         renderPatientDetail();
     }
 
-    // 🔥 ระบบเจาะลึกประวัติ: เรียงล่าสุดไว้บนสุด และกรองค้นหาตามวันที่ระบุได้
     function renderPatientDetail() {
         document.getElementById('patientListSection').style.display = 'none';
         document.getElementById('patientDetailSection').style.display = 'block';
@@ -368,14 +430,12 @@
         const historyCardsDiv = document.getElementById('patientHistoryCards');
         historyCardsDiv.innerHTML = '';
 
-        // คัดกรองกวาดข้อมูลประวัติคนไข้คนนี้ โดยดึงจากกุญแจกลุ่มผสมให้ข้อมูลตรงตัวไม่ปนกัน
         let patientRecords = allData.filter(item => 
             item.patientName === currentSelectedPatientName && 
             item.patientGender === currentSelectedPatientGender && 
             item.villageNo === currentSelectedPatientVillage
         );
 
-        // 🔄 บังคับจัดเรียงประวัติ: รอบประเมินล่าสุด (ใหม่สุด) ไว้ด้านบนสุด ➡️ เก่าสุดอยู่ล่างสุด
         patientRecords.sort((a, b) => parseTimestamp(b.timestamp) - parseTimestamp(a.timestamp));
 
         if (patientRecords.length === 0) return;
@@ -390,13 +450,10 @@
         document.getElementById('patientBirthMonth').value = latestRecord.birthMonth || "";
         document.getElementById('patientBirthYear').value = latestRecord.birthYear || "";
 
-        // 🔄 ระบบกรองข้อมูลตามวันที่เลือกดู (ถ้ามีค่าในช่องปฏิทิน)
-        const dateFilterVal = document.getElementById('detailDateFilter').value; // คืนค่าฟอร์แมต "YYYY-MM-DD"
+        const dateFilterVal = document.getElementById('detailDateFilter').value; 
         if (dateFilterVal) {
             const parts = dateFilterVal.split('-');
-            const formattedFilterDate = `${parts[2]}/${parts[1]}/${parts[0]}`; // แปลงเป็นฟอร์แมต "dd/MM/yyyy" สำหรับใช้เทียบฐานข้อมูล
-            
-            // กรองเอาเฉพาะข้อมูลแถวที่บันทึกตรงกับวันที่ระบุวันเดียวโดดๆ
+            const formattedFilterDate = `${parts[2]}/${parts[1]}/${parts[0]}`; 
             patientRecords = patientRecords.filter(item => item.timestamp.split(' ')[0] === formattedFilterDate);
         }
 
@@ -405,7 +462,6 @@
             return;
         }
 
-        // วาดแผ่นการ์ดเรียงผลงานลงมาด้านล่าง
         patientRecords.forEach(item => {
             let card = document.createElement('div');
             card.className = 'history-card';
@@ -424,7 +480,6 @@
         });
     }
 
-    // สั่งล้างช่องวันที่และดึงข้อมูลกลับมาแสดงตามปกติ
     function clearDetailDateFilter() {
         document.getElementById('detailDateFilter').value = "";
         renderPatientDetail();
