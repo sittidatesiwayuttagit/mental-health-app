@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบแดชบอร์ดคนดูแล - รพ.สต.</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f1f5f9; color: #1e293b; margin: 0; padding: 20px; }
+        .admin-card { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        
+        /* สไตล์สำหรับการแบ่งหน้าจอการทำงาน (Step) */
+        .step { display: none; }
+        .step.active { display: block; }
+        
+        .header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; }
+        .search-container { display: flex; gap: 10px; margin-bottom: 25px; }
+        
+        /* สไตล์ฟอร์มและอินพุต */
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: bold; margin-bottom: 8px; color: #475569; }
+        input[type="text"], input[type="password"] { width: 100%; padding: 12px; border: 2px solid #cbd5e1; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
+        
+        /* ปุ่มสั่งการ */
+        .btn-refresh, .btn-search, .btn-login { padding: 12px 20px; border: none; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; color: white; }
+        .btn-refresh { background-color: #3b82f6; }
+        .btn-search { background-color: #10b981; }
+        .btn-login { background-color: #3b82f6; width: 100%; padding: 15px; font-size: 16px; margin-top: 10px; }
+        
+        .loading { text-align: center; color: #64748b; font-style: italic; }
+        .patient-history { margin-top: 25px; }
+        .history-card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 15px; margin-bottom: 15px; background-color: #f8fafc; }
+        .history-header { display: flex; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 8px; font-weight: bold; color: #64748b; }
+        .info-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; }
+        .danger { color: #ef4444; font-weight: bold; }
+        .trend-chart-container { margin-top: 30px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="admin-card">
+
+    <div id="loginStep" class="step active">
+        <div class="header">
+            <h2>🔐 ระบบยืนยันตัวตนผู้ดูแลข้อมูล (Admin)</h2>
+            <p>กรุณากรอกสิทธิ์เข้าใช้งานเพื่อเข้าถึงระบบค้นหาและประวัติสุขภาพจิตผู้ป่วย</p>
+        </div>
+        <div class="form-group">
+            <label for="adminUsername">Username</label>
+            <input type="text" id="adminUsername" placeholder="ระบุ Username ผู้ดูแลระบบ">
+        </div>
+        <div class="form-group">
+            <label for="adminPassword">Password</label>
+            <input type="password" id="adminPassword" placeholder="ระบุ Password ผู้ดูแลระบบ">
+        </div>
+        <button class="btn-login" onclick="verifyAdminAuth()">🔓 เข้าสู่ระบบแดชบอร์ด</button>
+    </div>
+
+    <div id="dashboardStep" class="step">
+        <h2>📊 แดชบอร์ดดูข้อมูลสุขภาพจิต</h2>
+        
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="กรอกชื่อ-สกุล ผู้ป่วยเพื่อค้นหา...">
+            <button class="btn-search" onclick="loadData(true)">🔍 ค้นหา</button>
+            <button class="btn-refresh" onclick="loadData(false)">🔄 แสดงทั้งหมด/รีเฟรช</button>
+        </div>
+        
+        <div id="loadingText" class="loading" style="display:none;">กำลังโหลดข้อมูล...</div>
+
+        <div id="trendChartContainer" class="trend-chart-container">
+            <canvas id="trendChart"></canvas>
+        </div>
+
+        <div id="patientHistory" class="patient-history"></div>
+    </div>
+
+</div>
+
+<script>
+    // 🔗 ฝังลิงก์แอปสคริปต์หลังบ้านของจริงให้เรียบร้อยครับ
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzcRlhZ2PqUfkrlTBUWDlLZcLsOOCnBBhbit2yJEIdJF4v2ZYXolvuY1dSQn11X8TNhdQ/exec';
+    
+    // บัญชีผู้ดูแลระบบ (สามารถแก้ไขจับคู่ตัวซ้ายตัวขวาตามต้องการได้เลยครับ)
+    const adminUsers = {
+        "admin1": "pass1234",
+        "รพสตโนนสว่าง": "health2026"
+    };
+
+    let allData = [];
+    let trendChartObj = null; 
+
+    // ฟังก์ชันสลับหน้าต่างการทำงาน
+    function changeStep(stepId) {
+        document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+        document.getElementById(stepId).classList.add('active');
+    }
+
+    // ฟังก์ชันตรวจสอบสิทธิ์ล็อกอิน
+    function verifyAdminAuth() {
+        const u = document.getElementById('adminUsername').value.trim();
+        const p = document.getElementById('adminPassword').value;
+
+        if (adminUsers[u] && adminUsers[u] === p) {
+            changeStep('dashboardStep'); // สลับไปหน้าจอหลัก
+            loadData(false);             // ดึงข้อมูลทั้งหมดขึ้นมาแสดงทันทีเมื่อผ่าน
+        } else {
+            alert("❌ Username หรือ Password ไม่ถูกต้อง! ไม่สามารถเข้าถึงข้อมูลความลับผู้ป่วยได้");
+        }
+    }
+
+    // ฟังก์ชันหลักดึงและจัดระเบียบข้อมูลผู้ป่วย
+    function loadData(isSearch) {
+        const loading = document.getElementById('loadingText');
+        const historyDiv = document.getElementById('patientHistory');
+        const searchInput = document.getElementById('searchInput').value.trim().toLowerCase();
+        const chartContainer = document.getElementById('trendChartContainer');
+
+        loading.style.display = 'block';
+        historyDiv.innerHTML = '';
+        chartContainer.style.display = 'none'; 
+
+        fetch(GOOGLE_SCRIPT_URL)
+            .then(response => response.json())
+            .then(data => {
+                allData = data;
+                loading.style.display = 'none';
+
+                let filteredData = allData;
+                if(isSearch && searchInput) {
+                    filteredData = allData.filter(item => item.patientName.toLowerCase().includes(searchInput));
+                }
+
+                // เรียงข้อมูลตามวันที่ (ใหม่ไปเก่า)
+                filteredData.sort((a, b) => {
+                    const dateA = parseTimestamp(a.timestamp);
+                    const dateB = parseTimestamp(b.timestamp);
+                    return dateB - dateA;
+                });
+
+                if(filteredData.length === 0) {
+                    historyDiv.innerHTML = '<p style="text-align:center; color:#64748b;">❌ ไม่พบข้อมูลผู้ป่วยที่ค้นหา</p>';
+                    return;
+                }
+
+                // แสดงกราฟเฉพาะเมื่อค้นหารายคนเจาะจงสำเร็จ
+                if(isSearch && searchInput) {
+                    filteredDataGrouped = groupDataByPatient(filteredData);
+                    if (Object.keys(filteredDataGrouped).length === 1) { 
+                        showChart(Object.values(filteredDataGrouped)[0]);
+                    }
+                }
+
+                // วนลูปแสดงการ์ดประวัติข้อมูลรายบุคคลแบบแยกคอลัมน์ชัดเจน
+                filteredData.forEach(item => {
+                    let card = document.createElement('div');
+                    card.className = 'history-card';
+                    let q9s = item.q9Score ? item.q9Score : '-(ไม่มี)-';
+                    let q8r = item.q8Result ? item.q8Result : '-(ไม่มี)-';
+                    
+                    card.innerHTML = `
+                        <div class="history-header">
+                            <span>วันที่ประเมิน: ${item.timestamp}</span>
+                            <span>แบบประเมินหลัก: ${item.assessmentType}</span>
+                        </div>
+                        <div class="info-row"><span>ชื่อผู้ป่วย:</span> <span><b>${item.patientName}</b> (หมู่บ้าน: ${item.villageNo})</span></div>
+                        <div class="info-row"><span>ข้อมูลทั่วไป:</span> <span>อายุ ${item.patientAge} ปี | เพศ ${item.patientGender}</span></div>
+                        <div class="info-row"><span>ผู้ประเมิน (อสม.):</span> <span>${item.vhmName}</span></div>
+                        <div class="info-row"><span>ผลประเมิน 2Q:</span> <span class="${item.q2Result.includes('เสี่ยง') ? 'danger' : ''}">${item.q2Result}</span></div>
+                        <div class="info-row"><span>คะแนนคอลัมน์ 9Q:</span> <span>${q9s}</span></div>
+                        <div class="info-row"><span>ผลประเมินคอลัมน์ 8Q:</span> <span>${q8r}</span></div>
+                        <div class="info-row"><span>หมายเหตุผู้ส่ง:</span> <span>${item.comment || '-(ว่าง)-'}</span></div>
+                    `;
+                    historyDiv.appendChild(card);
+                });
+            })
+            .catch(err => {
+                loading.style.display = 'none';
+                historyDiv.innerHTML = '<p style="text-align:center; color:#ef4444;">❌ เกิดข้อผิดพลาดในการโหลดข้อมูล</p>';
+                console.error(err);
+            });
+    }
+
+    function parseTimestamp(timestampStr) {
+        const parts = timestampStr.match(/(\d+)/g);
+        return new Date(parts[2], parts[1]-1, parts[0], parts[3], parts[4]); 
+    }
+
+    function groupDataByPatient(data) {
+        return data.reduce((groups, item) => {
+            if(!groups[item.patientName]) { groups[item.patientName] = []; }
+            groups[item.patientName].push(item);
+            return groups;
+        }, {});
+    }
+
+    function showChart(patientData) {
+        const chartContainer = document.getElementById('trendChartContainer');
+        chartContainer.style.display = 'block';
+
+        const chartData = patientData.filter(item => item.assessmentType === '9Q' && item.q9Score)
+                                   .map(item => ({
+                                       x: parseTimestamp(item.timestamp),
+                                       y: parseInt(item.q9Score.replace(/\D/g,'')) || 0 
+                                   }))
+                                   .sort((a, b) => a.x - b.x); 
+
+        if(chartData.length === 0) {
+            chartContainer.innerHTML = '<p style="text-align:center; color:#64748b; padding:10px;">⚠️ ผู้ป่วยคนนี้ยังมีเฉพาะข้อมูลคัดกรองทั่วไป (ยังไม่มีประวัติคะแนนแบบ 9Q เพื่อนำมาพล็อตแสดงกราฟแนวโน้มได้)</p>';
+            return;
+        }
+
+        const ctx = document.getElementById('trendChart').getContext('2d');
+        if (trendChartObj) { trendChartObj.destroy(); }
+
+        trendChartObj = new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [{
+                    label: `กราฟแนวโน้มคะแนน 9Q ของคุณ ${patientData[0].patientName}`,
+                    data: chartData,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                scales: {
+                    x: {
+                        type: 'time', 
+                        time: { unit: 'day', displayFormats: { day: 'dd/MM' } },
+                        title: { display: true, text: 'วันที่ประเมิน' }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'ระดับคะแนน 9Q' },
+                        suggestedMax: 27 
+                    }
+                }
+            }
+        });
+    }
+</script>
+</body>
+</html>
