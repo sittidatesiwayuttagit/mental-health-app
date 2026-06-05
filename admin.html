@@ -11,11 +11,15 @@
         
         .step { display: none; }
         .step.active { display: block; }
-        
         .header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; }
         
-        /* สไตล์โซนค้นหาและจัดเรียงแบบแถวคู่ */
-        .search-container { background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 12px; margin-bottom: 25px; }
+        .tabs-bar { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        .tab-btn { padding: 12px 25px; border: none; background: #e2e8f0; color: #475569; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+        .tab-btn.active { background: #3b82f6; color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .search-container, .vhm-form-box { background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 12px; margin-bottom: 25px; }
         .inputs-row { display: flex; gap: 10px; margin-bottom: 12px; }
         .controls-row { display: flex; gap: 10px; align-items: center; }
         
@@ -26,16 +30,17 @@
         input[type="number"] { width: 160px; }
         select { flex: 1; background-color: white; cursor: pointer; }
         
-        /* ปุ่มสั่งการ */
-        .btn-refresh, .btn-search, .btn-login { padding: 12px 20px; border: none; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; color: white; white-space: nowrap; }
+        .btn-refresh, .btn-search, .btn-login, .btn-action { padding: 12px 20px; border: none; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; color: white; white-space: nowrap; }
         .btn-refresh { background-color: #64748b; }
         .btn-search { background-color: #10b981; }
         .btn-login { background-color: #3b82f6; width: 100%; padding: 15px; font-size: 16px; margin-top: 10px; }
+        .btn-action.delete { background-color: #ef4444; }
+        .btn-action.edit { background-color: #f59e0b; margin-right: 5px; }
         
         .loading { text-align: center; color: #64748b; font-style: italic; margin: 20px 0; }
-        .patient-history { margin-top: 25px; }
-        .history-card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 15px; margin-bottom: 15px; background-color: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
-        .history-header { display: flex; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 8px; font-weight: bold; color: #64748b; font-size: 14px; }
+        .patient-history, .vhm-list-container { margin-top: 25px; }
+        .history-card, .vhm-table-row { border: 1px solid #e2e8f0; border-radius: 10px; padding: 15px; margin-bottom: 15px; background-color: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .history-header, .vhm-row-header { display: flex; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 8px; font-weight: bold; color: #64748b; font-size: 14px; }
         .info-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; }
         .danger { color: #ef4444; font-weight: bold; }
         .trend-chart-container { margin-top: 30px; background: #fafafa; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; display: none; }
@@ -48,7 +53,7 @@
     <div id="loginStep" class="step active">
         <div class="header">
             <h2>🔐 ระบบยืนยันตัวตนผู้ดูแลข้อมูล (Admin)</h2>
-            <p>กรุณากรอกสิทธิ์เข้าใช้งานเพื่อเข้าถึงระบบค้นหาและประวัติสุขภาพจิตผู้ป่วย</p>
+            <p>กรุณากรอกสิทธิ์เข้าใช้งานเพื่อเข้าถึงระบบแดชบอร์ด</p>
         </div>
         <div class="form-group" style="margin-bottom: 15px;">
             <label style="display:block; font-weight:bold; margin-bottom:5px;">Username</label>
@@ -62,50 +67,74 @@
     </div>
 
     <div id="dashboardStep" class="step">
-        <h2>📊 แดชบอร์ดดูข้อมูลสุขภาพจิต</h2>
         
-        <div class="search-container">
-            <div class="inputs-row">
-                <input type="text" id="searchInput" oninput="processData()" placeholder="🔍 พิมพ์ชื่อ-นามสกุลผู้ป่วยเพื่อค้นหา...">
-                <input type="number" id="ageInput" oninput="processData()" placeholder="🔢 พิมพ์อายุเพื่อค้นหา..." min="1" max="120">
-            </div>
-            <div class="controls-row">
-                <label style="font-weight: bold; color: #475569; white-space: nowrap;">🔃 วิธีเรียงข้อมูล:</label>
-                <select id="sortSelect" onchange="processData()">
-                    <option value="timeNewOld">🕒 เวลาตรวจล่าสุด ➡️ เก่าสุด (ค่าเริ่มต้น)</option>
-                    <option value="timeOldNew">🕒 เวลาตรวจเก่าสุด ➡️ ล่าสุด</option>
-                    <option value="nameAZ">🔤 ชื่อผู้ป่วย: ก ➡️ ฮ</option>
-                    <option value="nameZA">🔤 ชื่อผู้ป่วย: ฮ ➡️ ก</option>
-                    <option value="ageMaxMin">👴 อายุผู้รับตรวจ: มาก ➡️ น้อย</option>
-                    <option value="ageMinMax">👶 อายุผู้รับตรวจ: น้อย ➡️ มาก</option>
-                </select>
-                <button class="btn-search" onclick="processData()">🔍 ค้นหา</button>
-                <button class="btn-refresh" onclick="fetchData()">🔄 รีเฟรชฐานข้อมูล</button>
-            </div>
+        <div class="tabs-bar">
+            <button id="tabPatientsBtn" class="tab-btn active" onclick="switchTab('patientsTab')">📋 ข้อมูลผู้ป่วย</button>
+            <button id="tabVhmBtn" class="tab-btn" onclick="switchTab('vhmTab')">👥 ข้อมูล อสม.</button>
         </div>
-        
+
         <div id="loadingText" class="loading" style="display:none;">กำลังดึงข้อมูลล่าสุดจาก Google Sheet...</div>
 
-        <div id="trendChartContainer" class="trend-chart-container">
-            <canvas id="trendChart"></canvas>
+        <div id="patientsTab" class="tab-content active">
+            <div class="search-container">
+                <div class="inputs-row">
+                    <input type="text" id="searchInput" oninput="processData()" placeholder="🔍 พิมพ์ชื่อ-นามสกุลผู้ป่วยเพื่อค้นหา...">
+                    <input type="number" id="ageInput" oninput="processData()" placeholder="🔢 พิมพ์อายุเพื่อค้นหา..." min="1" max="120">
+                </div>
+                <div class="controls-row">
+                    <label style="font-weight: bold; color: #475569; white-space: nowrap;">🔃 วิธีเรียงข้อมูล:</label>
+                    <select id="sortSelect" onchange="processData()">
+                        <option value="timeNewOld">🕒 เวลาตรวจล่าสุด ➡️ เก่าสุด</option>
+                        <option value="timeOldNew">🕒 เวลาตรวจเก่าสุด ➡️ ล่าสุด</option>
+                        <option value="nameAZ">🔤 ชื่อผู้ป่วย: ก ➡️ ฮ</option>
+                        <option value="nameZA">🔤 ชื่อผู้ป่วย: ฮ ➡️ ก</option>
+                        <option value="ageMaxMin">👴 อายุผู้รับตรวจ: มาก ➡️ น้อย</option>
+                        <option value="ageMinMax">👶 อายุผู้รับตรวจ: น้อย ➡️ มาก</option>
+                    </select>
+                    <button class="btn-search" onclick="processData()">🔍 ค้นหา</button>
+                    <button class="btn-refresh" onclick="fetchPatientData()">🔄 รีเฟรช</button>
+                </div>
+            </div>
+            <div id="trendChartContainer" class="trend-chart-container"><canvas id="trendChart"></canvas></div>
+            <div id="patientHistory" class="patient-history"></div>
         </div>
 
-        <div id="patientHistory" class="patient-history"></div>
+        <div id="vhmTab" class="tab-content">
+            <div class="vhm-form-box">
+                <h4 id="formVhmTitle" style="margin-top: 0; color: #3b82f6;">➕ เพิ่ม อสม. รายใหม่เข้าระบบคลาวด์</h4>
+                <input type="hidden" id="vhmFormMode" value="add">
+                
+                <div class="inputs-row">
+                    <input type="text" id="vhmUsernameInput" placeholder="Username (ภาษาอังกฤษ)">
+                    <input type="text" id="vhmPasswordInput" placeholder="Password เข้าใช้งาน">
+                </div>
+                <div class="inputs-row">
+                    <input type="text" id="vhmNameInput" placeholder="ชื่อ-นามสกุล อสม.">
+                    <input type="text" id="vhmSecretKeyInput" placeholder="รหัสลับส่วนตัว (เช่นเลขท้ายบัตร)">
+                </div>
+                <div style="text-align: right;">
+                    <button id="btnCancelVhmEdit" class="btn-refresh" style="display:none; margin-right:5px;" onclick="cancelVhmEditMode()">ยกเลิก</button>
+                    <button class="btn-search" onclick="saveVhmData()">💾 บันทึกข้อมูล อสม.</button>
+                </div>
+            </div>
+            
+            <div id="vhmList" class="vhm-list-container"></div>
+        </div>
+
     </div>
 
 </div>
 
 <script>
-    // ลิงก์เชื่อมโยงฐานข้อมูลแอปสคริปต์หลังบ้านของจริง
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzcRlhZ2PqUfkrlTBUWDlLZcLsOOCnBBhbit2yJEIdJF4v2ZYXolvuY1dSQn11X8TNhdQ/exec';
+    // 🔗 อัปเดตลิงก์ชุดใหม่เรียบร้อยแล้วครับ
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxcElfzuPPKHs1omffjEOdGa9ih98l0_lLo5-21TvLYo7Az68o9a03ugNuN-dmAsd3Nog/exec';
     
-    // บัญชีผู้ดูแลระบบ
     const adminUsers = {
         "admin1": "pass1234",
         "รพสตโนนสว่าง": "health2026"
     };
 
-    let allData = []; // ถังเก็บข้อมูลดิบทั้งหมดที่ดึงมาจากคลาวด์ครั้งเดียว
+    let allData = []; 
     let trendChartObj = null; 
 
     function changeStep(stepId) {
@@ -113,184 +142,199 @@
         document.getElementById(stepId).classList.add('active');
     }
 
-    // ระบบล็อกอินพาสเวิร์ด
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById(tabId).classList.add('active');
+        if (tabId === 'patientsTab') {
+            document.getElementById('tabPatientsBtn').classList.add('active');
+            fetchPatientData();
+        } else if (tabId === 'vhmTab') {
+            document.getElementById('tabVhmBtn').classList.add('active');
+            fetchVhmData();
+        }
+    }
+
     function verifyAdminAuth() {
         const u = document.getElementById('adminUsername').value.trim();
         const p = document.getElementById('adminPassword').value;
-
         if (adminUsers[u] && adminUsers[u] === p) {
             changeStep('dashboardStep'); 
-            fetchData(); // ดึงข้อมูลก้อนใหญ่จากคลาวด์มาเก็บในเครื่องรอบแรก
+            fetchPatientData(); 
         } else {
             alert("❌ Username หรือ Password ไม่ถูกต้อง!");
         }
     }
 
-    // ฟังก์ชันยิง Fetch ดึงข้อมูลจากคลาวด์ (ทำตอนเริ่ม หรือตอนกดรีเฟรชเท่านั้น)
-    function fetchData() {
+    function fetchPatientData() {
         const loading = document.getElementById('loadingText');
-        const historyDiv = document.getElementById('patientHistory');
-        const chartContainer = document.getElementById('trendChartContainer');
-
         loading.style.display = 'block';
-        historyDiv.innerHTML = '';
-        chartContainer.style.display = 'none'; 
-
         fetch(GOOGLE_SCRIPT_URL)
-            .then(response => response.json())
+            .then(res => res.json())
             .then(data => {
                 allData = data;
                 loading.style.display = 'none';
-                processData(); // นำข้อมูลมาประมวลผลการกรองและจัดเรียงทันที
-            })
-            .catch(err => {
-                loading.style.display = 'none';
-                historyDiv.innerHTML = '<p style="text-align:center; color:#ef4444;">❌ เกิดข้อผิดพลาดในการโหลดข้อมูลภายนอก</p>';
-                console.error(err);
+                processData();
             });
     }
 
-    // 🔥 หัวใจหลัก: ฟังก์ชันคัดกรองและสลับการเรียงลำดับข้อมูลในเครื่องแบบทันทีทันใด
     function processData() {
         const historyDiv = document.getElementById('patientHistory');
         const chartContainer = document.getElementById('trendChartContainer');
-
         historyDiv.innerHTML = '';
         chartContainer.style.display = 'none';
-
         if (allData.length === 0) return;
 
-        // นำข้อมูลดิบมาโคลนใส่ถังจำลองเพื่อทำการสับเปลี่ยนตัวแปร
         let filteredData = [...allData];
-
-        // 1. ระบบคัดกรองตัวอักษร "ชื่อผู้ป่วย"
         const nameSearch = document.getElementById('searchInput').value.trim().toLowerCase();
-        if (nameSearch) {
-            filteredData = filteredData.filter(item => item.patientName.toLowerCase().includes(nameSearch));
-        }
-
-        // 2. ระบบคัดกรองจับคู่ตัวเลข "อายุผู้ป่วย"
+        if (nameSearch) filteredData = filteredData.filter(item => item.patientName.toLowerCase().includes(nameSearch));
+        
         const ageSearch = document.getElementById('ageInput').value.trim();
-        if (ageSearch) {
-            filteredData = filteredData.filter(item => parseInt(item.patientAge) === parseInt(ageSearch));
-        }
+        if (ageSearch) filteredData = filteredData.filter(item => parseInt(item.patientAge) === parseInt(ageSearch));
 
-        // 3. ระบบสลับโหมดจัดเรียงลำดับข้อมูลตามที่ผู้ใช้เลือก (Sorting)
         const sortType = document.getElementById('sortSelect').value;
         filteredData.sort((a, b) => {
-            if (sortType === 'timeNewOld') {
-                return parseTimestamp(b.timestamp) - parseTimestamp(a.timestamp); // ล่าสุดไปเก่าสุด
-            } else if (sortType === 'timeOldNew') {
-                return parseTimestamp(a.timestamp) - parseTimestamp(b.timestamp); // เก่าสุดไปล่าสุด
-            } else if (sortType === 'nameAZ') {
-                return a.patientName.localeCompare(b.patientName, 'th');         // ชื่อ: ก -> ฮ
-            } else if (sortType === 'nameZA') {
-                return b.patientName.localeCompare(a.patientName, 'th');         // ชื่อ: ฮ -> ก
-            } else if (sortType === 'ageMaxMin') {
-                return parseInt(b.patientAge) - parseInt(a.patientAge);          // อายุ: มาก -> น้อย
-            } else if (sortType === 'ageMinMax') {
-                return parseInt(a.patientAge) - parseInt(b.patientAge);          // อายุ: น้อย -> มาก
-            }
+            if (sortType === 'timeNewOld') return parseTimestamp(b.timestamp) - parseTimestamp(a.timestamp);
+            if (sortType === 'timeOldNew') return parseTimestamp(a.timestamp) - parseTimestamp(b.timestamp);
+            if (sortType === 'nameAZ') return a.patientName.localeCompare(b.patientName, 'th');
+            if (sortType === 'nameZA') return b.patientName.localeCompare(a.patientName, 'th');
+            if (sortType === 'ageMaxMin') return parseInt(b.patientAge) - parseInt(a.patientAge);
+            if (sortType === 'ageMinMax') return parseInt(a.patientAge) - parseInt(b.patientAge);
             return 0;
         });
 
-        // หากคัดกรองทับซ้อนแล้วไม่เหลือรายชื่อใครเลย
-        if (filteredData.length === 0) {
-            historyDiv.innerHTML = '<p style="text-align:center; color:#64748b; padding:20px;">❌ ไม่พบข้อมูลประวัติผู้ป่วยตามเงื่อนไขหรืออายุที่คุณเลือกค้นหา</p>';
-            return;
-        }
-
-        // 4. แสดงกราฟสถิติแนวโน้ม (ระบบจะคำนวณอัตโนมัติเมื่อผลการเสิร์ชบีบจนเหลือผู้ป่วยเพียงคนเดียว)
         let filteredDataGrouped = groupDataByPatient(filteredData);
-        if (Object.keys(filteredDataGrouped).length === 1) { 
-            showChart(Object.values(filteredDataGrouped)[0]);
-        }
+        if (Object.keys(filteredDataGrouped).length === 1) showChart(Object.values(filteredDataGrouped)[0]);
 
-        // 5. สั่งเรนเดอร์ลูปวาดการ์ดข้อมูลลงบนหน้าต่าง iPad
         filteredData.forEach(item => {
             let card = document.createElement('div');
             card.className = 'history-card';
-            let q9s = item.q9Score ? item.q9Score : '-(ไม่มี)-';
-            let q8r = item.q8Result ? item.q8Result : '-(ไม่มี)-';
-            
             card.innerHTML = `
-                <div class="history-header">
-                    <span>วันที่ประเมิน: ${item.timestamp}</span>
-                    <span>แบบประเมินหลัก: ${item.assessmentType}</span>
-                </div>
+                <div class="history-header"><span>วันที่ประเมิน: ${item.timestamp}</span><span>แบบประเมินหลัก: ${item.assessmentType}</span></div>
                 <div class="info-row"><span>ชื่อผู้ป่วย:</span> <span><b>${item.patientName}</b> (หมู่บ้าน: ${item.villageNo})</span></div>
                 <div class="info-row"><span>ข้อมูลทั่วไป:</span> <span>อายุ ${item.patientAge} ปี | เพศ ${item.patientGender}</span></div>
                 <div class="info-row"><span>ผู้ประเมิน (อสม.):</span> <span>${item.vhmName}</span></div>
                 <div class="info-row"><span>ผลประเมิน 2Q:</span> <span class="${item.q2Result.includes('เสี่ยง') ? 'danger' : ''}">${item.q2Result}</span></div>
-                <div class="info-row"><span>คะแนนคอลัมน์ 9Q:</span> <span>${q9s}</span></div>
-                <div class="info-row"><span>ผลประเมินคอลัมน์ 8Q:</span> <span>${q8r}</span></div>
+                <div class="info-row"><span>คะแนนคอลัมน์ 9Q:</span> <span>${item.q9Score || '-(ไม่มี)-'}</span></div>
+                <div class="info-row"><span>ผลประเมินคอลัมน์ 8Q:</span> <span>${item.q8Result || '-(ไม่มี)-'}</span></div>
                 <div class="info-row"><span>หมายเหตุผู้ส่ง:</span> <span>${item.comment || '-(ว่าง)-'}</span></div>
             `;
             historyDiv.appendChild(card);
         });
     }
 
-    // ฟังก์ชันแปลงข้อความ String วันที่จาก Google ให้กลายเป็นวัตถุ Date Object เพื่อใช้คำนวณบวกลบเรียงลำดับเวลา
-    function parseTimestamp(timestampStr) {
-        const parts = timestampStr.match(/(\d+)/g);
-        return new Date(parts[2], parts[1]-1, parts[0], parts[3], parts[4]); 
-    }
+    function parseTimestamp(tStr) { const parts = tStr.match(/(\d+)/g); return new Date(parts[2], parts[1]-1, parts[0], parts[3], parts[4]); }
+    function groupDataByPatient(data) { return data.reduce((g, item) => { if(!g[item.patientName]) { g[item.patientName] = []; } g[item.patientName].push(item); return g; }, {}); }
 
-    function groupDataByPatient(data) {
-        return data.reduce((groups, item) => {
-            if(!groups[item.patientName]) { groups[item.patientName] = []; }
-            groups[item.patientName].push(item);
-            return groups;
-        }, {});
-    }
-
-    // ระบบวาดกราฟแนวโน้ม
-    function showChart(patientData) {
+    function showChart(pData) {
         const chartContainer = document.getElementById('trendChartContainer');
         chartContainer.style.display = 'block';
-
-        const chartData = patientData.filter(item => item.assessmentType === '9Q' && item.q9Score)
-                                   .map(item => ({
-                                       x: parseTimestamp(item.timestamp),
-                                       y: parseInt(item.q9Score.replace(/\D/g,'')) || 0 
-                                   }))
-                                   .sort((a, b) => a.x - b.x); 
-
-        if(chartData.length === 0) {
-            chartContainer.innerHTML = '<p style="text-align:center; color:#64748b; padding:5px; font-size:13px;">⚠️ ผู้ป่วยคนนี้มีประวัติในระบบ แต่ยังไม่มีบันทึกผลคะแนนแบบทดสอบ 9Q จึงไม่สามารถวาดกราฟแนวโน้มระดับจิตใจได้</p>';
-            return;
-        }
-
+        const chartData = pData.filter(item => item.assessmentType === '9Q' && item.q9Score).map(item => ({ x: parseTimestamp(item.timestamp), y: parseInt(item.q9Score.replace(/\D/g,'')) || 0 })).sort((a, b) => a.x - b.x);
+        if(chartData.length === 0) { chartContainer.innerHTML = '<p style="text-align:center; color:#64748b; padding:5px;">⚠️ ผู้ป่วยคนนี้ยังไม่มีสถิติคะแนน 9Q</p>'; return; }
         chartContainer.innerHTML = '<canvas id="trendChart"></canvas>';
-        const ctx = document.getElementById('trendChart').getContext('2d');
+        new Chart(document.getElementById('trendChart').getContext('2d'), { type: 'line', data: { datasets: [{ label: `กราฟแนวโน้มคะแนน 9Q ของคุณ ${pData[0].patientName}`, data: chartData, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', fill: true, tension: 0.1 }] }, options: { scales: { x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'dd/MM' } } }, y: { beginAtZero: true, suggestedMax: 27 } } } });
+    }
 
-        trendChartObj = new Chart(ctx, {
-            type: 'line',
-            data: {
-                datasets: [{
-                    label: `กราฟแนวโน้มสถิติคะแนน 9Q ของคุณ ${patientData[0].patientName}`,
-                    data: chartData,
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    fill: true,
-                    tension: 0.1
-                }]
-            },
-            options: {
-                scales: {
-                    x: {
-                        type: 'time', 
-                        time: { unit: 'day', displayFormats: { day: 'dd/MM' } },
-                        title: { display: true, text: 'วันที่ตรวจประเมิน' }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        title: { display: true, text: 'คะแนนสะสม 9Q' },
-                        suggestedMax: 27 
-                    }
+    function fetchVhmData() {
+        const loading = document.getElementById('loadingText');
+        const listDiv = document.getElementById('vhmList');
+        loading.style.display = 'block';
+        listDiv.innerHTML = '';
+
+        fetch(`${GOOGLE_SCRIPT_URL}?action=getVhmList`)
+            .then(res => res.json())
+            .then(data => {
+                loading.style.display = 'none';
+                if(data.length === 0) { listDiv.innerHTML = '<p style="text-align:center; color:#64748b;">❌ ไม่พบข้อมูลรายชื่อ อสม. ในระบบ</p>'; return; }
+                
+                data.forEach(vhm => {
+                    let card = document.createElement('div');
+                    card.className = 'vhm-table-row';
+                    card.innerHTML = `
+                        <div class="vhm-row-header"><span>ชื่อ อสม: <b>${vhm.name}</b></span><span>Username: ${vhm.username}</span></div>
+                        <div class="info-row"><span>รหัสเข้าใช้งาน (Password):</span> <span>${vhm.password}</span></div>
+                        <div class="info-row"><span>รหัสลับกู้บัญชี:</span> <span>${vhm.secretKey}</span></div>
+                        <div style="text-align: right; margin-top: 10px;">
+                            <button class="btn-action edit" onclick="enableVhmEditMode('${vhm.username}', '${vhm.password}', '${vhm.name}', '${vhm.secretKey}')">✏️ แก้ไข</button>
+                            <button class="btn-action delete" onclick="deleteVhmData('${vhm.username}')">❌ ลบออก</button>
+                        </div>
+                    `;
+                    listDiv.appendChild(card);
+                });
+            });
+    }
+
+    function saveVhmData() {
+        const mode = document.getElementById('vhmFormMode').value;
+        const u = document.getElementById('vhmUsernameInput').value.trim();
+        const p = document.getElementById('vhmPasswordInput').value.trim();
+        const n = document.getElementById('vhmNameInput').value.trim();
+        const k = document.getElementById('vhmSecretKeyInput').value.trim();
+
+        if(!u || !p || !n || !k) { alert("⚠️ กรุณากรอกรายละเอียดของ อสม. ให้ครบทุกช่องครับ"); return; }
+
+        const loading = document.getElementById('loadingText');
+        loading.style.display = 'block';
+
+        fetch(`${GOOGLE_SCRIPT_URL}?action=saveVhm&mode=${mode}&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}&name=${encodeURIComponent(n)}&secretKey=${encodeURIComponent(k)}`)
+            .then(res => res.json())
+            .then(res => {
+                loading.style.display = 'none';
+                if(res.success) {
+                    alert("🎉 บันทึกปรับปรุงข้อมูล อสม. บนฐานข้อมูล Google Sheet สำเร็จ!");
+                    cancelVhmEditMode(); 
+                    fetchVhmData();      
+                } else {
+                    alert("❌ ข้อผิดพลาด: " + res.message);
                 }
-            }
-        });
+            });
+    }
+
+    function deleteVhmData(username) {
+        if(!confirm(`🚨 คุณแน่ใจใช่ไหมว่าต้องการลบ Username: "${username}" ออกจากฐานข้อมูลระบบ?`)) return;
+        
+        const loading = document.getElementById('loadingText');
+        loading.style.display = 'block';
+
+        fetch(`${GOOGLE_SCRIPT_URL}?action=deleteVhm&username=${encodeURIComponent(username)}`)
+            .then(res => res.json())
+            .then(res => {
+                loading.style.display = 'none';
+                if(res.success) {
+                    alert("🗑️ ลบรายชื่อ อสม. ออกจากหน้าต่างควบคุมเรียบร้อยแล้วครับ");
+                    fetchVhmData();
+                } else {
+                    alert("❌ ไม่สามารถลบได้: " + res.message);
+                }
+            });
+    }
+
+    function enableVhmEditMode(username, password, name, secretKey) {
+        document.getElementById('formVhmTitle').innerText = `✏️ กำลังแก้ไขข้อมูลของ อสม. (${username})`;
+        document.getElementById('vhmFormMode').value = "edit";
+        
+        document.getElementById('vhmUsernameInput').value = username;
+        document.getElementById('vhmUsernameInput').disabled = true; 
+        document.getElementById('vhmPasswordInput').value = password;
+        document.getElementById('vhmNameInput').value = name;
+        document.getElementById('vhmSecretKeyInput').value = secretKey;
+        
+        document.getElementById('btnCancelVhmEdit').style.display = 'inline-block';
+        window.scrollTo(0, 0);
+    }
+
+    function cancelVhmEditMode() {
+        document.getElementById('formVhmTitle').innerText = "➕ เพิ่ม อสม. รายใหม่เข้าระบบคลาวด์";
+        document.getElementById('vhmFormMode').value = "add";
+        
+        document.getElementById('vhmUsernameInput').value = "";
+        document.getElementById('vhmUsernameInput').disabled = false;
+        document.getElementById('vhmPasswordInput').value = "";
+        document.getElementById('vhmNameInput').value = "";
+        document.getElementById('vhmSecretKeyInput').value = "";
+        
+        document.getElementById('btnCancelVhmEdit').style.display = 'none';
     }
 </script>
 </body>
