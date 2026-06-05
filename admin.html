@@ -62,6 +62,7 @@
 
 <div class="admin-card">
 
+    <!-- ================= ส่วนที่ 1: หน้าล็อกอินยืนยันตัวตนผู้ดูแล ================= -->
     <div id="loginStep" class="step active">
         <div class="header">
             <h2>🔐 ระบบยืนยันตัวตนผู้ดูแลข้อมูล (Admin)</h2>
@@ -78,6 +79,7 @@
         <button class="btn-login" onclick="verifyAdminAuth()">🔓 เข้าสู่ระบบแดชบอร์ด</button>
     </div>
 
+    <!-- ================= ส่วนที่ 2: หน้าแดชบอร์ดควบคุมหลักเมื่อผ่านการกรอกรหัส ================= -->
     <div id="dashboardStep" class="step">
         
         <div class="tabs-bar">
@@ -87,6 +89,7 @@
 
         <div id="loadingText" class="loading" style="display:none;">กำลังดึงข้อมูลล่าสุดจาก Google Sheet...</div>
 
+        <!-- 🔹 แถบเนื้อหาที่ 1: จัดการข้อมูลผู้ป่วย -->
         <div id="patientsTab" class="tab-content active">
             
             <div id="patientListSection">
@@ -127,6 +130,7 @@
 
         </div>
 
+        <!-- 🔹 แถบเนื้อหาที่ 2: จัดการระบบ เพิ่ม/แก้ไข/ลบ รายชื่อ อสม. -->
         <div id="vhmTab" class="tab-content">
             <div class="vhm-form-box">
                 <h4 id="formVhmTitle" style="margin-top: 0; color: #3b82f6;">➕ เพิ่ม อสม. รายใหม่เข้าระบบคลาวด์</h4>
@@ -193,9 +197,7 @@
         }
     }
 
-    // ==========================================
-    // 👤 โซนระบบจัดการคนไข้ / ผู้รับตรวจ
-    // ==========================================
+    // 🔥 ปรับปรุงจุดที่ 1: ระบบดึงข้อมูลผู้ป่วยแบบดักจับ Error
     function fetchPatientData() {
         const loading = document.getElementById('loadingText');
         loading.style.display = 'block';
@@ -204,11 +206,23 @@
         document.getElementById('patientDetailSection').style.display = 'none';
 
         fetch(GOOGLE_SCRIPT_URL)
-            .then(res => res.json())
-            .then(data => {
-                allData = data;
+            .then(res => {
+                if (!res.ok) throw new Error("HTTP Status " + res.status);
+                return res.text(); // อ่านเป็นข้อความดิบ
+            })
+            .then(text => {
+                try {
+                    allData = JSON.parse(text); // ค่อยแปลงเป็น object
+                    loading.style.display = 'none';
+                    processData();
+                } catch(e) {
+                    loading.style.display = 'none';
+                    alert("❌ Google Apps Script คืนข้อมูลผู้ป่วยกลับมาผิดพลาด!\n(แนวทางแก้: ตรวจสอบลิงก์ Google Script ว่าวางถูกตัวไหม หรือกด Deploy เวอร์ชันใหม่แล้วหรือยัง)\n\nข้อความสั้น: " + text.substring(0, 150));
+                }
+            })
+            .catch(err => {
                 loading.style.display = 'none';
-                processData();
+                alert("❌ เกิดข้อผิดพลาดเครือข่าย/CORS (ดึงข้อมูลผู้ป่วยไม่ได้): " + err.message);
             });
     }
 
@@ -241,15 +255,12 @@
         filteredData.forEach(item => {
             if (!seenNames.has(item.patientName)) {
                 seenNames.add(item.patientName);
-                uniquePatients.push({
-                    name: item.patientName,
-                    age: item.patientAge
-                });
+                uniquePatients.push({ name: item.patientName, age: item.patientAge });
             }
         });
 
         if (uniquePatients.length === 0) {
-            listViewDiv.innerHTML = '<p style="text-align:center; color:#64748b; padding:20px;">❌ ไม่พบรายชื่อผู้ป่วยตามรหัสเงื่อนไขการค้นหา</p>';
+            listViewDiv.innerHTML = '<p style="text-align:center; color:#64748b; padding:20px;">❌ ไม่พบรายชื่อผู้ป่วยตามเงื่อนไขการค้นหา</p>';
             return;
         }
 
@@ -310,9 +321,7 @@
 
     function parseTimestamp(tStr) { const parts = tStr.match(/(\d+)/g); return new Date(parts[2], parts[1]-1, parts[0], parts[3], parts[4]); }
 
-    // ==========================================
-    // 👥 โซนระบบจัดการข้อมูลรายชื่อ อสม.
-    // ==========================================
+    // 🔥 ปรับปรุงจุดที่ 2: ระบบดึงข้อมูลรายชื่อ อสม. แบบดักจับ Error
     function fetchVhmData() {
         const loading = document.getElementById('loadingText');
         const listDiv = document.getElementById('vhmList');
@@ -320,25 +329,38 @@
         listDiv.innerHTML = '';
 
         fetch(`${GOOGLE_SCRIPT_URL}?action=getVhmList`)
-            .then(res => res.json())
-            .then(data => {
+            .then(res => {
+                if (!res.ok) throw new Error("HTTP Status " + res.status);
+                return res.text(); // อ่านเป็นข้อความดิบ
+            })
+            .then(text => {
+                try {
+                    const data = JSON.parse(text);
+                    loading.style.display = 'none';
+                    if(data.length === 0) { listDiv.innerHTML = '<p style="text-align:center; color:#64748b;">❌ ไม่พบข้อมูลรายชื่อ อสม. ในระบบ</p>'; return; }
+                    
+                    data.forEach(vhm => {
+                        let card = document.createElement('div');
+                        card.className = 'vhm-table-row';
+                        card.innerHTML = `
+                            <div class="vhm-row-header"><span>ชื่อ อสม: <b>${vhm.name}</b></span><span>Username: ${vhm.username}</span></div>
+                            <div class="info-row"><span>รหัสเข้าใช้งาน (Password):</span> <span>${vhm.password}</span></div>
+                            <div class="info-row"><span>รหัสลับกู้บัญชี:</span> <span>${vhm.secretKey}</span></div>
+                            <div style="text-align: right; margin-top: 10px;">
+                                <button class="btn-action edit" onclick="enableVhmEditMode('${vhm.username}', '${vhm.password}', '${vhm.name}', '${vhm.secretKey}')">✏️ แก้ไข</button>
+                                <button class="btn-action delete" onclick="deleteVhmData('${vhm.username}')">❌ ลบออก</button>
+                            </div>
+                        `;
+                        listDiv.appendChild(card);
+                    });
+                } catch(e) {
+                    loading.style.display = 'none';
+                    alert("❌ Google Apps Script คืนข้อมูล อสม. กลับมาผิดพลาด!\n(แนวทางแก้: ตรวจสอบว่าใน Google Sheet สร้างแผ่นงานชื่อว่า 'อสม' ถูกต้องเป๊ะๆ หรือยังครับ)\n\nข้อความสั้น: " + text.substring(0, 150));
+                }
+            })
+            .catch(err => {
                 loading.style.display = 'none';
-                if(data.length === 0) { listDiv.innerHTML = '<p style="text-align:center; color:#64748b;">❌ ไม่พบข้อมูลรายชื่อ อสม. ในระบบ</p>'; return; }
-                
-                data.forEach(vhm => {
-                    let card = document.createElement('div');
-                    card.className = 'vhm-table-row';
-                    card.innerHTML = `
-                        <div class="vhm-row-header"><span>ชื่อ อสม: <b>${vhm.name}</b></span><span>Username: ${vhm.username}</span></div>
-                        <div class="info-row"><span>รหัสเข้าใช้งาน (Password):</span> <span>${vhm.password}</span></div>
-                        <div class="info-row"><span>รหัสลับกู้บัญชี:</span> <span>${vhm.secretKey}</span></div>
-                        <div style="text-align: right; margin-top: 10px;">
-                            <button class="btn-action edit" onclick="enableVhmEditMode('${vhm.username}', '${vhm.password}', '${vhm.name}', '${vhm.secretKey}')">✏️ แก้ไข</button>
-                            <button class="btn-action delete" onclick="deleteVhmData('${vhm.username}')">❌ ลบออก</button>
-                        </div>
-                    `;
-                    listDiv.appendChild(card);
-                });
+                alert("❌ เกิดข้อผิดพลาดเครือข่าย/CORS (ดึงข้อมูล อสม. ไม่ได้): " + err.message);
             });
     }
 
