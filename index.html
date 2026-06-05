@@ -60,7 +60,7 @@
         </div>
         <div class="form-group">
             <label>ชื่อ-นามสกุล ผู้รับตรวจ *</label>
-            <input type="text" id="patientName" placeholder="ระบุชื่อและนามสกุล">
+            <input type="text" id="patientName" placeholder="ตัวอย่าง: นางจิตดี ดีจิต">
         </div>
         <div class="form-group">
             <label>อายุ (ปี) *</label>
@@ -68,12 +68,13 @@
         </div>
         <div class="form-group">
             <label>เพศ *</label>
-            <div class="radio-group">
-                <input type="radio" id="g_male" name="gender" value="ชาย"><label for="g_male" class="radio-label">ชาย</label>
-                <input type="radio" id="g_female" name="gender" value="หญิง"><label for="g_female" class="radio-label">หญิง</label>
-                <input type="radio" id="g_other" name="gender" value="อื่นๆ"><label for="g_other" class="radio-label">อื่นๆ</label>
-            </div>
-        </div>
+            <select id="patientGender">
+                <option value="">-- เลือกเพศ --</option>
+                <option value="ชาย">ชาย</option>
+                <option value="หญิง">หญิง</option>
+                <option value="อื่นๆ">อื่นๆ</option>
+            </select>
+    </div>
         <div class="form-group">
             <label>หมู่บ้าน *</label>
             <select id="villageNo">
@@ -201,7 +202,7 @@
     // หน้า 1 -> 2: บังคับกรอกครบ
     function goToStep2() {
         if(!document.getElementById('patientName').value.trim() || !document.getElementById('patientAge').value || 
-           !document.querySelector('input[name="gender"]:checked') || !document.getElementById('villageNo').value) {
+           !document.getElementById('patientGender').value || !document.getElementById('villageNo').value) {
             alert("⚠️ กรุณากรอกข้อมูลทั่วไปให้ครบทุกข้อ");
             return;
         }
@@ -226,7 +227,7 @@
         
         document.getElementById('smName').innerText = document.getElementById('patientName').value;
         document.getElementById('smAge').innerText = document.getElementById('patientAge').value + " ปี";
-        document.getElementById('smGender').innerText = document.querySelector('input[name="gender"]:checked').value;
+        document.getElementById('smGender').innerText = document.getElementById('patientGender').value;
         document.getElementById('smVillage').innerText = document.getElementById('villageNo').value;
         const type = document.getElementById('assessmentTypeSelect').value;
         document.getElementById('smType').innerText = "แบบประเมิน " + type;
@@ -255,7 +256,7 @@
         const sendData = new URLSearchParams({
             vhmName: currentVhmName, patientName: document.getElementById('patientName').value,
             patientAge: document.getElementById('patientAge').value,
-            patientGender: document.querySelector('input[name="gender"]:checked').value,
+            patientGender: document.getElementById('patientGender').value,
             villageNo: document.getElementById('villageNo').value, assessmentType: type,
             q2Result: document.getElementById('smQ2Result').innerText,
             q9Score: (type === '9Q') ? document.getElementById('smQ9Score').innerText : '',
