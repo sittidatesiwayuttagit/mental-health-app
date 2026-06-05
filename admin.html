@@ -57,6 +57,9 @@
         .patient-row-card:hover { background-color: #f0f7ff; border-color: #3b82f6; }
         .patient-row-name { font-size: 16px; font-weight: bold; color: #1e293b; }
         .patient-row-age { color: #64748b; font-size: 14px; margin-left: 10px; background: #f1f5f9; padding: 4px 10px; border-radius: 20px; }
+        
+        /* สไตล์แถบแจ้งผู้ใช้งานปัจจุบัน */
+        .admin-info-header { text-align: right; font-size: 14px; color: #475569; margin-bottom: 15px; font-weight: bold; background: #f8fafc; padding: 10px 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
     </style>
 </head>
 <body>
@@ -106,15 +109,16 @@
 
     <div id="dashboardStep" class="step">
         
+        <div class="admin-info-header">🖥️ ผู้ใช้งานปัจจุบัน: <span id="adminDisplayName" style="color: #3b82f6;">-</span></div>
+
         <div class="tabs-bar">
             <button id="tabPatientsBtn" class="tab-btn active" onclick="switchTab('patientsTab')">📋 ข้อมูลผู้ป่วย</button>
             <button id="tabVhmBtn" class="tab-btn" onclick="switchTab('vhmTab')">👥 ข้อมูล อสม.</button>
-        </div>
+            <button id="tabAdminsBtn" class="tab-btn" onclick="switchTab('adminsTab')">👥 ข้อมูลผู้ดูแล</button> </div>
 
         <div id="loadingText" class="loading" style="display:none;">กำลังดึงข้อมูลล่าสุดจาก Google Sheet...</div>
 
         <div id="patientsTab" class="tab-content active">
-            
             <div id="patientListSection">
                 <div class="search-container">
                     <div class="inputs-row">
@@ -135,18 +139,15 @@
                         <button class="btn-refresh" onclick="fetchPatientData()">🔄 รีเฟรช</button>
                     </div>
                 </div>
-                
                 <div id="patientListView"></div>
             </div>
 
             <div id="patientDetailSection" style="display: none;">
                 <button class="btn-refresh" onclick="backToPatientList()" style="margin-bottom: 20px; background-color: #475569; display: inline-flex; align-items: center; gap: 5px;">⬅️ กลับไปหน้าประวัติรายชื่อ</button>
-                
                 <div id="patientDetailHeader" style="background: #eff6ff; padding: 20px; border-radius: 14px; margin-bottom: 15px; border: 1px solid #bfdbfe;">
                     <h3 id="detPatientName" style="margin: 0 0 8px 0; color: #1d4ed8;">👤 ชื่อผู้ป่วย: -</h3>
                     <p id="detPatientMeta" style="margin: 0; color: #4b5563; font-size: 15px;">ข้อมูลพื้นฐาน: อายุคำนวณ - | เพศ - | ที่อยู่: -</p>
                 </div>
-
                 <div class="search-container" style="background-color: #ffffff; border: 2px solid #3b82f6; margin-bottom: 15px;">
                     <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">📆 จัดการวันเดือนปีเกิดของผู้ป่วย (พ.ศ.)</h4>
                     <div class="inputs-row" style="margin-top: 10px;">
@@ -164,7 +165,6 @@
                         <button class="btn-search" onclick="savePatientBirthdate()">💾 บันทึกวันเดือนปีเกิด</button>
                     </div>
                 </div>
-
                 <div class="search-container" style="background-color: #ffffff; border: 1px solid #cbd5e1; margin-bottom: 25px;">
                     <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">🔍 ตัวกรอง: เลือกดูประวัติตามวันที่ตรวจ</h4>
                     <div class="inputs-row" style="margin-top: 10px;">
@@ -173,18 +173,15 @@
                         <button class="btn-refresh" onclick="clearDetailDateFilter()" style="background-color: #64748b;">🔄 แสดงทั้งหมด</button>
                     </div>
                 </div>
-
                 <h3 style="color: #334155; border-left: 4px solid #3b82f6; padding-left: 10px; margin-bottom: 15px;">📋 ประวัติการบันทึกประเมินสุขภาพจิตทั้งหมด</h3>
                 <div id="patientHistoryCards"></div>
             </div>
-
         </div>
 
         <div id="vhmTab" class="tab-content">
             <div class="vhm-form-box">
                 <h4 id="formVhmTitle" style="margin-top: 0; color: #3b82f6;">➕ เพิ่ม อสม. รายใหม่เข้าระบบคลาวด์</h4>
                 <input type="hidden" id="vhmFormMode" value="add"> 
-                
                 <div class="inputs-row">
                     <input type="text" id="vhmUsernameInput" placeholder="Username (ภาษาอังกฤษ)">
                     <input type="text" id="vhmPasswordInput" placeholder="Password เข้าใช้งาน">
@@ -198,8 +195,27 @@
                     <button class="btn-search" onclick="saveVhmData()">💾 บันทึกข้อมูล อสม.</button>
                 </div>
             </div>
-            
             <div id="vhmList" class="vhm-list-container"></div>
+        </div>
+
+        <div id="adminsTab" class="tab-content">
+            <div class="vhm-form-box" style="border: 2px solid #10b981;">
+                <h4 id="formAdminTitle" style="margin-top: 0; color: #10b981;">➕ เพิ่ม ผู้ดูแลระบบ (Admin) รายใหม่เข้าระบบคลาวด์</h4>
+                <input type="hidden" id="adminFormMode" value="add"> 
+                <div class="inputs-row">
+                    <input type="text" id="adminUsernameInput" placeholder="Username แอดมินใหม่">
+                    <input type="text" id="adminPasswordInput" placeholder="Password เข้าใช้งาน">
+                </div>
+                <div class="inputs-row">
+                    <input type="text" id="adminNameInput" placeholder="ชื่อ-นามสกุล/ตำแหน่ง ผู้ดูแล">
+                    <input type="text" id="adminSecretKeyInput" placeholder="รหัสลับส่วนตัว (สำหรับใช้กู้คืนรหัสผ่าน)">
+                </div>
+                <div style="text-align: right;">
+                    <button id="btnCancelAdminEdit" class="btn-refresh" style="display:none; margin-right:5px;" onclick="cancelAdminEditMode()">ยกเลิก</button>
+                    <button class="btn-search" style="background-color: #10b981;" onclick="saveAdminData()">💾 บันทึกข้อมูลผู้ดูแล</button>
+                </div>
+            </div>
+            <div id="adminList" class="vhm-list-container"></div>
         </div>
 
     </div>
@@ -207,7 +223,7 @@
 </div>
 
 <script>
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwCHEcYZ5s7Ed527DLRxA1G2M61LriCZrngz3g6SA9RafkJRRtblSOZ98f_sIhqQcdlsw/exec';
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxSGSPTC_S4GA9gygpo8dhAcvIostndG6og5jiRrvV6Bm1m1dXxpP1TR6-eE3I5cykuIw/exec';
     
     let allData = []; 
     let currentSelectedPatientName = ""; 
@@ -258,10 +274,13 @@
         } else if (tabId === 'vhmTab') {
             document.getElementById('tabVhmBtn').classList.add('active');
             fetchVhmData();
+        } else if (tabId === 'adminsTab') {
+            document.getElementById('tabAdminsBtn').classList.add('active');
+            fetchAdminData(); // 👈 สลับมาเรียกโหลดรายชื่อแอดมิน
         }
     }
 
-    // 🔄 ปรับปรุง: ยิงตรวจสอบสิทธิ์ล็อกอินแอดมินผ่านสเปรดชีตออนไลน์ (แท็บ 'แอดมิน')
+    // ยิงตรวจสอบสิทธิ์ล็อกอินแอดมินผ่านคลาวด์
     function verifyAdminAuth() {
         const u = document.getElementById('adminUsername').value.trim();
         const p = document.getElementById('adminPassword').value;
@@ -275,6 +294,8 @@
             .then(res => {
                 btn.innerText = "🔓 เข้าสู่ระบบแดชบอร์ด";
                 if (res.success) {
+                    // 🔄 บันทึกชื่อแอดมินลงกล่องหัวข้อแดชบอร์ดด่วน
+                    document.getElementById('adminDisplayName').innerText = res.name;
                     changeStep('dashboardStep'); 
                     fetchPatientData(); 
                 } else {
@@ -287,7 +308,6 @@
             });
     }
 
-    // 🔄 ฟังก์ชันพิเศษใหม่: ยึดหลักยืนยันตัวตนแอดมินผ่านรหัสลับบนคลาวด์เพื่ออัปเดตรหัสผ่าน
     function handleAdminResetPassword() {
         const u = document.getElementById('resetAdminUsername').value.trim();
         const key = document.getElementById('resetAdminSecretKey').value.trim();
@@ -593,6 +613,105 @@
         document.getElementById('vhmUsernameInput').value = ""; document.getElementById('vhmUsernameInput').disabled = false;
         document.getElementById('vhmPasswordInput').value = ""; document.getElementById('vhmNameInput').value = ""; document.getElementById('vhmSecretKeyInput').value = "";
         document.getElementById('btnCancelVhmEdit').style.display = 'none';
+    }
+
+
+    // ==========================================
+    // 👥 โซนระบบจัดการข้อมูลรายชื่อผู้ดูแลระบบ (Admin) (เพิ่มใหม่ถอดด้าม)
+    // ==========================================
+    
+    // ดึงรายชื่อแอดมินจากคลาวด์แท็บ "แอดมิน"
+    function fetchAdminData() {
+        const loading = document.getElementById('loadingText');
+        const listDiv = document.getElementById('adminList');
+        loading.style.display = 'block'; listDiv.innerHTML = '';
+
+        // ฝั่งระบบใช้ฐานข้อมูลกุญแจเดียวกับ Code.gs แผ่นงานแอดมิน
+        fetch(`${GOOGLE_SCRIPT_URL}?action=getVhmList`) // ส่งผ่านระบบค้นหาเดิม แต่ยิงไปรับแยก
+        fetch(`${GOOGLE_SCRIPT_URL}?action=getAdminList`) // เรียกแอคชันจัดการแอดมินตรงตัว
+            .then(res => { if (!res.ok) throw new Error("HTTP Status " + res.status); return res.text(); })
+            .then(text => {
+                try {
+                    const data = JSON.parse(text); loading.style.display = 'none';
+                    if(data.length === 0) { listDiv.innerHTML = '<p style="text-align:center; color:#64748b;">❌ ไม่พบข้อมูลรายชื่อผู้ดูแลระบบ</p>'; return; }
+                    data.forEach(adm => {
+                        let card = document.createElement('div'); card.className = 'vhm-table-row';
+                        card.style.borderLeft = "4px solid #10b981"; // ตัดเส้นขอบเขียวให้แยกหมวดง่าย
+                        card.innerHTML = `
+                            <div class="vhm-row-header"><span style="color:#10b981;">ชื่อผู้ดูแล: <b>${adm.name}</b></span><span>Username: ${adm.username}</span></div>
+                            <div class="info-row"><span>รหัสเข้าใช้งาน (Password):</span> <span>${adm.password}</span></div>
+                            <div class="info-row"><span>รหัสลับกู้บัญชีแอดมิน:</span> <span>${adm.secretKey}</span></div>
+                            <div style="text-align: right; margin-top: 10px;">
+                                <button class="btn-action edit" style="background-color:#10b981;" onclick="enableAdminEditMode('${adm.username}', '${adm.password}', '${adm.name}', '${adm.secretKey}')">✏️ แก้ไข</button>
+                                <button class="btn-action delete" onclick="deleteAdminData('${adm.username}')">❌ ลบออก</button>
+                            </div>
+                        `;
+                        listDiv.appendChild(card);
+                    });
+                } catch(e) { loading.style.display = 'none'; alert("❌ คืนข้อมูลผู้ดูแลผิดพลาด โครงสร้างตอบกลับตารางไม่ตรง"); }
+            })
+            .catch(err => { loading.style.display = 'none'; alert("❌ ดึงข้อมูลผู้ดูแลระบบไม่ได้: " + err.message); });
+    }
+
+    // สั่งบันทึกข้อมูลเพิ่ม/แก้ไขผู้ดูแลระบบขึ้นชีตคลาวด์
+    function saveAdminData() {
+        const mode = document.getElementById('adminFormMode').value;
+        const u = document.getElementById('adminUsernameInput').value.trim();
+        const p = document.getElementById('adminPasswordInput').value.trim();
+        const n = document.getElementById('adminNameInput').value.trim();
+        const k = document.getElementById('adminSecretKeyInput').value.trim();
+
+        if(!u || !p || !n || !k) { alert("⚠️ กรุณากรอกรายละเอียดของผู้ดูแลระบบให้ครบถ้วนทุกช่องครับ"); return; }
+
+        const loading = document.getElementById('loadingText'); loading.style.display = 'block';
+
+        // เพิ่มคำสั่งแอคชัน saveAdmin ลงระบบหลังบ้าน Google Apps Script โยงตรงแท็บแอดมิน
+        fetch(`${GOOGLE_SCRIPT_URL}?action=saveAdmin&mode=${mode}&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}&name=${encodeURIComponent(n)}&secretKey=${encodeURIComponent(k)}`)
+            .then(res => res.json())
+            .then(res => {
+                loading.style.display = 'none';
+                if(res.success) {
+                    alert("🎉 บันทึกการอัปเดตบัญชีสิทธิ์ผู้ดูแลระบบลง Google Sheet สำเร็จ!");
+                    cancelAdminEditMode();
+                    fetchAdminData();
+                } else {
+                    alert("❌ ข้อผิดพลาด: " + res.message);
+                }
+            });
+    }
+
+    // สั่งลบแอดมินรายบุคคลออกจากคลาวด์
+    function deleteAdminData(username) {
+        if(!confirm(`🚨 แจ้งเตือนความปลอดภัยสูงสุด: คุณต้องการลบสิทธิ์เข้าถึงของสิทธิ์แอดมิน Username: "${username}" ใช่หรือไม่? บัญชีนี้จะไม่สามารถเปิดแดชบอร์ดนี้ได้อีกต่อไป`)) return;
+        const loading = document.getElementById('loadingText'); loading.style.display = 'block';
+
+        fetch(`${GOOGLE_SCRIPT_URL}?action=deleteAdmin&username=${encodeURIComponent(username)}`)
+            .then(res => res.json())
+            .then(res => {
+                loading.style.display = 'none';
+                if(res.success) {
+                    alert("🗑️ ทำการเพิกถอนสิทธิ์และลบแอดมินรายดังกล่าวเรียบร้อยครับ");
+                    fetchAdminData();
+                } else {
+                    alert("❌ ไม่สามารถดำเนินการลบได้: " + res.message);
+                }
+            });
+    }
+
+    function enableAdminEditMode(username, password, name, secretKey) {
+        document.getElementById('formAdminTitle').innerText = `✏️ กำลังแก้ไขข้อมูลของผู้ดูแลระบบ (${username})`;
+        document.getElementById('adminFormMode').value = "edit";
+        document.getElementById('adminUsernameInput').value = username; document.getElementById('adminUsernameInput').disabled = true; 
+        document.getElementById('adminPasswordInput').value = password; document.getElementById('adminNameInput').value = name; document.getElementById('adminSecretKeyInput').value = secretKey;
+        document.getElementById('btnCancelAdminEdit').style.display = 'inline-block'; window.scrollTo(0, 0);
+    }
+
+    function cancelAdminEditMode() {
+        document.getElementById('formAdminTitle').innerText = "➕ เพิ่ม ผู้ดูแลระบบ (Admin) รายใหม่เข้าระบบคลาวด์";
+        document.getElementById('adminFormMode').value = "add";
+        document.getElementById('adminUsernameInput').value = ""; document.getElementById('adminUsernameInput').disabled = false;
+        document.getElementById('adminPasswordInput').value = ""; document.getElementById('adminNameInput').value = ""; document.getElementById('adminSecretKeyInput').value = "";
+        document.getElementById('btnCancelAdminEdit').style.display = 'none';
     }
 </script>
 </body>
