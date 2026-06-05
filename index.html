@@ -3,233 +3,269 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบคัดกรองสุขภาพจิตชุมชน</title>
-    
-    <!-- ดึงระบบ LINE LIFF SDK -->
+    <title>ระบบคัดกรองสุขภาพจิต - รพ.สต.บ้านทองหลาง</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-
-    <!-- ตกแต่งหน้าตาแอปให้สวยงาม เหมาะกับ iPad (จิ้มง่าย ปุ่มใหญ่) -->
     <style>
-        body {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            background-color: #f4f7f6;
-            color: #333;
-            margin: 0;
-            padding: 20px;
+        body { font-family: Arial, sans-serif; background-color: #f1f5f9; color: #334155; margin: 0; padding: 15px; }
+        .container { max-width: 550px; margin: 20px auto; background: #ffffff; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); position: relative; }
+        .step { display: none; }
+        .step.active { display: block; }
+        .header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; }
+        .vhm-info-header { display: none; text-align: right; font-size: 14px; color: #64748b; margin-bottom: 15px; font-weight: bold; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: bold; margin-bottom: 8px; color: #1e293b; }
+        input[type="text"], input[type="number"], input[type="password"], select, textarea { 
+            width: 100%; padding: 12px; border: 2px solid #cbd5e1; border-radius: 10px; box-sizing: border-box; font-size: 16px; 
         }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: #ffffff;
-            padding: 30px;
-            border-radius: 16px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        }
-        h2 {
-            color: #2c3e50;
-            text-align: center;
-            margin-bottom: 5px;
-        }
-        .subtitle {
-            text-align: center;
-            color: #7f8c8d;
-            margin-bottom: 30px;
-            font-size: 14px;
-        }
-        .form-group {
-            margin-bottom: 25px;
-        }
-        label {
-            display: block;
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #34495e;
-        }
-        input[type="text"], textarea {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #bdc3c7;
-            border-radius: 8px;
-            box-sizing: border-box;
-            font-size: 16px;
-        }
-        input[type="text"]:focus, textarea:focus {
-            border-color: #3498db;
-            outline: none;
-        }
-        .radio-group {
-            display: flex;
-            gap: 15px;
-            margin-top: 5px;
-        }
-        .radio-label {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 15px;
-            background: #f8f9fa;
-            border: 2px solid #ecdcdc;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: normal;
-            transition: all 0.2s;
-        }
-        .radio-group input[type="radio"] {
-            display: none; /* ซ่อนปุ่มกลมๆ เล็กๆ */
-        }
-        /* เมื่อกดเลือก ปุ่มจะเปลี่ยนเป็นสีฟ้าเด่นชัด */
-        .radio-group input[type="radio"]:checked + .radio-label {
-            background: #e3f2fd;
-            border-color: #2196f3;
-            color: #0d47a1;
-            font-weight: bold;
-        }
-        .btn-submit {
-            width: 100%;
-            background-color: #2ecc71;
-            color: white;
-            padding: 15px;
-            border: none;
-            border-radius: 8px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 10px;
-            transition: background 0.2s;
-        }
-        .btn-submit:hover {
-            background-color: #27ae60;
-        }
+        .radio-group { display: flex; gap: 10px; margin-top: 5px; }
+        .radio-label { flex: 1; text-align: center; padding: 12px; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 10px; cursor: pointer; }
+        .radio-group input[type="radio"] { display: none; }
+        .radio-group input[type="radio"]:checked + .radio-label { background: #eff6ff; border-color: #3b82f6; color: #1d4ed8; font-weight: bold; }
+        .indication { font-size: 13px; color: #64748b; margin-top: 5px; font-style: italic; }
+        .sub-questions { background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-top: 15px; }
+        .btn-nav { width: 100%; padding: 15px; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-next { background-color: #3b82f6; color: white; }
+        .btn-submit { background-color: #10b981; color: white; }
+        .btn-back { background-color: #94a3b8; color: white; margin-top: 5px; }
+        .summary-box { background: #f8fafc; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
+        .summary-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #e2e8f0; }
+        .summary-item span:first-child { font-weight: bold; color: #64748b; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>📋 แบบประเมินสุขภาพจิตชุมชน (2Q)</h2>
-    <div class="subtitle">หน่วยบริการสาธารณสุขเคลื่อนที่</div>
-
-    <form id="assessmentForm">
-        <!-- 1. กรอกรหัส HN -->
+    <div id="vhmInfoHeader" class="vhm-info-header">ผู้ประเมิน: <span id="vhmDisplayName">-</span></div>
+    
+    <div id="step0" class="step active">
+        <div class="header">
+            <h2>🔐 ระบบยืนยันตัวตน อสม.</h2>
+            <p>กรุณากรอก Username และ Password ของคุณ</p>
+        </div>
         <div class="form-group">
-            <label for="hnCode">รหัสผู้ป่วย / HN *</label>
-            <input type="text" id="hnCode" placeholder="กรอกรหัสอ้างอิง (เช่น HN69001)" required>
+            <label for="vhmUsername">Username</label>
+            <input type="text" id="vhmUsername" placeholder="ระบุ Username ของคุณ">
+        </div>
+        <div class="form-group">
+            <label for="vhmPassword">Password</label>
+            <input type="password" id="vhmPassword" placeholder="ระบุ Password ของคุณ">
+        </div>
+        <button class="btn-nav btn-next" onclick="verifyAuth()">🔓 เข้าสู่ระบบ</button>
+    </div>
+
+    <div id="step1" class="step">
+        <div class="header">
+            <h2>📋 ข้อมูลทั่วไปผู้รับการประเมิน</h2>
+            <p>กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง</p>
+        </div>
+        <div class="form-group">
+            <label>ชื่อ-นามสกุล ผู้รับตรวจ *</label>
+            <input type="text" id="patientName" placeholder="ระบุชื่อและนามสกุล">
+        </div>
+        <div class="form-group">
+            <label>อายุ (ปี) *</label>
+            <input type="number" id="patientAge" placeholder="ระบุอายุเป็นตัวเลข" min="1" max="120">
+        </div>
+        <div class="form-group">
+            <label>เพศ *</label>
+            <div class="radio-group">
+                <input type="radio" id="g_male" name="gender" value="ชาย"><label for="g_male" class="radio-label">ชาย</label>
+                <input type="radio" id="g_female" name="gender" value="หญิง"><label for="g_female" class="radio-label">หญิง</label>
+                <input type="radio" id="g_other" name="gender" value="อื่นๆ"><label for="g_other" class="radio-label">อื่นๆ</label>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>หมู่บ้าน *</label>
+            <select id="villageNo">
+                <option value="">-- เลือกหมู่ที่ --</option>
+                <option value="หมู่ 1">หมู่ 1</option><option value="หมู่ 2">หมู่ 2</option><option value="หมู่ 5">หมู่ 5</option><option value="หมู่ 8">หมู่ 8</option>
+            </select>
+        </div>
+        <button class="btn-nav btn-next" onclick="goToStep2()">ถัดไป ➡️</button>
+    </div>
+
+    <div id="step2" class="step">
+        <div class="header">
+            <h2>🧠 เลือกแบบประเมินสุขภาพจิต</h2>
+            <p>เลือกแบบประเมินหลักเพื่อเริ่มการตอบข้อซักถาม</p>
         </div>
 
-        <!-- 2. คำถามข้อที่ 1 -->
-        <div class="form-group">
-            <label>1. ใน 2 สัปดาห์ที่ผ่านมา รวมทั้งวันนี้ ท่านมีอาการหดหู่ เศร้า หรือท้อแท้สิ้นหวังหรือไม่?</label>
-            <div class="radio-group">
-                <input type="radio" id="q1_no" name="q1" value="ไม่มี" required>
-                <label for="q1_no" class="radio-label">ไม่มี</label>
+        <select id="assessmentTypeSelect" onchange="switchAssessment()">
+            <option value="2Q">แบบคัดกรองโรคซึมเศร้า 2Q</option>
+            <option value="9Q">แบบประเมินโรคซึมเศร้า 9Q</option>
+            <option value="8Q">แบบประเมินความเสี่ยงการฆ่าตัวตาย 8Q</option>
+        </select>
+        <div id="indicationText" class="indication"></div>
 
-                <input type="radio" id="q1_yes" name="q1" value="มี">
-                <label for="q1_yes" class="radio-label">มี</label>
+        <div class="sub-questions">
+            <h4>📋 ส่วนที่ 1: ข้อคำถาม 2Q (บังคับทำ)</h4>
+            <div class="form-group">
+                <label>1. ใน 2 สัปดาห์ที่ผ่านมา รวมทั้งวันนี้ ท่านมีอาการหดหู่ เศร้า หรือท้อแท้สิ้นหวังหรือไม่?</label>
+                <div class="radio-group">
+                    <input type="radio" id="q2q1_no" name="q2q1" value="ไม่มี"><label for="q2q1_no" class="radio-label">ไม่มี</label>
+                    <input type="radio" id="q2q1_yes" name="q2q1" value="มี"><label for="q2q1_yes" class="radio-label">มี</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>2. ใน 2 สัปดาห์ที่ผ่านมา รวมทั้งวันนี้ ท่านมีอาการเบื่อ ทำอะไรก็ไม่เพลิดเพลินหรือไม่?</label>
+                <div class="radio-group">
+                    <input type="radio" id="q2q2_no" name="q2q2" value="ไม่มี"><label for="q2q2_no" class="radio-label">ไม่มี</label>
+                    <input type="radio" id="q2q2_yes" name="q2q2" value="มี"><label for="q2q2_yes" class="radio-label">มี</label>
+                </div>
             </div>
         </div>
 
-        <!-- 3. คำถามข้อที่ 2 -->
-        <div class="form-group">
-            <label>2. ใน 2 สัปดาห์ที่ผ่านมา รวมทั้งวันนี้ ท่านมีอาการเบื่อ ทำอะไรก็ไม่เพลิดเพลินหรือไม่?</label>
-            <div class="radio-group">
-                <input type="radio" id="q2_no" name="q2" value="ไม่มี" required>
-                <label for="q2_no" class="radio-label">ไม่มี</label>
+        <div id="panel9Q" class="sub-questions" style="display:none;">
+            <h4>📋 ส่วนที่ 2: ข้อคำถามประเมิน 9Q (จำลอง)</h4>
+            <p style="font-size:12px; color:#64748b;">(คะแนน: 0=ไม่มี, 1=บางวัน, 2=บ่อย, 3=ทุกวัน)</p>
+            <div class="form-group"><label>1. เบื่อ ไม่สนใจอยากทำอะไร?</label><select id="q9q1"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
+            <div class="form-group"><label>2. ซึมเศร้า ท้อแท้?</label><select id="q9q2"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
+        </div>
 
-                <input type="radio" id="q2_yes" name="q2" value="มี">
-                <label for="q2_yes" class="radio-label">มี</label>
+        <div id="panel8Q" class="sub-questions" style="display:none;">
+            <h4>📋 ส่วนที่ 2: ข้อคำถามประเมิน 8Q (จำลอง)</h4>
+            <div class="form-group">
+                <label>1. คิดอยากตาย?</label>
+                <div class="radio-group">
+                    <input type="radio" id="q8q1_no" name="q8q1" value="ไม่มี"><label for="q8q1_no" class="radio-label">ไม่มี</label>
+                    <input type="radio" id="q8q1_yes" name="q8q1" value="มี"><label for="q8q1_yes" class="radio-label">มี</label>
+                </div>
             </div>
         </div>
 
-        <!-- 4. บันทึกเพิ่มเติม -->
-        <div class="form-group">
-            <label for="note">บันทึกเพิ่มเติม / อาการสำคัญ</label>
-            <textarea id="note" rows="3" placeholder="ระบุข้อมูลเพิ่มเติม (ถ้ามี)"></textarea>
+        <div class="form-group" style="margin-top:20px;">
+            <label for="comment">หมายเหตุ (ถ้ามี)</label>
+            <textarea id="comment" rows="2" placeholder="กรอกข้อมูลเพิ่มเติม..."></textarea>
         </div>
 
-        <!-- ปุ่มกดส่งข้อมูล -->
-        <button type="submit" class="btn-submit">💾 บันทึกและส่งรายงานให้หัวหน้า</button>
-    </form>
+        <button class="btn-nav btn-next" onclick="goToStep3()">ถัดไป ➡️</button>
+        <button class="btn-nav btn-back" onclick="changeStep(1)">⬅️ ย้อนกลับ</button>
+    </div>
+
+    <div id="step3" class="step">
+        <div class="header"><h2>🔍 ตรวจสอบความถูกต้อง</h2></div>
+        <div class="summary-box">
+            <h4>👤 ข้อมูลทั่วไป</h4>
+            <div class="summary-item"><span>ชื่อ-สกุล:</span> <span id="smName">-</span></div>
+            <div class="summary-item"><span>อายุ:</span> <span id="smAge">-</span></div>
+            <div class="summary-item"><span>เพศ:</span> <span id="smGender">-</span></div>
+            <div class="summary-item"><span>หมู่บ้าน:</span> <span id="smVillage">-</span></div>
+        </div>
+        <div class="summary-box">
+            <h4>📊 ผลการคัดกรอง</h4>
+            <div class="summary-item"><span>แบบประเมินหลัก:</span> <span id="smType">-</span></div>
+            <div class="summary-item"><span>ผลประเมิน 2Q:</span> <span id="smQ2Result">-</span></div>
+            <div class="summary-item"><span>คะแนน 9Q:</span> <span id="smQ9Score">-(ไม่ได้ประเมิน)-</span></div>
+            <div class="summary-item"><span>ผลประเมิน 8Q:</span> <span id="smQ8Result">-(ไม่ได้ประเมิน)-</span></div>
+            <div class="summary-item"><span>หมายเหตุ:</span> <span id="smComment">-</span></div>
+        </div>
+        <button class="btn-nav btn-submit" onclick="submitData()">📤 ส่งข้อมูล</button>
+        <button class="btn-nav btn-back" onclick="changeStep(2)">⬅️ ย้อนกลับแก้ไข</button>
+    </div>
 </div>
 
 <script>
-    // ==========================================
-    // 🛠️ จุดใส่รหัสกุญแจของคุณ (ตามขั้นตอนในรูปคู่มือ)
-    // ==========================================
-    const MESSAGING_API_TOKEN = 'vQk54LXyk7D2Il3BISTRmnzJ4mps/CpaJsYmIxpq3cNqpAxTSdtv1Eq74qfcRNgRYKWkdgbnaB06cuJDRD9OgZ+ioJj5LuxA3pRlr7PWltpfhlXdAVQgTf1lKt9SOAUWAfDPKrU1Jhj2laQUM9bQRAdB04t89/1O/w1cDnyilFU='; // ใส่ Channel Access Token ของคุณ
-    const LIFF_ID = '2010303347-dja2J8TA';             // ใส่ LIFF ID ของคุณ
-    const GROUP_ID = 'C8dcd1af7c2008c7f41effc6126b121cd';           
-    // ===================================================
+    // 🔗 ระบบฝังไอดีกุญแจและลิงก์เชื่อมต่อฐานข้อมูลเรียบร้อยแล้วครับ
+    const LIFF_ID = '2010303347-dja2J8TA'; 
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzcRlhZ2PqUfkrlTBUWDlLZcLsOOCnBBhbit2yJEIdJF4v2ZYXolvuY1dSQn11X8TNhdQ/exec';
 
-    // เริ่มการทำงานระบบ LINE LIFF
-    liff.init({ liffId: LIFF_ID })
-        .then(() => {
-            console.log("LINE LIFF เชื่อมต่อเรียบร้อย");
-        })
-        .catch((err) => {
-            console.error("LIFF เกิดข้อผิดพลาด:", err);
-        });
+    // รายชื่อ อสม. จำลอง (ปรับเพิ่มขยายจำนวนคน/เปลี่ยนรหัสผ่านตรงนี้ได้เลยครับ)
+    const vhmUsers = {
+        "user1": { pass: "pass1", name: "สมใจ ดีงาม" },
+        "user2": { pass: "pass2", name: "ศักดิ์ดา ร่มเย็น" }
+    };
+    let currentVhmName = "";
 
-    // ระบบทำงานเมื่อกดส่งฟอร์ม
-    document.getElementById('screeningForm').addEventListener('submit', function(e) {
-        e.preventDefault();
+    liff.init({ liffId: LIFF_ID }).then(() => { console.log("LIFF Ready"); });
 
-        // ดึงค่าจากฟอร์ม
-        const vhm = document.getElementById('vhmName').value;
-        const patient = document.getElementById('patientName').value;
-        const village = document.getElementById('villageNo').value;
-        const q1 = document.querySelector('input[name="q1"]:checked').value;
-        const q2 = document.querySelector('input[name="q2"]:checked').value;
-        const comment = document.getElementById('comment').value || 'ไม่มี';
+    function changeStep(step) {
+        document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+        document.getElementById('step' + step).classList.add('active');
+        window.scrollTo(0, 0);
+    }
 
-        // ประเมินผล 2Q
-        let finalResult = "🟢 ปกติ";
-        if (q1 === "มี" || q2 === "มี") {
-            finalResult = "🚨 มีความเสี่ยงโรคซึมเศร้า (ส่งต่อเจ้าหน้าที่ตรวจ 9Q)";
+    // หน้า 0: ตรวจรหัสผ่าน
+    function verifyAuth() {
+        const u = document.getElementById('vhmUsername').value;
+        const p = document.getElementById('vhmPassword').value;
+        if(vhmUsers[u] && vhmUsers[u].pass === p) {
+            currentVhmName = vhmUsers[u].name;
+            document.getElementById('vhmDisplayName').innerText = currentVhmName;
+            document.getElementById('vhmInfoHeader').style.display = "block";
+            changeStep(1);
+        } else {
+            alert("❌ Username หรือ Password ไม่ถูกต้อง");
         }
+    }
 
-        // จัดข้อความเพื่อส่งเข้ากลุ่ม LINE
-        const reportTemplate = `📢 รายงานผลคัดกรองสุขภาพจิต (2Q)\n` +
-                               `• ผู้ส่งรายงาน: อสม. ${vhm}\n` +
-                               `• ชื่อผู้รับตรวจ: ${patient} (${village})\n` +
-                               `• ข้อ 1 (หดหู่ เศร้า ท้อแท้): ${q1}\n` +
-                               `• ข้อ 2 (เบื่อ ไม่อยากทำอะไร): ${q2}\n` +
-                               `• สรุปผลประเมิน: ${finalResult}\n` +
-                               `• หมายเหตุ: ${comment}`;
+    // หน้า 1 -> 2: บังคับกรอกครบ
+    function goToStep2() {
+        if(!document.getElementById('patientName').value.trim() || !document.getElementById('patientAge').value || 
+           !document.querySelector('input[name="gender"]:checked') || !document.getElementById('villageNo').value) {
+            alert("⚠️ กรุณากรอกข้อมูลทั่วไปให้ครบทุกข้อ");
+            return;
+        }
+        switchAssessment(); 
+        changeStep(2);
+    }
 
-        // โครงสร้างข้อความแบบส่งตรงเข้ากลุ่มไลน์ผ่านเบื้องหลัง (Messaging API Push Message)
-        const payload = {
-            to: GROUP_ID,
-            messages: [
-                {
-                    type: 'text',
-                    text: reportTemplate
-                }
-            ]
-        };
+    // หน้า 2: เลือกประเภทประเมิน
+    function switchAssessment() {
+        const type = document.getElementById('assessmentTypeSelect').value;
+        const inText = document.getElementById('indicationText');
+        document.getElementById('panel9Q').style.display = (type === '9Q') ? 'block' : 'none';
+        document.getElementById('panel8Q').style.display = (type === '8Q') ? 'block' : 'none';
+        inText.innerText = (type === '2Q') ? '💡 ใช้คัดกรองความเสี่ยงซึมเศร้าเบื้องต้น' : (type === '9Q') ? '💡 ใช้ประเมินระดับเมื่อพบความเสี่ยงจาก 2Q' : '💡 ใช้ประเมินความเสี่ยงต่อการฆ่าตัวตาย';
+    }
 
-        // ส่งข้อมูลหา LINE ผ่าน Proxy เพื่อป้องกันปัญหา CORS บนบราวเซอร์หน้าบ้าน
-        fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent('https://api.line.me/v2/bot/message/push')}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${MESSAGING_API_TOKEN}`
-            },
-            body: JSON.stringify(payload)
-        })
-        .then(response => {
-            if(response.ok) {
-                alert('ส่งรายงานเข้ากลุ่มไลน์ รพ.สต. เรียบร้อยแล้วครับ!');
-                liff.closeWindow(); // ปิดหน้าต่างแอปทันทีเมื่อส่งเสร็จ
-            } else {
-                alert('ส่งข้อมูลไม่สำเร็จ กรุณาเช็กความถูกต้องของ Token หรือ Group ID อีกครั้ง');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('เกิดข้อผิดพลาดในการเชื่อมต่อระบบเครือข่าย');
+    // หน้า 2 -> 3: สรุป
+    function goToStep3() {
+        const q2q1 = document.querySelector('input[name="q2q1"]:checked');
+        const q2q2 = document.querySelector('input[name="q2q2"]:checked');
+        if(!q2q1 || !q2q2) { alert("⚠️ กรุณาทำแบบคัดกรอง 2Q ให้ครบ"); return; }
+        
+        document.getElementById('smName').innerText = document.getElementById('patientName').value;
+        document.getElementById('smAge').innerText = document.getElementById('patientAge').value + " ปี";
+        document.getElementById('smGender').innerText = document.querySelector('input[name="gender"]:checked').value;
+        document.getElementById('smVillage').innerText = document.getElementById('villageNo').value;
+        const type = document.getElementById('assessmentTypeSelect').value;
+        document.getElementById('smType').innerText = "แบบประเมิน " + type;
+        const q2Res = (q2q1.value === "มี" || q2q2.value === "มี") ? "🚨 มีความเสี่ยง" : "🟢 ปกติ";
+        document.getElementById('smQ2Result').innerText = q2Res;
+
+        if(type === '9Q') {
+            let score9Q = parseInt(document.getElementById('q9q1').value) + parseInt(document.getElementById('q9q2').value);
+            document.getElementById('smQ9Score').innerText = score9Q + " คะแนน (จำลอง)";
+            document.getElementById('smQ8Result').innerText = "-(ไม่ได้ประเมิน)-";
+        } else if(type === '8Q') {
+            const q8q1 = document.querySelector('input[name="q8q1"]:checked');
+            document.getElementById('smQ8Result').innerText = q8q1 ? `คิดอยากตาย: ${q8q1.value}` : "-(ไม่ได้กรอก)-";
+            document.getElementById('smQ9Score').innerText = "-(ไม่ได้ประเมิน)-";
+        } else {
+            document.getElementById('smQ9Score').innerText = "-(ไม่ได้ประเมิน)-";
+            document.getElementById('smQ8Result').innerText = "-(ไม่ได้ประเมิน)-";
+        }
+        document.getElementById('smComment').innerText = document.getElementById('comment').value.trim() || "-(ว่าง)-";
+        changeStep(3);
+    }
+
+    // หน้า 3: ส่งข้อมูล
+    function submitData() {
+        const type = document.getElementById('assessmentTypeSelect').value;
+        const sendData = new URLSearchParams({
+            vhmName: currentVhmName, patientName: document.getElementById('patientName').value,
+            patientAge: document.getElementById('patientAge').value,
+            patientGender: document.querySelector('input[name="gender"]:checked').value,
+            villageNo: document.getElementById('villageNo').value, assessmentType: type,
+            q2Result: document.getElementById('smQ2Result').innerText,
+            q9Score: (type === '9Q') ? document.getElementById('smQ9Score').innerText : '',
+            q8Result: (type === '8Q') ? document.getElementById('smQ8Result').innerText : '',
+            comment: document.getElementById('comment').value
         });
-    });
+        fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: sendData })
+        .then(() => { alert('🎉 บันทึกสำเร็จครับ!'); liff.closeWindow(); })
+        .catch(error => { alert('❌ เกิดข้อผิดพลาด'); console.error(error); });
+    }
 </script>
-
 </body>
 </html>
