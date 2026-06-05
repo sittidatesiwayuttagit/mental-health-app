@@ -68,7 +68,7 @@
         </div>
         <div class="form-group">
             <label for="resetSecretKey">รหัสลับยืนยันตัวตน *</label>
-            <input type="password" id="resetSecretKey" placeholder="กรอกรหัสลับ (เลขท้ายบัตรหรือเบอร์โทรที่ลงทะเบียนไว้)">
+            <input type="password" id="resetSecretKey" placeholder="กรอกรหัสลับ">
         </div>
         <div class="form-group">
             <label for="resetNewPassword">ระบุรหัสผ่านใหม่ที่ต้องการ *</label>
@@ -85,7 +85,7 @@
         </div>
         <div class="form-group">
             <label>ชื่อ-นามสกุล ผู้รับตรวจ *</label>
-            <input type="text" id="patientName" placeholder=ตัวอย่าง : สุขภาพ จิตดี">
+            <input type="text" id="patientName" placeholder="ตัวอย่าง : สุขภาพ จิตดี">
         </div>
         <div class="form-group">
             <label>อายุ (ปี) *</label>
@@ -194,8 +194,162 @@
 
 <script>
     const LIFF_ID = '2010303347-dja2J8TA'; 
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzcElfzuPPKHs1omffjEOdGa9ih98l0_lLo5-21TvLYo7Az68o9a03ugNuN-dmAsd3Nog/exec';
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxcElfzuPPKHs1omffjEOdGa9ih98l0_lLo5-21TvLYo7Az68o9a03ugNuN-dmAsd3Nog/exec';
 
     let currentVhmName = "";
 
-    liff.init({ liffId: LIFF_ID }).then(() => { console.log("LIFF Ready
+    liff.init({ liffId: LIFF_ID }).then(() => { console.log("LIFF Ready"); });
+
+    function changeStep(step) {
+        document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+        document.getElementById('step' + step).classList.add('active');
+        window.scrollTo(0, 0);
+    }
+
+    // 🛠️ ฟังก์ชันยืนยันตัวตนพร้อมระบบดักจับข้อผิดพลาดฉบับจัดเต็ม
+    function verifyAuth() {
+        const u = document.getElementById('vhmUsername').value.trim();
+        const p = document.getElementById('vhmPassword').value;
+        const btn = document.getElementById('btnLoginText');
+
+        if(!u || !p) { alert("⚠️ กรุณากรอกข้อมูลให้ครบถ้วน"); return; }
+        btn.innerText = "⏳ กำลังเชื่อมต่อฐานข้อมูลคลาวด์...";
+        
+        fetch(`${GOOGLE_SCRIPT_URL}?action=checkLogin&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}`)
+            .then(res => {
+                if (!res.ok) throw new Error("HTTP Status " + res.status);
+                return res.text(); 
+            })
+            .then(text => {
+                try {
+                    const res = JSON.parse(text); 
+                    btn.innerText = "🔓 เข้าสู่ระบบ";
+                    if(res.success) {
+                        currentVhmName = res.name;
+                        document.getElementById('vhmDisplayName').innerText = currentVhmName;
+                        document.getElementById('vhmInfoHeader').style.display = "block";
+                        changeStep(1);
+                    } else {
+                        alert("❌ " + res.message);
+                    }
+                } catch(parseError) {
+                    btn.innerText = "🔓 เข้าสู่ระบบ";
+                    alert("❌ Google Apps Script คืนข้อมูลกลับมาผิดพลาด!\n(แนวทางแก้: ตรวจสอบว่าแผ่นงานใน Google Sheet ชื่อ 'อสม' หรือยัง? หรือกดยอมรับสิทธิ์บัญชีในระบบ Apps Script แล้วหรือยัง)\n\nข้อความจากเซิร์ฟเวอร์ย่อ: " + text.substring(0, 150));
+                }
+            })
+            .catch(err => {
+                btn.innerText = "🔓 เข้าสู่ระบบ";
+                alert("❌ ระบบถูกบล็อกการเชื่อมต่อ (CORS Error)\n(แนวทางแก้: ตอนกด Deploy รหัสใหม่ใน Apps Script ลืมตั้งค่าช่วงล่างสุดเป็น 'Anyone' หรือเปล่าครับ ลองรีเช็กอีกรอบ)\n\nรายละเอียด: " + err.message);
+            });
+    }
+
+    function handleResetPassword() {
+        const u = document.getElementById('resetUsername').value.trim();
+        const key = document.getElementById('resetSecretKey').value.trim();
+        const newP = document.getElementById('resetNewPassword').value;
+        const btn = document.getElementById('btnResetText');
+
+        if(!u || !key || !newP) { alert("⚠️ กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง"); return; }
+        if(newP.length < 4) { alert("⚠️ รหัสผ่านใหม่ควรยาว 4 ตัวอักษรขึ้นไป"); return; }
+
+        btn.innerText = "⏳ กำลังบันทึกรหัสผ่านใหม่...";
+
+        fetch(`${GOOGLE_SCRIPT_URL}?action=resetPassword&username=${encodeURIComponent(u)}&secretKey=${encodeURIComponent(key)}&newPassword=${encodeURIComponent(newP)}`)
+            .then(res => {
+                if (!res.ok) throw new Error("HTTP Status " + res.status);
+                return res.text();
+            })
+            .then(text => {
+                try {
+                    const res = JSON.parse(text);
+                    btn.innerText = "💾 บันทึกและเปลี่ยนรหัสผ่าน";
+                    if(res.success) {
+                        alert("🎉 อัปเดตรหัสผ่านใหม่ลงคลาวด์เรียบร้อย! สามารถใช้รหัสผ่านใหม่ล็อกอินได้ทันทีครับ");
+                        document.getElementById('vhmUsername').value = u;
+                        document.getElementById('vhmPassword').value = "";
+                        changeStep(0);
+                    } else {
+                        alert("❌ " + res.message);
+                    }
+                } catch(e) {
+                    btn.innerText = "💾 บันทึกและเปลี่ยนรหัสผ่าน";
+                    alert("❌ Google Apps Script ปฏิเสธการบันทึกรหัสผ่านใหม่:\n" + text.substring(0, 150));
+                }
+            })
+            .catch(err => {
+                btn.innerText = "💾 บันทึกและเปลี่ยนรหัสผ่าน";
+                alert("❌ เกิดข้อผิดพลาดระบบเครือข่าย: " + err.message);
+            });
+    }
+
+    function goToStep2() {
+        if(!document.getElementById('patientName').value.trim() || 
+           !document.getElementById('patientAge').value || 
+           !document.getElementById('patientGender').value || 
+           !document.getElementById('villageNo').value) {
+            alert("⚠️ กรุณากรอกข้อมูลทั่วไปให้ครบทุกข้อ");
+            return;
+        }
+        switchAssessment(); 
+        changeStep(2);
+    }
+
+    function switchAssessment() {
+        const type = document.getElementById('assessmentTypeSelect').value;
+        const inText = document.getElementById('indicationText');
+        document.getElementById('panel9Q').style.display = (type === '9Q') ? 'block' : 'none';
+        document.getElementById('panel8Q').style.display = (type === '8Q') ? 'block' : 'none';
+        inText.innerText = (type === '2Q') ? '💡 ใช้คัดกรองความเสี่ยงซึมเศร้าเบื้องต้น' : (type === '9Q') ? '💡 ใช้ประเมินระดับเมื่อพบความเสี่ยงจาก 2Q' : '💡 ใช้ประเมินความเสี่ยงต่อการฆ่าตัวตาย';
+    }
+
+    function goToStep3() {
+        const q2q1 = document.querySelector('input[name="q2q1"]:checked');
+        const q2q2 = document.querySelector('input[name="q2q2"]:checked');
+        if(!q2q1 || !q2q2) { alert("⚠️ กรุณาทำแบบคัดกรอง 2Q ให้ครบ"); return; }
+        
+        document.getElementById('smName').innerText = document.getElementById('patientName').value;
+        document.getElementById('smAge').innerText = document.getElementById('patientAge').value + " ปี";
+        document.getElementById('smGender').innerText = document.getElementById('patientGender').value;
+        document.getElementById('smVillage').innerText = document.getElementById('villageNo').value;
+        const type = document.getElementById('assessmentTypeSelect').value;
+        document.getElementById('smType').innerText = "แบบประเมิน " + type;
+        const q2Res = (q2q1.value === "มี" || q2q2.value === "มี") ? "🚨 มีความเสี่ยง" : "🟢 ปกติ";
+        document.getElementById('smQ2Result').innerText = q2Res;
+
+        if(type === '9Q') {
+            let score9Q = parseInt(document.getElementById('q9q1').value) + parseInt(document.getElementById('q9q2').value);
+            document.getElementById('smQ9Score').innerText = score9Q + " คะแนน (จำลอง)";
+            document.getElementById('smQ8Result').innerText = "-(ไม่ได้ประเมิน)-";
+        } else if(type === '8Q') {
+            const q8q1 = document.querySelector('input[name="q8q1"]:checked');
+            document.getElementById('smQ8Result').innerText = q8q1 ? `คิดอยากตาย: ${q8q1.value}` : "-(ไม่ได้กรอก)-";
+            document.getElementById('smQ9Score').innerText = "-(ไม่ได้ประเมิน)-";
+        } else {
+            document.getElementById('smQ9Score').innerText = "-(ไม่ได้ประเมิน)-";
+            document.getElementById('smQ8Result').innerText = "-(ไม่ได้ประเมิน)-";
+        }
+        document.getElementById('smComment').innerText = document.getElementById('comment').value.trim() || "-(ว่าง)-";
+        changeStep(3);
+    }
+
+    function submitData() {
+        const type = document.getElementById('assessmentTypeSelect').value;
+        const sendData = new URLSearchParams({
+            vhmName: currentVhmName, 
+            patientName: document.getElementById('patientName').value,
+            patientAge: document.getElementById('patientAge').value,
+            patientGender: document.getElementById('patientGender').value,
+            villageNo: document.getElementById('villageNo').value, 
+            assessmentType: type,
+            q2Result: document.getElementById('smQ2Result').innerText,
+            q9Score: (type === '9Q') ? document.getElementById('smQ9Score').innerText : '',
+            q8Result: (type === '8Q') ? document.getElementById('smQ8Result').innerText : '',
+            comment: document.getElementById('comment').value
+        });
+        fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: sendData })
+        .then(() => { alert('🎉 บันทึกสำเร็จครับ!'); liff.closeWindow(); })
+        .catch(error => { alert('❌ เกิดข้อผิดพลาด'); console.error(error); });
+    }
+</script>
+</body>
+</html>
