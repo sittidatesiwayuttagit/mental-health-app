@@ -189,7 +189,7 @@
 
 <script>
     const LIFF_ID = '2010303347-dja2J8TA'; 
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbycTCwVYMOIzPCQss3eEpp4fqytBfOtQ_mhUuL7oXM3QF9RzLZen5UlI2AGP5-Mwz-ilQ/exec';
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzCxHbTjCEIRaU3JRpphYYShu7VtzBIyj-x4qC0tqixUSa2nTSbavefHHQu7L6ZMP2FQ/exec';
 
     let currentVhmName = "";
 
@@ -276,7 +276,6 @@
             });
     }
 
-    // 🔄 เอาเงื่อนไขตรวจจับความว่างของช่องอายุออกแล้วครับ
     function goToStep2() {
         if(!document.getElementById('patientName').value.trim() || 
            !document.getElementById('patientGender').value || 
@@ -296,18 +295,27 @@
         inText.innerText = (type === '2Q') ? '💡 ใช้คัดกรองความเสี่ยงซึมเศร้าเบื้องต้น' : (type === '9Q') ? '💡 ใช้ประเมินระดับเมื่อพบความเสี่ยงจาก 2Q' : '💡 ใช้ประเมินความเสี่ยงต่อการฆ่าตัวตาย';
     }
 
-    // 🔄 ตัดกระบวนการกวาดเลขอายุมาแสดงหน้าสรุปผลเรียบร้อยครับ
+    // 🔥 ปรับปรุงฟังก์ชันตรวจสอบ: ล็อกระบบไม่ให้ข้ามหน้าเมื่อพบความเสี่ยง 2Q แต่ยังใช้แบบทดสอบแค่ 2Q
     function goToStep3() {
         const q2q1 = document.querySelector('input[name="q2q1"]:checked');
         const q2q2 = document.querySelector('input[name="q2q2"]:checked');
         if(!q2q1 || !q2q2) { alert("⚠️ กรุณาทำแบบคัดกรอง 2Q ให้ครบ"); return; }
         
+        const type = document.getElementById('assessmentTypeSelect').value;
+        const q2Res = (q2q1.value === "มี" || q2q2.value === "มี") ? "🚨 มีความเสี่ยง" : "🟢 ปกติ";
+
+        // 🔄 ระบบตรวจจับความเสี่ยงพ่วงเงื่อนไขบังคับทำ 9Q
+        if (q2Res === "🚨 มีความเสี่ยง" && type === "2Q") {
+            alert("🚨 ผู้รับตรวจมีความเสี่ยงจากแบบคัดกรอง 2Q! ระบบขอปฏิเสธการส่งข้อมูล และบังคับให้ทำแบบประเมิน 9Q ต่อเพื่อวิเคราะห์ระดับความรุนแรง กรุณากรอกหัวข้อ 9Q ด้านล่างให้ครบถ้วนครับ");
+            document.getElementById('assessmentTypeSelect').value = "9Q"; // สั่งสลับ Dropdown ไปที่ 9Q อัตโนมัติ
+            switchAssessment(); // สั่งเปิดแผงคำถามข้อ 9Q ทันที
+            return; // 🛑 บล็อกสั่งหยุดประมวลผล ไม่ยอมให้ข้ามไปหน้าสรุป
+        }
+        
         document.getElementById('smName').innerText = document.getElementById('patientName').value;
         document.getElementById('smGender').innerText = document.getElementById('patientGender').value;
         document.getElementById('smVillage').innerText = document.getElementById('villageNo').value;
-        const type = document.getElementById('assessmentTypeSelect').value;
         document.getElementById('smType').innerText = "แบบประเมิน " + type;
-        const q2Res = (q2q1.value === "มี" || q2q2.value === "มี") ? "🚨 มีความเสี่ยง" : "🟢 ปกติ";
         document.getElementById('smQ2Result').innerText = q2Res;
 
         if(type === '9Q') {
@@ -326,7 +334,6 @@
         changeStep(3);
     }
 
-    // 🔄 ส่งค่า 'patientAge' เป็นช่องว่าง เพื่อให้ตาราง Google Sheet แถวแรกสุดไม่ลัดวงจรข้ามคอลัมน์
     function submitData() {
         const type = document.getElementById('assessmentTypeSelect').value;
         const sendData = new URLSearchParams({
