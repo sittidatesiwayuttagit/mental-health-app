@@ -11,7 +11,13 @@
         .step { display: none; }
         .step.active { display: block; }
         .header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; }
-        .vhm-info-header { display: none; text-align: right; font-size: 14px; color: #64748b; margin-bottom: 15px; font-weight: bold; }
+        
+        /* 🛠️ ปรับแต่งแถบหัวข้อผู้ประเมินให้รองรับปุ่มออกจากระบบแบบ Flexbox */
+        .vhm-info-header { display: none; justify-content: space-between; align-items: center; font-size: 14px; color: #475569; margin-bottom: 25px; font-weight: bold; background: #f8fafc; padding: 10px 15px; border-radius: 10px; border: 1px solid #e2e8f0; }
+        /* สไตล์ปุ่มออกจากระบบขนาดกะทัดรัด */
+        .btn-logout { padding: 6px 12px; background-color: #ef4444; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        .btn-logout:hover { background-color: #dc2626; }
+
         .form-group { margin-bottom: 20px; }
         label { display: block; font-weight: bold; margin-bottom: 8px; color: #1e293b; }
         input[type="text"], input[type="number"], input[type="password"], select, textarea { 
@@ -35,7 +41,10 @@
 <body>
 
 <div class="container">
-    <div id="vhmInfoHeader" class="vhm-info-header">ผู้ประเมิน: <span id="vhmDisplayName">-</span></div>
+    <div id="vhmInfoHeader" class="vhm-info-header">
+        <div>ผู้ประเมิน: <span id="vhmDisplayName">-</span></div>
+        <button class="btn-logout" onclick="logout()">🔒 ออกจากระบบ</button>
+    </div>
     
     <div id="step0" class="step active">
         <div class="header">
@@ -246,7 +255,7 @@
                         currentVhmName = res.name;
                         let roleTitle = (role === 'admin') ? 'ผู้ดูแลระบบ' : 'อสม.';
                         document.getElementById('vhmDisplayName').innerText = `${currentVhmName} (${roleTitle})`;
-                        document.getElementById('vhmInfoHeader').style.display = "block";
+                        document.getElementById('vhmInfoHeader').style.display = "flex"; // 🛠️ เปลี่ยนการแสดงผลเป็นแบบ flex เพื่อจัดวางปุ่ม
                         changeStep(1);
                     } else {
                         alert("❌ " + res.message);
@@ -260,6 +269,49 @@
                 btn.innerText = "🔓 เข้าสู่ระบบ";
                 alert("❌ ระบบถูกบล็อกการเชื่อมต่อ (CORS Error): " + err.message);
             });
+    }
+
+    // 🛠️ เพิ่มใหม่: ฟังก์ชันออกจากระบบนิรภัย ล้างฟอร์มเกลี้ยงและถีบกลับหน้าล็อกอินโดยไม่มีการบันทึกข้อมูล
+    function logout() {
+        if (!confirm("🚨 แจ้งเตือนความปลอดภัย:\nคุณต้องการออกจากระบบใช่หรือไม่? ข้อมูลผู้ป่วยทั้งหมดที่กำลังพิมพ์ค้างอยู่ ณ ตอนนี้จะถูกล้างทิ้งและไม่ถูกบันทึกลงฐานข้อมูลคลาวด์ครับ")) return;
+        
+        // 1. ล้างสมองตัวแปรจำสิทธิ์
+        currentVhmName = "";
+        
+        // 2. ซ่อนแถบแจ้งชื่อผู้ประเมิน
+        document.getElementById('vhmInfoHeader').style.display = "none";
+        
+        // 3. กวาดล้างข้อมูลประวัติที่พิมพ์ค้างอยู่ทั้งหมด
+        document.getElementById('patientName').value = "";
+        document.getElementById('patientGender').value = "";
+        document.getElementById('villageNo').value = "";
+        document.getElementById('comment').value = "";
+        
+        // ล้างติ๊กเลือกวิทยุ 2Q
+        document.querySelectorAll('input[name="q2q1"], input[name="q2q2"]').forEach(radio => radio.checked = false);
+        
+        // ล้างตัวเลือก 9Q ทั้งหมด
+        for (let i = 1; i <= 9; i++) {
+            const el = document.getElementById('q9q' + i);
+            if (el) el.value = "";
+        }
+        
+        // ล้างตัวเลือก 8Q ทั้งหมด
+        for (let i = 1; i <= 8; i++) {
+            const el = document.getElementById('q8q' + i);
+            if (el) el.value = "";
+        }
+        
+        // 4. ตั้งพารามิเตอร์แบบคัดกรองถอยกลับไปที่ 2Q เคลียร์มุมมอง
+        document.getElementById('assessmentTypeSelect').value = "2Q";
+        switchAssessment();
+        
+        // 5. ล้างช่องป้อนรหัสผ่านล็อกอินหน้าแรกเพื่อความปลอดภัย
+        document.getElementById('vhmUsername').value = "";
+        document.getElementById('vhmPassword').value = "";
+        
+        // 6. ดีดเปลี่ยนหน้าจอถอยกลับไปล็อกหน้าล็อกอินที่ก้าวเข้ามาตอนแรกสุดทันที
+        changeStep(0);
     }
 
     function handleResetPassword() {
@@ -406,7 +458,6 @@
         changeStep(3);
     }
 
-    // 🎯 แก้ไขจุดนี้: ระบบวนลูปรับข้อมูลคนใหม่แบบไม่ปิดหน้าต่างใช้งาน
     function submitData() {
         const type = document.getElementById('assessmentTypeSelect').value;
         const sendData = new URLSearchParams({
@@ -423,35 +474,26 @@
         });
         fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: sendData })
         .then(() => { 
-            // 1. เด้งป๊อปอัปแจ้งผลสำเร็จตามปกติ
             alert('🎉 ส่งรายงานการคัดกรองขึ้นระบบคลาวด์ รพ.สต. สำเร็จเรียบร้อยครับ!'); 
             
-            // 2. ล้างข้อมูลฟอร์มเก่าทั้งหมดออกให้ขาวสะอาด 
             document.getElementById('patientName').value = "";
             document.getElementById('patientGender').value = "";
             document.getElementById('villageNo').value = "";
             document.getElementById('comment').value = "";
             
-            // ล้างติ๊กวิทยุ 2Q
             document.querySelectorAll('input[name="q2q1"], input[name="q2q2"]').forEach(radio => radio.checked = false);
             
-            // ล้างข้อมูลตัวเลือก 9Q ทั้งหมด
             for (let i = 1; i <= 9; i++) {
                 const el = document.getElementById('q9q' + i);
                 if (el) el.value = "";
             }
-            
-            // ล้างข้อมูลตัวเลือก 8Q ทั้งหมด
             for (let i = 1; i <= 8; i++) {
                 const el = document.getElementById('q8q' + i);
                 if (el) el.value = "";
             }
             
-            // 3. ปรับหมวดสลับคืนค่ากลับไปเริ่มต้นคัดกรองที่แบบประเมิน 2Q ใหม่
             document.getElementById('assessmentTypeSelect').value = "2Q";
-            switchAssessment(); // คุมให้ซ่อนแผง 9Q และ 8Q อัตโนมัติ
-            
-            // 4. ดีดหน้าต่างสลับเปลี่ยนสเต็ปกลับไปหน้า 1 (กรอกข้อมูลทั่วไป) ทันทีโดยไม่ต้องล็อกอินใหม่
+            switchAssessment();
             changeStep(1);
         })
         .catch(error => { 
