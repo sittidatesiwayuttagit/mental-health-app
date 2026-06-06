@@ -244,7 +244,284 @@
 </div>
 
 <script>
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzzH5QM_E38_0hDRar2JXeuDUs1Jq3J7m2RqWVZyky4Cqgle3pTk2lsfuc-dB1FO3PCoA/exec';
+    const GOOGLE_SCRIPT_URL = '/**
+ * =========================================================================
+ * [ไฟล์หลังบ้านเวอร์ชันมหากาพย์สมบูรณ์แบบ] Code.gs - รพ.สต.บ้านทองหลาง (2026)
+ * ม้วนเดียวจบ: คุมทั้งหน้า อสม. (index.html) และ แอดมิน (admin.html) พร้อมระบบยิง LINE หลายคน
+ * วิธีใช้: ก๊อปปี้ทั้งหมดนี้ไปวางทับใน Google Apps Script หลังบ้านได้เลยครับพี่!
+ * =========================================================================
+ */
+
+function doGet(e) {
+  try {
+    var action = e.parameter.action;
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    // 💡 รายชื่อแท็บแผ่นงานสำรองกันเหนียวเพื่อค้นหาอัตโนมัติ
+    var adminSheetNames = ["แอดมิน", "ข้อมูลผู้ดูแล", "Admin", "Admins"];
+    var vhmSheetNames   = ["อสม", "ข้อมูลอสม", "VHM", "Vhm", "รายชื่ออสม"];
+    var patientProfileNames = ["ผู้ป่วย", "ข้อมูลผู้ป่วย", "Patients", "Patient"];
+    var feedbackSheetNames = ["Feedback", "ข้อเสนอแนะ", "ฟีดแบ็ค"];
+    
+    function getTargetSheet(namesArray) {
+      for (var i = 0; i < namesArray.length; i++) {
+        var s = ss.getSheetByName(namesArray[i]);
+        if (s) return s;
+      }
+      return null;
+    }
+    
+    function findColumnIndex(headers, keywords) {
+      for (var k = 0; k < keywords.length; k++) {
+        for (var c = 0; c < headers.length; c++) {
+          if (headers[c].toString().toLowerCase().indexOf(keywords[k].toLowerCase()) !== -1) return c;
+        }
+      }
+      return -1;
+    }
+    
+    // -------------------------------------------------------------------------
+    // 🔑 [โซนที่ 1] ระบบล็อกอินและตรวจสอบสิทธิ์ (index.html และ admin.html)
+    // -------------------------------------------------------------------------
+    
+    // 1.1 ล็อกอินฝั่งแอดมินตรงตัว (admin.html)
+    if (action === "checkAdminLogin") {
+      var u = e.parameter.username; var p = e.parameter.password;
+      var sheet = getTargetSheet(adminSheetNames);
+      if (!sheet) return ContentService.createTextOutput(JSON.stringify({success: false, message: "ไม่พบแท็บแผ่นงาน แอดมิน ใน Google Sheet"})).setMimeType(ContentService.MimeType.JSON);
+      var data = sheet.getDataRange().getValues();
+      for (var i = 1; i < data.length; i++) {
+        if (data[i][0].toString().trim() === u && data[i][1].toString() === p) {
+          return ContentService.createTextOutput(JSON.stringify({success: true, name: data[i][2]}))
+                               .setMimeType(ContentService.MimeType.JSON);
+        }
+      }
+      return ContentService.createTextOutput(JSON.stringify({success: false, message: "Username หรือ Password แอดมินไม่ถูกต้อง"})).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // 1.2 ล็อกอินฝั่งเจ้าหน้าที่ / อสม. มหาชน (index.html)
+    if (action === "checkVhmLogin" || action === "checkUserLogin" || action === "login" || action === "checkLogin") {
+      var u = e.parameter.username; var p = e.parameter.password;
+      var type = e.parameter.type || e.parameter.role || "";
+      
+      if (type.indexOf("ดูแล") !== -1 || type.indexOf("admin") !== -1) {
+        var sheet = getTargetSheet(adminSheetNames);
+        var data = sheet.getDataRange().getValues();
+        for (var i = 1; i < data.length; i++) {
+          if (data[i][0].toString().trim() === u && data[i][1].toString() === p) {
+            return ContentService.createTextOutput(JSON.stringify({success: true, name: data[i][2], role: "admin"})).setMimeType(ContentService.MimeType.JSON);
+          }
+        }
+      } else {
+        var sheet = getTargetSheet(vhmSheetNames);
+        if (!sheet) return ContentService.createTextOutput(JSON.stringify({success: false, message: "ไม่พบแท็บแผ่นงาน อสม. ใน Google Sheet"})).setMimeType(ContentService.MimeType.JSON);
+        var data = sheet.getDataRange().getValues();
+        for (var i = 1; i < data.length; i++) {
+          if (data[i][0].toString().trim() === u && data[i][1].toString() === p) {
+            return ContentService.createTextOutput(JSON.stringify({success: true, name: data[i][2], role: "vhm"})).setMimeType(ContentService.MimeType.JSON);
+          }
+        }
+      }
+      return ContentService.createTextOutput(JSON.stringify({success: false, message: "Username หรือ Password ไม่ถูกต้อง"})).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // 1.3 ระบบกู้คืนรหัสผ่าน (ทั้ง อสม. และ แอดมิน)
+    if (action === "resetAdminPassword" || action === "resetVhmPassword" || action === "resetPassword") {
+      var u = e.parameter.username; var key = e.parameter.secretKey; var newP = e.parameter.newPassword;
+      var sheet = (action === "resetAdminPassword") ? getTargetSheet(adminSheetNames) : getTargetSheet(vhmSheetNames);
+      if (!sheet) sheet = getTargetSheet(adminSheetNames) || getTargetSheet(vhmSheetNames);
+      var data = sheet.getDataRange().getValues();
+      for (var i = 1; i < data.length; i++) {
+        if (data[i][0].toString().trim() === u && data[i][3].toString().trim() === key) {
+          sheet.getRange(i + 1, 2).setValue(newP); return ContentService.createTextOutput(JSON.stringify({success: true})).setMimeType(ContentService.MimeType.JSON);
+        }
+      }
+      return ContentService.createTextOutput(JSON.stringify({success: false, message: "ข้อมูลยืนยันตัวตนไม่ถูกต้อง"})).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // -------------------------------------------------------------------------
+    // ⚙️ [โซนที่ 2] ระบบจัดการรายชื่อ อสม. / แอดมิน / Feedback ของหน้าแอดมิน
+    // -------------------------------------------------------------------------
+    if (action === "getVhmList") {
+      var sheet = getTargetSheet(vhmSheetNames); if (!sheet) return ContentService.createTextOutput(JSON.stringify([])).setMimeType(ContentService.MimeType.JSON);
+      var data = sheet.getDataRange().getValues(); var list = [];
+      for (var i = 1; i < data.length; i++) { list.push({ username: data[i][0].toString(), password: data[i][1].toString(), name: data[i][2].toString(), secretKey: data[i][3].toString() }); }
+      return ContentService.createTextOutput(JSON.stringify(list)).setMimeType(ContentService.MimeType.JSON);
+    }
+    if (action === "getAdminList") {
+      var sheet = getTargetSheet(adminSheetNames); if (!sheet) return ContentService.createTextOutput(JSON.stringify([])).setMimeType(ContentService.MimeType.JSON);
+      var data = sheet.getDataRange().getValues(); var list = [];
+      for (var i = 1; i < data.length; i++) { list.push({ username: data[i][0].toString(), password: data[i][1].toString(), name: data[i][2].toString(), secretKey: data[i][3].toString() }); }
+      return ContentService.createTextOutput(JSON.stringify(list)).setMimeType(ContentService.MimeType.JSON);
+    }
+    if (action === "getFeedback") {
+      var sheet = getTargetSheet(feedbackSheetNames); if (!sheet) return ContentService.createTextOutput(JSON.stringify([])).setMimeType(ContentService.MimeType.JSON);
+      var data = sheet.getDataRange().getValues(); var list = [];
+      for (var i = 1; i < data.length; i++) { if (!data[i][1]) continue; list.push({ "timestamp": data[i][0] ? Utilities.formatDate(new Date(data[i][0]), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm") : "-", "text": data[i][1].toString() }); }
+      return ContentService.createTextOutput(JSON.stringify(list)).setMimeType(ContentService.MimeType.JSON);
+    }
+    if (action === "saveVhm" || action === "saveAdmin" || action === "deleteVhm" || action === "deleteAdmin") {
+      var mode = e.parameter.mode; var u = e.parameter.username; var p = e.parameter.password; var n = e.parameter.name; var k = e.parameter.secretKey;
+      var sheet = (action === "saveVhm" || action === "deleteVhm") ? getTargetSheet(vhmSheetNames) : getTargetSheet(adminSheetNames); var data = sheet.getDataRange().getValues();
+      if (action === "deleteVhm" || action === "deleteAdmin") {
+        for (var i = 1; i < data.length; i++) { if (data[i][0].toString().trim() === u.trim()) { sheet.deleteRow(i + 1); return ContentService.createTextOutput(JSON.stringify({success: true})).setMimeType(ContentService.MimeType.JSON); } }
+      } else {
+        if (mode === "edit") {
+          for (var i = 1; i < data.length; i++) { if (data[i][0].toString().trim() === u.trim()) { sheet.getRange(i + 1, 2).setValue(p); sheet.getRange(i + 1, 3).setValue(n); sheet.getRange(i + 1, 4).setValue(k); return ContentService.createTextOutput(JSON.stringify({success: true})).setMimeType(ContentService.MimeType.JSON); } }
+        } else { sheet.appendRow([u, p, n, k]); return ContentService.createTextOutput(JSON.stringify({success: true})).setMimeType(ContentService.MimeType.JSON); }
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 📆 [โซนที่ 3] จัดการบันทึกประวัติวันเกิดแยกเข้าแท็บ "ผู้ป่วย" แบบล็อกคอลัมน์เป๊ะๆ
+    // -------------------------------------------------------------------------
+    if (action === "savePatientBirthdate") {
+      var name = e.parameter.patientName.trim(); var d = e.parameter.birthDay; var m = e.parameter.birthMonth; var y = e.parameter.birthYear;
+      var sheet = getTargetSheet(patientProfileNames);
+      if (!sheet) { sheet = ss.insertSheet("ผู้ป่วย"); sheet.appendRow(["ชื่อผู้ป่วย", "วันที่เกิด", "เดือนเกิด", "ปีพ.ศ.เกิด"]); }
+      
+      var data = sheet.getDataRange().getValues(); var updated = false;
+      for (var i = 1; i < data.length; i++) {
+        if (data[i][0].toString().trim() === name) {
+          sheet.getRange(i + 1, 2).setValue(d); sheet.getRange(i + 1, 3).setValue(m); sheet.getRange(i + 1, 4).setValue(y);
+          updated = true; break;
+        }
+      }
+      if (!updated) { sheet.appendRow([name, d, m, y]); }
+      return ContentService.createTextOutput(JSON.stringify({success: true})).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // -------------------------------------------------------------------------
+    // 📊 [โซนที่ 4] แกนโหลดประวัติคัดกรองจาก Sheet1 และควบรวมวันเกิดจากแท็บผู้ป่วย
+    // -------------------------------------------------------------------------
+    
+    // 4.1 ดึงแผนผังวันเกิดจากชีท "ผู้ป่วย" มานอนรอในหน่วยความจำ
+    var birthdateMap = {};
+    var patientProfileSheet = getTargetSheet(patientProfileNames);
+    if (patientProfileSheet) {
+      var pData = patientProfileSheet.getDataRange().getValues();
+      for (var b = 1; b < pData.length; b++) {
+        var pName = pData[b][0].toString().trim();
+        if (pName) { birthdateMap[pName] = { day: pData[b][1].toString(), month: pData[b][2].toString(), year: pData[b][3].toString() }; }
+      }
+    }
+
+    // 4.2 วิ่งไปเจาะจงดึงข้อมูลประวัติทั้งหมดจากแท็บแผ่นงานแรกชื่อ "Sheet1"
+    var screeningSheet = ss.getSheetByName("Sheet1") || ss.getSheets()[0];
+    var data = screeningSheet.getDataRange().getValues();
+    var list = [];
+    
+    // บังคับล็อกตำแหน่งดัชนีตามรูปแรกของ Sheet1 ของพี่เป๊ะๆ ป้องกันปัญหาข้อมูลเลื่อนหลุดช่อง
+    // A=วัน-เวลา(0), B=ชื่อ-สกุลผู้รับตรวจ(1), D=เพศ(3), E=หมู่ที่(4), F=ชื่ออสม(5), G=ประเภท(6), H=2Q(7), I=9Q(8), J=8Q(9), K=หมายเหตุ(10)
+    for (var i = 1; i < data.length; i++) {
+      var pName = data[i][1] ? data[i][1].toString().trim() : "";
+      if (!pName) continue; // สลัดทิ้งช่องแถวเปล่า
+      
+      // จับคู่ดึงโครงสร้างวันเกิด-ปีเกิดมาคำนวณผูกรวมร่าง
+      var bDay = "", bMonth = "", bYear = "";
+      if (birthdateMap[pName]) {
+        bDay = birthdateMap[pName].day; bMonth = birthdateMap[pName].month; bYear = birthdateMap[pName].year;
+      }
+      
+      var timeStr = "-"; 
+      try { if (data[i][0]) { timeStr = Utilities.formatDate(new Date(data[i][0]), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm"); } } catch(err) { timeStr = data[i][0].toString(); }
+      
+      list.push({
+        timestamp: timeStr,
+        patientName: pName,
+        patientGender: data[i][3] ? data[i][3].toString().trim() : "-",
+        villageNo: data[i][4] ? data[i][4].toString().trim() : "-",
+        vhmName: data[i][5] ? data[i][5].toString().trim() : "-",
+        assessmentType: data[i][6] ? data[i][6].toString().trim() : "2Q/9Q/8Q",
+        q2Result: data[i][7] ? data[i][7].toString().trim() : "-",
+        q9Score: data[i][8] ? data[i][8].toString().trim() : "0",
+        q8Result: data[i][9] ? data[i][9].toString().trim() : "0",
+        comment: data[i][10] ? data[i][10].toString().trim() : "-",
+        birthDay: bDay, birthMonth: bMonth, birthYear: bYear
+      });
+    }
+    return ContentService.createTextOutput(JSON.stringify(list)).setMimeType(ContentService.MimeType.JSON);
+
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({success: false, message: "ระบบหลังบ้านขัดข้อง: " + err.toString()})).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doPost(e) {
+  var action = e.parameter.action; var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var feedbackSheetNames = ["Feedback", "ข้อเสนอแนะ", "ฟีดแบ็ค"];
+  function getTargetSheet(namesArray) { for (var i = 0; i < namesArray.length; i++) { var s = ss.getSheetByName(namesArray[i]); if (s) return s; } return null; }
+
+  if (action === "submitFeedback") {
+    var sheet = getTargetSheet(feedbackSheetNames);
+    if (!sheet) { sheet = ss.insertSheet("Feedback"); sheet.appendRow(["วัน-เวลาที่ส่ง", "ข้อเสนอแนะ / ปัญหาที่พบ"]); }
+    var feedbackText = e.parameter.feedbackText; if (feedbackText) { sheet.appendRow([new Date(), feedbackText]); }
+    return ContentService.createTextOutput(JSON.stringify({success: true})).setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  // 📝 ส่วนรับฟอร์ม อสม. บันทึกกระจายข้อมูลลงแท็บ "Sheet1" พร้อมระบบเด้ง LINE หลายคน (Multicast)
+  try {
+    var params = e.parameter;
+    var sheet = ss.getSheetByName("Sheet1") || ss.getSheets()[0];
+    
+    // เรียงแถวคอลัมน์บันทึกตรงตามโครงสร้างภาพแรกของ Sheet1 เป๊ะๆ
+    var rowData = [
+      new Date(),
+      params.patientName || "ไม่ระบุชื่อ",
+      params.patientAge || "-",
+      params.patientGender || "-",
+      params.villageNo || "-",
+      params.vhmName || "-",
+      params.assessmentType || "2Q/9Q/8Q",
+      params.q2Result || "-",
+      params.q9Score || "0",
+      params.q8Result || "0",
+      params.comment || "-"
+    ];
+    sheet.appendRow(rowData);
+    
+    // ตรวจดักจับเคสวิกฤตสุขภาพจิตเพื่อส่ง LINE เตือนภัย
+    var num9Q = parseInt(params.q9Score) || 0; var num8Q = parseInt(params.q8Result) || 0;
+    if (num9Q >= 7 || num8Q >= 1 || (params.q2Result && params.q2Result.indexOf("เสี่ยง") !== -1)) {
+      var channelAccessToken = "vQk54LXyk7D2Il3BISTRmnzJ4mps/CpaJsYmlxpq3cNqpAxTSdtv1Eq74qfcRNgRYKWkdbgnaB06cuJDRD9OgZ+ioJj5LuxA3pRl7PWltpfhlXdAVQgTf1lKt9SOAUWAfDPKrU1Jhj2laQUM9bQRaDB04t89/1O/w1cDnyllFU=";
+      
+      // 🛠️ [จุดรวมสายตรวจแอดมิน] พี่เอาชุดรหัส User ID ตัว U ของผู้ดูแลทุกคนมาหยอดใส่เรียงคอมม่าในกรงนี้ได้เลยครับ!
+      var targetIds = [
+        "U7bb79de2f3f8e5e7276ec097958a6973", // ผู้ดูแลคนที่ 1 (ไอดีเดิมของพี่)
+        "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", // ผู้ดูแลคนที่ 2 (เอาไอดีจริงของคนอื่นมาสลับวางแทนตัว x ได้เลย)
+        "Uyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"  // ผู้ดูแลคนที่ 3 (เอาไอดีจริงของคนอื่นมาสลับวางแทนตัว y ได้เลย)
+      ];
+      
+      var alertMessage = "🚨 [แจ้งเตือนเคสเสี่ยงสูง] รพ.สต.บ้านทองหลาง\\n\\n" +
+                         "👤 ผู้รับตรวจ: " + (params.patientName||"") + "\\n" +
+                         "🏡 พื้นที่: " + (params.villageNo||"-") + " | เพศ: " + (params.patientGender||"-") + "\\n" +
+                         "📌 ผลคัดกรองด่วน 2Q: " + (params.q2Result||"-") + "\\n" +
+                         "🧠 คะแนนสรุป 9Q: " + (params.q9Score||"0") + "\\n" +
+                         "⚠️ คะแนนสรุป 8Q (เสี่ยงทำร้ายตัวเอง): " + (params.q8Result||"0") + "\\n" +
+                         "🧑‍⚕️ เจ้าหน้าที่ผู้ประเมิน: " + (params.vhmName||"-") + "\\n" +
+                         "📝 หมายเหตุเพิ่มเติม: " + (params.comment||"-");
+      
+      // เปลี่ยนหัวเรือยิงผ่านท่อจัดชุดกระจายกลุ่ม (Multicast) ของทาง LINE เพื่อยิงออกพร้อมกันทีเดียว
+      var url = "https://api.line.me/v2/bot/message/multicast";
+      var payload = JSON.stringify({ 
+        "to": targetIds, 
+        "messages": [{ "type": "text", "text": alertMessage }] 
+      });
+      
+      var options = {
+        "method": "post",
+        "headers": { "Content-Type": "application/json", "Authorization": "Bearer " + channelAccessToken },
+        "payload": payload,
+        "muteHttpExceptions": true
+      };
+      UrlFetchApp.fetch(url, options);
+    }
+    return ContentService.createTextOutput(JSON.stringify({success: true})).setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({success: false, error: err.toString()})).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+';
     
     let allData = []; 
     let currentSelectedPatientName = ""; 
