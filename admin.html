@@ -273,15 +273,11 @@
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySImkthOaj1K3yK3QtFsc0qUNx7wFMF9gNaPjO_IL86H6JaywSU2ZnF4NPic_ypsW8ew/exec';
     const LIFF_ID = "2010303347-dja2J8TA"; 
 
-    // 🎯 แก้ไขระบบดึงและส่งข้อมูล: ใช้ fetch แทนเพื่อให้ทำงานบน Vercel ได้สมบูรณ์
+    // 🎯 ปรับจังหวะโหลด: ดึงโปรไฟล์ LINE และ fetch ยิงข้อมูลทันที (เพราะย้าย liff.init ไปไว้ตอนโหลดหน้าเว็บแล้ว)
     async function saveLineIdToSheet(username, password) {
       try {
-        await liff.init({ liffId: LIFF_ID });
-        if (!liff.isLoggedIn()) {
-          liff.login(); 
-        } else {
+        if (liff.isLoggedIn()) {
           const profile = await liff.getProfile();
-          // ยิง fetch ไปหาหลังบ้านเพื่อบันทึกข้อมูล
           fetch(`${GOOGLE_SCRIPT_URL}?action=updateAdminLineId&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&lineId=${encodeURIComponent(profile.userId)}`)
             .then(res => res.json())
             .then(res => console.log("บันทึกสิทธิ์ LINE ID ลง Google Sheet สำเร็จ:", res))
@@ -297,12 +293,23 @@
     let currentSelectedPatientGender = "";
     let currentSelectedPatientVillage = "";
 
-    window.onload = () => {
+    // 🎯 ปรับปรุงจุดนี้: ให้แอปขอสิทธิ์และล็อกอิน LINE ค้างไว้ทันทีตั้งแต่เปิดหน้าเว็บ เพื่อไม่ให้เด้งรีโหลดตอนกดปุ่มล็อกอิน
+    window.onload = async () => {
         const daySelect = document.getElementById('patientBirthDay');
         for (let i = 1; i <= 31; i++) {
             let opt = document.createElement('option');
             opt.value = i; opt.innerText = i;
             daySelect.appendChild(opt);
+        }
+
+        try {
+            await liff.init({ liffId: LIFF_ID });
+            if (!liff.isLoggedIn()) {
+                // บังคับให้เด้งกลับมาที่หน้า admin.html ตัวเองแน่นอน 100% ไม่หลุดไปหน้าอื่น
+                liff.login({ redirectUri: window.location.href }); 
+            }
+        } catch (err) {
+            console.error("LIFF Onload Init Error:", err);
         }
     };
 
@@ -363,7 +370,7 @@
             .then(res => {
                 btn.innerText = "🔓 เข้าสู่ระบบแดชบอร์ด";
                 if (res.success) {
-                    // 🎯 เรียกฟังก์ชัน fetch ส่งคู่ Username และ Password ไปล็อกแถวคอลัมน์ E
+                    // เรียกฟังก์ชันส่งคู่ Username และ Password ไปล็อกแถวบันทึกคอลัมน์ E ได้ทันที ไม่รีโหลดหน้าจอแล้ว
                     saveLineIdToSheet(u, p);
                     
                     document.getElementById('adminDisplayName').innerText = res.name;
@@ -468,7 +475,7 @@
             if (sortType === 'timeNewOld') return parseTimestamp(b.timestamp) - parseTimestamp(a.timestamp);
             if (sortType === 'timeOldNew') return parseTimestamp(a.timestamp) - parseTimestamp(b.timestamp);
             if (sortType === 'nameAZ') return a.patientName.localeCompare(b.patientName, 'th');
-            if (sortType === 'nameZA') return b.patientName.localeCompare(a.patientName, 'th');
+            if (sortType === 'nameZA') return b.patientName.localeCompare(b.patientName, 'th');
             if (sortType === 'ageMaxMin') return getNumericAge(b) - getNumericAge(a);
             if (sortType === 'ageMinMax') {
                 let ageA = getNumericAge(a); let ageB = getNumericAge(b);
@@ -823,3 +830,5 @@
             });
     }
 </script>
+</body>
+</html>
