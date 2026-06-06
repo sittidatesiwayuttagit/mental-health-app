@@ -245,7 +245,21 @@
 
 <script>
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyuOTeY-1dcKYJV30fkXSyv8JzhfclxNjpnzZCgg8xcb1pekoxiIYJpuIBnMZ_INYzdZA/exec';
-    
+    // วางไว้บนสุดในแท็ก <script>
+    const LIFF_ID = "2010303347-dja2J8TA"; // ไปเอามาจาก LINE Developers
+
+    async function saveLineIdToSheet(username) {
+      try {
+        await liff.init({ liffId: LIFF_ID });
+        if (liff.isLoggedIn()) {
+          const profile = await liff.getProfile();
+          google.script.run.updateAdminLineId(username, profile.userId);
+        }
+      } catch (err) {
+        console.error("LIFF Error:", err);
+      }
+    }
+
     let allData = []; 
     let currentSelectedPatientName = ""; 
     let currentSelectedPatientGender = "";
