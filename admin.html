@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบแดชบอร์ดคนดูแล - รพ.สต.บ้านทองหลาง</title>
+    
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    
     <style>
         body { font-family: Arial, sans-serif; background-color: #f1f5f9; color: #1e293b; margin: 0; padding: 20px; }
         .admin-card { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
@@ -270,11 +273,14 @@
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySImkthOaj1K3yK3QtFsc0qUNx7wFMF9gNaPjO_IL86H6JaywSU2ZnF4NPic_ypsW8ew/exec';
     const LIFF_ID = "2010303347-dja2J8TA"; 
 
-    // 🎯 แก้ไขระบบดึงและส่งข้อมูล: ส่งคู่ทั้ง Username และ Password ไปบันทึกใน Google Sheet
+    // 🎯 แก้ไขระบบดึงและส่งข้อมูล: บังคับล็อกอินดักไอดีตัว U ส่งคู่ทั้ง Username และ Password
     async function saveLineIdToSheet(username, password) {
       try {
         await liff.init({ liffId: LIFF_ID });
-        if (liff.isLoggedIn()) {
+        if (!liff.isLoggedIn()) {
+          // ถ้ายังไม่ล็อกอิน ให้กระโดดไปล็อกอินของ LINE ก่อนเพื่อดูดไอดีตัว U
+          liff.login(); 
+        } else {
           const profile = await liff.getProfile();
           google.script.run.updateAdminLineId(username, password, profile.userId);
         }
