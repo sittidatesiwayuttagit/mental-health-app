@@ -273,16 +273,19 @@
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySImkthOaj1K3yK3QtFsc0qUNx7wFMF9gNaPjO_IL86H6JaywSU2ZnF4NPic_ypsW8ew/exec';
     const LIFF_ID = "2010303347-dja2J8TA"; 
 
-    // 🎯 แก้ไขระบบดึงและส่งข้อมูล: บังคับล็อกอินดักไอดีตัว U ส่งคู่ทั้ง Username และ Password
+    // 🎯 แก้ไขระบบดึงและส่งข้อมูล: ใช้ fetch แทนเพื่อให้ทำงานบน Vercel ได้สมบูรณ์
     async function saveLineIdToSheet(username, password) {
       try {
         await liff.init({ liffId: LIFF_ID });
         if (!liff.isLoggedIn()) {
-          // ถ้ายังไม่ล็อกอิน ให้กระโดดไปล็อกอินของ LINE ก่อนเพื่อดูดไอดีตัว U
           liff.login(); 
         } else {
           const profile = await liff.getProfile();
-          google.script.run.updateAdminLineId(username, password, profile.userId);
+          // ยิง fetch ไปหาหลังบ้านเพื่อบันทึกข้อมูล
+          fetch(`${GOOGLE_SCRIPT_URL}?action=updateAdminLineId&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&lineId=${encodeURIComponent(profile.userId)}`)
+            .then(res => res.json())
+            .then(res => console.log("บันทึกสิทธิ์ LINE ID ลง Google Sheet สำเร็จ:", res))
+            .catch(err => console.error("ระบบคลาวด์ขัดข้องในการเซฟ ID:", err));
         }
       } catch (err) {
         console.error("LIFF Error:", err);
@@ -360,7 +363,7 @@
             .then(res => {
                 btn.innerText = "🔓 เข้าสู่ระบบแดชบอร์ด";
                 if (res.success) {
-                    // 🎯 เรียกฟังก์ชันส่งคู่ Username และ Password ไปล็อกแถวคอลัมน์ E
+                    // 🎯 เรียกฟังก์ชัน fetch ส่งคู่ Username และ Password ไปล็อกแถวคอลัมน์ E
                     saveLineIdToSheet(u, p);
                     
                     document.getElementById('adminDisplayName').innerText = res.name;
@@ -820,5 +823,3 @@
             });
     }
 </script>
-</body>
-</html>
