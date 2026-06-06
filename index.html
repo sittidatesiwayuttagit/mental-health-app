@@ -37,7 +37,6 @@
 <div class="container">
     <div id="vhmInfoHeader" class="vhm-info-header">ผู้ประเมิน: <span id="vhmDisplayName">-</span></div>
     
-    <!-- ================= หน้า 0: ยืนยันตัวตนเจ้าหน้าที่ ================= -->
     <div id="step0" class="step active">
         <div class="header">
             <h2>🔐 ระบบยืนยันตัวตนเจ้าหน้าที่</h2>
@@ -65,7 +64,6 @@
         </p>
     </div>
 
-    <!-- ================= หน้าพิเศษ: กู้คืนและเปลี่ยนรหัสผ่านด้วยตัวเอง ================= -->
     <div id="stepReset" class="step">
         <div class="header">
             <h2>🔄 ตั้งรหัสผ่านใหม่ด้วยตนเอง</h2>
@@ -94,7 +92,6 @@
         <button class="btn-nav btn-back" onclick="changeStep(0)">⬅️ ย้อนกลับหน้าล็อกอิน</button>
     </div>
 
-    <!-- ================= หน้า 1: ข้อมูลทั่วไป ================= -->
     <div id="step1" class="step">
         <div class="header">
             <h2>📋 ข้อมูลทั่วไปผู้รับการประเมิน</h2>
@@ -123,7 +120,6 @@
         <button class="btn-nav btn-next" onclick="goToStep2()">ถัดไป ➡️</button>
     </div>
 
-    <!-- ================= หน้า 2: แบบประเมินสุขภาพจิตแบบพ่วงคาสเคด ================= -->
     <div id="step2" class="step">
         <div class="header">
             <h2>🧠 เลือกแบบประเมินสุขภาพจิต</h2>
@@ -137,7 +133,6 @@
         </select>
         <div id="indicationText" class="indication"></div>
 
-        <!-- 🟦 ส่วนที่ 1: คำถามคัดกรอง 2Q -->
         <div id="panel2Q" class="sub-questions">
             <h4>📋 ส่วนที่ 1: ข้อคำถามคัดกรองซึมเศร้า 2Q (บังคับกรอก)</h4>
             <div class="form-group">
@@ -156,7 +151,6 @@
             </div>
         </div>
 
-        <!-- 🟦 ส่วนที่ 2: ข้อคำถามประเมินซึมเศร้า 9Q แบบจัดเต็มครบชุด -->
         <div id="panel9Q" class="sub-questions" style="display:none;">
             <h4>📋 ส่วนที่ 2: ข้อคำถามระดับความรุนแรง 9Q</h4>
             <p style="font-size:12px; color:#64748b; margin-bottom:12px;">(เกณฑ์: 0=ไม่มีเลย, 1=มีบางวัน 1-7 วัน, 2=มีบ่อย 7-14 วัน, 3=มีทุกวัน มากกว่า 14 วัน)</p>
@@ -171,7 +165,6 @@
             <div class="form-group" style="border: 2px solid #ef4444; padding: 10px; border-radius: 8px;"><label style="color:#b91c1c;">9. คิดทำร้ายตนเอง หรือคิดว่าถ้าตายๆ ไปเสียคงจะดี * (ข้อเฝ้าระวังพิเศษ)</label><select id="q9q9"><option value="">-- เลือกคำตอบ --</option><option value="0">ไม่มีเลย</option><option value="1">มีบางวัน</option><option value="2">มีบ่อยๆ</option><option value="3">มีทุกวัน</option></select></div>
         </div>
 
-        <!-- 🟦 ส่วนที่ 3: ข้อคำถามประเมินความเสี่ยงต่อการฆ่าตัวตาย 8Q ครบชุดและเกณฑ์น้ำหนัก -->
         <div id="panel8Q" class="sub-questions" style="display:none;">
             <h4>📋 ส่วนที่ 3: แบบประเมินความเสี่ยงต่อการฆ่าตัวตาย 8Q</h4>
             <p style="font-size:12px; color:#b91c1c; margin-bottom:12px; font-weight:bold;">⚠️ ข้อคำถามเกี่ยวกับความรู้สึกในช่วง 1 เดือนที่ผ่านมา (โปรดเลือก มี หรือ ไม่มี) โปรดถามด้วยความนุ่มนวล</p>
@@ -194,7 +187,6 @@
         <button class="btn-nav btn-back" onclick="changeStep(1)">⬅️ ย้อนกลับ</button>
     </div>
 
-    <!-- ================= หน้า 3: หน้าตรวจสอบข้อมูลสรุปก่อนบันทึกคลาวด์ ================= -->
     <div id="step3" class="step">
         <div class="header"><h2>🔍 ตรวจสอบความถูกต้อง</h2></div>
         <div class="summary-box">
@@ -322,7 +314,6 @@
         changeStep(2);
     }
 
-    // 🔄 คำนวณขยายแผงมุมมองฟอร์ม: ถ้าเป็น 8Q จะสั่งเปิดแผงทั้ง 2Q, 9Q และ 8Q เรียงลงมาให้กรอกพร้อมกัน
     function switchAssessment() {
         const type = document.getElementById('assessmentTypeSelect').value;
         const inText = document.getElementById('indicationText');
@@ -342,7 +333,6 @@
         }
     }
 
-    // 🔥 แกนคัดกรองคุมเกณฑ์: ตรวจจับคะแนน 9Q >= 7 หรือ ข้อ 9 มีอาการเพื่อบังคับทำ 8Q ห้ามข้ามสิทธิ์
     function goToStep3() {
         const q2q1 = document.querySelector('input[name="q2q1"]:checked');
         const q2q2 = document.querySelector('input[name="q2q2"]:checked');
@@ -351,7 +341,6 @@
         const type = document.getElementById('assessmentTypeSelect').value;
         const q2Res = (q2q1.value === "มี" || q2q2.value === "มี") ? "🚨 มีความเสี่ยง" : "🟢 ปกติ";
 
-        // เกณฑ์ขั้นที่ 1: ตรวจพบความเสี่ยง 2Q แต่ยังใช้หัวข้อ 2Q -> บังคับสลับทำ 9Q
         if (q2Res === "🚨 มีความเสี่ยง" && type === "2Q") {
             alert("🚨 ผู้รับตรวจมีความเสี่ยงจากผล 2Q! ระบบบังคับให้ทำแบบประเมิน 9Q ต่อเพื่อตรวจสอบความรุนแรง กรุณากรอกแบบสอบถามหัวข้อ 9Q ที่เพิ่มขึ้นมาด้านล่างครับ");
             document.getElementById('assessmentTypeSelect').value = "9Q"; 
@@ -362,7 +351,6 @@
         let score9Q = 0;
         let q9Value = 0;
 
-        // ถ้าหน้าต่างทำงานอยู่ในหมวด 9Q หรือ 8Q บังคับตรวจสอบความครบถ้วนของ 9Q ก่อนขยับหน้า
         if (type === '9Q' || type === '8Q') {
             for (let i = 1; i <= 9; i++) {
                 const val = document.getElementById(`q9q${i}`).value;
@@ -371,11 +359,10 @@
                     return;
                 }
                 score9Q += parseInt(val);
-                if (i === 9) q9Value = parseInt(val); // แกะคะแนนข้อ 9 ออกมาวินิจฉัยด่วน
+                if (i === 9) q9Value = parseInt(val); 
             }
         }
 
-        // 🚨 เกณฑ์ขั้นที่ 2 [เงื่อนไขใหม่]: คะแนนรวม 9Q >= 7 หรือ ข้อ 9 > 0 (คิดทำร้ายตัวเอง) แต่ยังไม่ทำ 8Q -> บังคับล็อกห้ามข้ามหน้า
         if ((score9Q >= 7 || q9Value > 0) && type !== '8Q') {
             alert(`🚨 ผลการประเมินวิกฤต! (คะแนนรวม 9Q = ${score9Q} คะแนน หรือ มีภาวะคิดทำร้ายตัวเองในข้อ 9)\n\nระบบตามหลักสาธารณสุขบังคับล็อกฟอร์ม ไม่ยอมให้ส่งข้อมูล และต้องทำแบบประเมินความเสี่ยงฆ่าตัวตาย 8Q เพิ่มเติมทันทีเพื่อป้องกันเหตุร้าย กรุณากรอกแผงข้อคำถาม 8Q ด้านล่างให้ครบถ้วนครับ`);
             document.getElementById('assessmentTypeSelect').value = "8Q";
@@ -384,7 +371,6 @@
         }
 
         let score8Q = 0;
-        // ถ้าหน้าต่างถูกยกระดับมาถึง 8Q บังคับเช็กความสะอาดเรียบร้อยของข้อสอบ 8Q ทั้ง 8 ข้อ
         if (type === '8Q') {
             for (let i = 1; i <= 8; i++) {
                 const val = document.getElementById(`q8q${i}`).value;
@@ -396,7 +382,6 @@
             }
         }
 
-        // นำค่าทั้งหมดไปลงพิมพ์กระจายลงหน้ากระดาน Step 3 ตรวจสอบความถูกต้อง
         document.getElementById('smName').innerText = document.getElementById('patientName').value;
         document.getElementById('smGender').innerText = document.getElementById('patientGender').value;
         document.getElementById('smVillage').innerText = document.getElementById('villageNo').value;
@@ -421,6 +406,7 @@
         changeStep(3);
     }
 
+    // 🎯 แก้ไขจุดนี้: ระบบวนลูปรับข้อมูลคนใหม่แบบไม่ปิดหน้าต่างใช้งาน
     function submitData() {
         const type = document.getElementById('assessmentTypeSelect').value;
         const sendData = new URLSearchParams({
@@ -436,8 +422,42 @@
             comment: document.getElementById('comment').value
         });
         fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: sendData })
-        .then(() => { alert('🎉 ส่งรายงานการคัดกรองขึ้นระบบคลาวด์ รพ.สต. สำเร็จเรียบร้อยครับ!'); liff.closeWindow(); })
-        .catch(error => { alert('❌ เกิดข้อผิดพลาดในเครือข่าย'); console.error(error); });
+        .then(() => { 
+            // 1. เด้งป๊อปอัปแจ้งผลสำเร็จตามปกติ
+            alert('🎉 ส่งรายงานการคัดกรองขึ้นระบบคลาวด์ รพ.สต. สำเร็จเรียบร้อยครับ!'); 
+            
+            // 2. ล้างข้อมูลฟอร์มเก่าทั้งหมดออกให้ขาวสะอาด 
+            document.getElementById('patientName').value = "";
+            document.getElementById('patientGender').value = "";
+            document.getElementById('villageNo').value = "";
+            document.getElementById('comment').value = "";
+            
+            // ล้างติ๊กวิทยุ 2Q
+            document.querySelectorAll('input[name="q2q1"], input[name="q2q2"]').forEach(radio => radio.checked = false);
+            
+            // ล้างข้อมูลตัวเลือก 9Q ทั้งหมด
+            for (let i = 1; i <= 9; i++) {
+                const el = document.getElementById('q9q' + i);
+                if (el) el.value = "";
+            }
+            
+            // ล้างข้อมูลตัวเลือก 8Q ทั้งหมด
+            for (let i = 1; i <= 8; i++) {
+                const el = document.getElementById('q8q' + i);
+                if (el) el.value = "";
+            }
+            
+            // 3. ปรับหมวดสลับคืนค่ากลับไปเริ่มต้นคัดกรองที่แบบประเมิน 2Q ใหม่
+            document.getElementById('assessmentTypeSelect').value = "2Q";
+            switchAssessment(); // คุมให้ซ่อนแผง 9Q และ 8Q อัตโนมัติ
+            
+            // 4. ดีดหน้าต่างสลับเปลี่ยนสเต็ปกลับไปหน้า 1 (กรอกข้อมูลทั่วไป) ทันทีโดยไม่ต้องล็อกอินใหม่
+            changeStep(1);
+        })
+        .catch(error => { 
+            alert('❌ เกิดข้อผิดพลาดในเครือข่าย'); 
+            console.error(error); 
+        });
     }
 </script>
 </body>
