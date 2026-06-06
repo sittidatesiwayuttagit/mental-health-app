@@ -3,200 +3,770 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบแดชบอร์ดผู้ดูแล - รพ.สต.บ้านทองหลาง</title>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <title>ระบบแดชบอร์ดคนดูแล - รพ.สต.บ้านทองหลาง</title>
     <style>
-        * { box-sizing: border-box; font-family: 'Sarabun', sans-serif; }
-        body { background-color: #f1f5f9; margin: 0; padding: 0; color: #1e293b; }
+        body { font-family: Arial, sans-serif; background-color: #f1f5f9; color: #1e293b; margin: 0; padding: 20px; }
+        .admin-card { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
         
-        /* หัวข้อส่วนบน */
-        .navbar { background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; padding: 20px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
-        .navbar h1 { margin: 0; font-size: 24px; font-weight: 700; }
-        .navbar p { margin: 5px 0 0 0; font-size: 14px; opacity: 0.9; }
+        .step { display: none; }
+        .step.active { display: block; }
+        .header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; }
+        
+        /* สไตล์แถบเมนู (Tabs Navigation) */
+        .tabs-bar { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        .tab-btn { padding: 12px 25px; border: none; background: #e2e8f0; color: #475569; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+        .tab-btn.active { background: #3b82f6; color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
 
-        /* แถบเมนูปุ่มเปลี่ยนแท็บ */
-        .tab-container { display: flex; justify-content: center; background: #ffffff; border-bottom: 2px solid #e2e8f0; padding: 10px 0; gap: 10px; }
-        .tab-btn { background: none; border: none; padding: 12px 24px; font-size: 15px; font-weight: 600; color: #64748b; cursor: pointer; border-radius: 8px; transition: all 0.2s ease; }
-        .tab-btn:hover { background-color: #f8fafc; color: #3b82f6; }
-        .tab-btn.active { background-color: #eff6ff; color: #2563eb; border-bottom: 3px solid #2563eb; border-radius: 8px 8px 0 0; }
+        /* สไตล์ระบบค้นหาและฟอร์ม */
+        .search-container, .vhm-form-box { background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 12px; margin-bottom: 25px; }
+        .inputs-row { display: flex; gap: 10px; margin-bottom: 12px; }
+        .controls-row { display: flex; gap: 10px; align-items: center; }
+        
+        input[type="text"], input[type="number"], input[type="password"], input[type="date"], select { 
+            width: 100%; padding: 12px; border: 2px solid #cbd5e1; border-radius: 10px; box-sizing: border-box; font-size: 16px; 
+        }
+        input[type="text"] { flex: 1; }
+        input[type="number"] { width: 160px; }
+        input[type="date"] { flex: 1; }
+        select { flex: 1; background-color: white; cursor: pointer; }
+        
+        /* สไตล์ปุ่ม */
+        .btn-refresh, .btn-search, .btn-login, .btn-action { padding: 12px 20px; border: none; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; color: white; white-space: nowrap; }
+        .btn-refresh { background-color: #64748b; }
+        .btn-search { background-color: #10b981; }
+        .btn-login { background-color: #3b82f6; width: 100%; padding: 15px; font-size: 16px; margin-top: 10px; }
+        .btn-action.delete { background-color: #ef4444; }
+        .btn-action.edit { background-color: #f59e0b; margin-right: 5px; }
+        
+        .loading { text-align: center; color: #64748b; font-style: italic; margin: 20px 0; }
+        .patient-history, .vhm-list-container { margin-top: 25px; }
+        .history-card, .vhm-table-row { border: 1px solid #e2e8f0; border-radius: 10px; padding: 15px; margin-bottom: 15px; background-color: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .history-header, .vhm-row-header { display: flex; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 8px; font-weight: bold; color: #64748b; font-size: 14px; }
+        .info-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; }
+        .danger { color: #ef4444; font-weight: bold; }
 
-        /* คอนเทนเนอร์แสดงผล */
-        .main-content { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
-        .tab-pane { display: none; background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
-        .tab-pane.active { display: block; }
+        /* สไตล์แถบปุ่มรายชื่อผู้ป่วย */
+        .patient-row-card {
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 16px 20px; background: white; border: 1px solid #e2e8f0; 
+            border-radius: 12px; margin-bottom: 10px; cursor: pointer; 
+            transition: all 0.2s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.01);
+        }
+        .patient-row-card:hover { background-color: #f0f7ff; border-color: #3b82f6; }
+        .patient-row-name { font-size: 16px; font-weight: bold; color: #1e293b; }
+        .patient-row-age { color: #64748b; font-size: 14px; margin-left: 10px; background: #f1f5f9; padding: 4px 10px; border-radius: 20px; }
+        
+        /* สไตล์แถบแจ้งผู้ใช้งานปัจจุบัน */
+        .admin-info-header { text-align: right; font-size: 14px; color: #475569; margin-bottom: 15px; font-weight: bold; background: #f8fafc; padding: 10px 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
 
-        /* การตั้งค่าดีไซน์ตาราง */
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 15px; text-align: left; }
-        th { background-color: #f8fafc; color: #475569; padding: 14px; border-bottom: 2px solid #e2e8f0; font-weight: 600; }
-        td { padding: 14px; border-bottom: 1px solid #f1f5f9; color: #334155; }
-        tr:hover { background-color: #f8fafc; }
-
-        /* ดีไซน์กล่องการ์ด Feedback (เพิ่มใหม่สะดุดตามาก) */
-        .feedback-card { background: #f8fafc; padding: 20px; border-radius: 12px; border-left: 6px solid #6366f1; box-shadow: 0 2px 8px rgba(0,0,0,0.02); margin-bottom: 15px; transition: transform 0.2s; }
-        .feedback-card:hover { transform: translateY(-2px); }
-        .feedback-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px; color: #64748b; font-weight: 600; }
-        .feedback-body { font-size: 16px; color: #1e293b; line-height: 1.6; white-space: pre-wrap; }
-
-        .loading { text-align: center; color: #94a3b8; padding: 40px 0; font-size: 16px; font-style: italic; }
-        .empty-state { text-align: center; color: #94a3b8; padding: 40px 0; font-size: 16px; }
+        /* 💬 เพิ่มใหม่: สไตล์กระดานการ์ด Feedback ข้อเสนอแนะ */
+        .feedback-card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 15px; background-color: #ffffff; border-left: 5px solid #6366f1; box-shadow: 0 2px 8px rgba(0,0,0,0.02); text-align: left; }
+        .feedback-header { display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 10px; font-weight: bold; color: #64748b; font-size: 13px; }
+        .feedback-body { font-size: 15px; color: #1e293b; line-height: 1.6; white-space: pre-wrap; }
     </style>
 </head>
 <body>
 
-<div class="navbar">
-    <h1>🖥️ แดชบอร์ดผู้ดูแลระบบอัจฉริยะ</h1>
-    <p>โรงพยาบาลส่งเสริมสุขภาพตำบลบ้านทองหลาง ประจำปี 2026</p>
-</div>
+<div class="admin-card">
 
-<div class="tab-container">
-    <button class="tab-btn active" onclick="switchTab('patients')">👤 ข้อมูลผู้ป่วย</button>
-    <button class="tab-btn" onclick="switchTab('vhm')">🧑‍⚕️ ข้อมูล อสม.</button>
-    <button class="tab-btn" onclick="switchTab('caregiver')">🏡 ข้อมูลผู้ดูแล</button>
-    <button class="tab-btn" onclick="switchTab('feedback')">💬 Feedback ข้อเสนอแนะ</button>
-</div>
-
-<div class="main-content">
-
-    <div id="tab-patients" class="tab-pane active">
-        <h2>👤 รายชื่อและผลคัดกรองข้อมูลผู้ป่วย</h2>
-        <p>แสดงรายชื่อและผลสรุปคะแนนประเมินภาวะสุขภาพจิต 2Q 9Q 8Q เรียลไทม์จากระบบคลาวด์</p>
-        <div id="patientsContainer" class="loading">⏳ กำลังโหลดข้อมูลผู้ป่วยจาก Google Sheet...</div>
+    <div id="loginStep" class="step active">
+        <div class="header">
+            <h2>🔐 ระบบยืนยันตัวตนผู้ดูแลข้อมูล (Admin)</h2>
+            <p>กรุณากรอกสิทธิ์เข้าใช้งานเพื่อเข้าถึงระบบแดชบอร์ด</p>
+        </div>
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label style="display:block; font-weight:bold; margin-bottom:5px;">Username</label>
+            <input type="text" id="adminUsername" placeholder="ระบุ Username ผู้ดูแลระบบ">
+        </div>
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label style="display:block; font-weight:bold; margin-bottom:5px;">Password</label>
+            <input type="password" id="adminPassword" placeholder="ระบุ Password ผู้ดูแลระบบ">
+        </div>
+        <button class="btn-login" id="btnAdminLoginText" onclick="verifyAdminAuth()">🔓 เข้าสู่ระบบแดชบอร์ด</button>
+        
+        <p style="text-align:center; margin-top:15px; font-size:14px;">
+            <a href="#" onclick="changeStep('resetAdminStep')" style="color:#3b82f6; font-weight:bold; text-decoration:none;">🔑 ลืมรหัสผ่าน? ตั้งรหัสใหม่ที่นี่</a>
+        </p>
     </div>
 
-    <div id="tab-vhm" class="tab-pane">
-        <h2>🧑‍⚕️ รายชื่อ อสม. นักจัดการสุขภาพจิตชุมชน</h2>
-        <p>รายชื่อและเขตพื้นที่ดูแลรับผิดชอบของพี่ๆ อสม. รพ.สต.บ้านทองหลาง</p>
-        <div id="vhmContainer" class="loading">⏳ กำลังโหลดข้อมูล อสม...</div>
+    <div id="resetAdminStep" class="step">
+        <div class="header">
+            <h2>🔄 ตั้งรหัสผ่านแอดมินใหม่ด้วยตนเอง</h2>
+            <p>ระบบจะตรวจสอบความถูกต้องจากรหัสลับบนฐานข้อมูลคลาวด์เพื่อยืนยันตัวตน</p>
+        </div>
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label style="display:block; font-weight:bold; margin-bottom:5px;">Username ของคุณ *</label>
+            <input type="text" id="resetAdminUsername" placeholder="กรอก Username แอดมินของคุณ">
+        </div>
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label style="display:block; font-weight:bold; margin-bottom:5px;">รหัสลับยืนยันตัวตนแอดมิน *</label>
+            <input type="password" id="resetAdminSecretKey" placeholder="กรอกรหัสลับแอดมินที่ลงทะเบียนไว้ใน Sheet">
+        </div>
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label style="display:block; font-weight:bold; margin-bottom:5px;">ระบุรหัสผ่านใหม่ที่ต้องการ *</label>
+            <input type="password" id="resetAdminNewPassword" placeholder="ตั้งรหัสผ่านใหม่">
+        </div>
+        <button class="btn-login" style="background-color: #10b981;" id="btnAdminResetText" onclick="handleAdminResetPassword()">💾 บันทึกและเปลี่ยนรหัสผ่าน</button>
+        <button class="btn-login" style="background-color: #94a3b8; margin-top: 8px;" onclick="changeStep('loginStep')">⬅️ ย้อนกลับหน้าล็อกอิน</button>
     </div>
 
-    <div id="tab-caregiver" class="tab-pane">
-        <h2>🏡 รายชื่อผู้ดูแลระบบแอดมิน / พยาบาลจิตเวช</h2>
-        <p>ตารางรายชื่อเจ้าหน้าที่สาธารณสุขและพยาบาลผู้ดูแลโปรเจกต์</p>
-        <div id="caregiverContainer" class="loading">⏳ กำลังโหลดข้อมูลผู้ดูแล...</div>
-    </div>
+    <div id="dashboardStep" class="step">
+        
+        <div class="admin-info-header">🖥️ ผู้ใช้งานปัจจุบัน: <span id="adminDisplayName" style="color: #3b82f6;">-</span></div>
 
-    <div id="tab-feedback" class="tab-pane">
-        <h2>💬 กล่องเสียงสะท้อนและข้อเสนอแนะระบบ (Anonymous Feedback)</h2>
-        <p>ข้อมูลทั้งหมดส่งมาแบบนิรนาม ไม่เก็บชื่อ/ผู้ใช้ใดๆ เพื่อความโปร่งใสและนำมาแก้ไขระบบหน้างาน</p>
-        <hr style="border: 0; height: 1px; background: #e2e8f0; margin: 20px 0;">
-        <div id="feedbackContainer" class="loading">⏳ กำลังดึงข้อมูลข้อเสนอแนะจากระบบคลาวด์...</div>
+        <div class="tabs-bar">
+            <button id="tabPatientsBtn" class="tab-btn active" onclick="switchTab('patientsTab')">📋 ข้อมูลผู้ป่วย</button>
+            <button id="tabVhmBtn" class="tab-btn" onclick="switchTab('vhmTab')">👥 ข้อมูล อสม.</button>
+            <button id="tabAdminsBtn" class="tab-btn" onclick="switchTab('adminsTab')">👥 ข้อมูลผู้ดูแล</button> 
+            <button id="tabFeedbackBtn" class="tab-btn" onclick="switchTab('feedbackTab')">💬 Feedback ข้อเสนอแนะ</button> 
+        </div>
+
+        <div id="loadingText" class="loading" style="display:none;">กำลังดึงข้อมูลล่าสุดจาก Google Sheet...</div>
+
+        <div id="patientsTab" class="tab-content active">
+            <div id="patientListSection">
+                <div class="search-container">
+                    <div class="inputs-row">
+                        <input type="text" id="searchInput" oninput="processData()" placeholder="🔍 พิมพ์ชื่อ-นามสกุลผู้ป่วยเพื่อค้นหา...">
+                        <input type="number" id="ageInput" oninput="processData()" placeholder="🔢 พิมพ์อายุคำนวณเพื่อค้นหา..." min="1" max="120">
+                    </div>
+                    <div class="controls-row">
+                        <label style="font-weight: bold; color: #475569; white-space: nowrap;">🔃 วิธีเรียงข้อมูล:</label>
+                        <select id="sortSelect" onchange="processData()">
+                            <option value="timeNewOld">🕒 เวลาตรวจล่าสุด ➡️ เก่าสุด</option>
+                            <option value="timeOldNew">🕒 เวลาตรวจเก่าสุด ➡️ ล่าสุด</option>
+                            <option value="nameAZ">🔤 ชื่อผู้ป่วย: ก ➡️ ฮ</option>
+                            <option value="nameZA">🔤 ชื่อผู้ป่วย: ฮ ➡️ ก</option>
+                            <option value="ageMaxMin">👴 อายุคำนวณ: มาก ➡️ น้อย</option>
+                            <option value="ageMinMax">👶 อายุคำนวณ: น้อย ➡️ มาก</option>
+                        </select>
+                        <button class="btn-search" onclick="processData()">🔍 ค้นหา</button>
+                        <button class="btn-refresh" onclick="fetchPatientData()">🔄 รีเฟรช</button>
+                    </div>
+                </div>
+                <div id="patientListView"></div>
+            </div>
+
+            <div id="patientDetailSection" style="display: none;">
+                <button class="btn-refresh" onclick="backToPatientList()" style="margin-bottom: 20px; background-color: #475569; display: inline-flex; align-items: center; gap: 5px;">⬅️ กลับไปหน้าประวัติรายชื่อ</button>
+                <div id="patientDetailHeader" style="background: #eff6ff; padding: 20px; border-radius: 14px; margin-bottom: 15px; border: 1px solid #bfdbfe;">
+                    <h3 id="detPatientName" style="margin: 0 0 8px 0; color: #1d4ed8;">👤 ชื่อผู้ป่วย: -</h3>
+                    <p id="detPatientMeta" style="margin: 0; color: #4b5563; font-size: 15px;">ข้อมูลพื้นฐาน: อายุคำนวณ - | เพศ - | ที่อยู่: -</p>
+                </div>
+                <div class="search-container" style="background-color: #ffffff; border: 2px solid #3b82f6; margin-bottom: 15px;">
+                    <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">📆 จัดการวันเดือนปีเกิดของผู้ป่วย (พ.ศ.)</h4>
+                    <div class="inputs-row" style="margin-top: 10px;">
+                        <select id="patientBirthDay"><option value="">-- วันที่เกิด --</option></select>
+                        <select id="patientBirthMonth">
+                            <option value="">-- เดือนเกิด --</option>
+                            <option value="1">มกราคม (1)</option><option value="2">กุมภาพันธ์ (2)</option><option value="3">มีนาคม (3)</option>
+                            <option value="4">เมษายน (4)</option><option value="5">พฤษภาคม (5)</option><option value="6">มิถุนายน (6)</option>
+                            <option value="7">กรกฎาคม (7)</option><option value="8">สิงหาคม (8)</option><option value="9">กันยายน (9)</option>
+                            <option value="10">ตุลาคม (10)</option><option value="11">พฤศจิกายน (11)</option><option value="12">ธันวาคม (12)</option>
+                        </select>
+                        <input type="number" id="patientBirthYear" placeholder="ปี พ.ศ. เกิด (เช่น 2515)" min="2400" max="2600">
+                    </div>
+                    <div style="text-align: right; margin-top: 10px;">
+                        <button class="btn-search" onclick="savePatientBirthdate()">💾 บันทึกวันเดือนปีเกิด</button>
+                    </div>
+                </div>
+                <div class="search-container" style="background-color: #ffffff; border: 1px solid #cbd5e1; margin-bottom: 25px;">
+                    <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">🔍 ตัวกรอง: เลือกดูประวัติตามวันที่ตรวจ</h4>
+                    <div class="inputs-row" style="margin-top: 10px;">
+                        <input type="date" id="detailDateFilter">
+                        <button class="btn-search" onclick="renderPatientDetail()">🔍 ค้นหาตามวันที่</button>
+                        <button class="btn-refresh" onclick="clearDetailDateFilter()" style="background-color: #64748b;">🔄 แสดงทั้งหมด</button>
+                    </div>
+                </div>
+                <h3 style="color: #334155; border-left: 4px solid #3b82f6; padding-left: 10px; margin-bottom: 15px;">📋 ประวัติการบันทึกประเมินสุขภาพจิตทั้งหมด</h3>
+                <div id="patientHistoryCards"></div>
+            </div>
+        </div>
+
+        <div id="vhmTab" class="tab-content">
+            <div class="vhm-form-box">
+                <h4 id="formVhmTitle" style="margin-top: 0; color: #3b82f6;">➕ เพิ่ม อสม. รายใหม่เข้าระบบคลาวด์</h4>
+                <input type="hidden" id="vhmFormMode" value="add"> 
+                <div class="inputs-row">
+                    <input type="text" id="vhmUsernameInput" placeholder="Username (ภาษาอังกฤษ)">
+                    <input type="text" id="vhmPasswordInput" placeholder="Password เข้าใช้งาน">
+                </div>
+                <div class="inputs-row">
+                    <input type="text" id="vhmNameInput" placeholder="ชื่อ-นามสกุล อสม.">
+                    <input type="text" id="vhmSecretKeyInput" placeholder="รหัสลับส่วนตัว (เช่นเลขท้ายบัตร)">
+                </div>
+                <div style="text-align: right;">
+                    <button id="btnCancelVhmEdit" class="btn-refresh" style="display:none; margin-right:5px;" onclick="cancelVhmEditMode()">ยกเลิก</button>
+                    <button class="btn-search" onclick="saveVhmData()">💾 บันทึกข้อมูล อสม.</button>
+                </div>
+            </div>
+            <div id="vhmList" class="vhm-list-container"></div>
+        </div>
+
+        <div id="adminsTab" class="tab-content">
+            <div class="vhm-form-box" style="border: 2px solid #10b981;">
+                <h4 id="formAdminTitle" style="margin-top: 0; color: #10b981;">➕ เพิ่ม ผู้ดูแลระบบ (Admin) รายใหม่เข้าระบบคลาวด์</h4>
+                <input type="hidden" id="adminFormMode" value="add"> 
+                <div class="inputs-row">
+                    <input type="text" id="adminUsernameInput" placeholder="Username แอดมินใหม่">
+                    <input type="text" id="adminPasswordInput" placeholder="Password เข้าใช้งาน">
+                </div>
+                <div class="inputs-row">
+                    <input type="text" id="adminNameInput" placeholder="ชื่อ-นามสกุล/ตำแหน่ง ผู้ดูแล">
+                    <input type="text" id="adminSecretKeyInput" placeholder="รหัสลับส่วนตัว (สำหรับใช้กู้คืนรหัสผ่าน)">
+                </div>
+                <div style="text-align: right;">
+                    <button id="btnCancelAdminEdit" class="btn-refresh" style="display:none; margin-right:5px;" onclick="cancelAdminEditMode()">ยกเลิก</button>
+                    <button class="btn-search" style="background-color: #10b981;" onclick="saveAdminData()">💾 บันทึกข้อมูลผู้ดูแล</button>
+                </div>
+            </div>
+            <div id="adminList" class="vhm-list-container"></div>
+        </div>
+
+        <div id="feedbackTab" class="tab-content">
+            <div style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 20px; border-radius: 12px; margin-bottom: 25px;">
+                <h3 style="margin-top:0; color:#6366f1;">💬 กล่องข้อเสนอแนะจากผู้ใช้งานระบบ (Anonymous)</h3>
+                <p style="margin:0; color:#64748b; font-size:14px;">รวมเสียงสะท้อนเพื่อนำไปปรับปรุงและซ่อมแซมระบบล็อกคัดกรอง ข้อมูลส่งมาแบบนิรนามและไม่มีการบันทึกชื่อตัวตน</p>
+            </div>
+            <div id="feedbackContainer"></div>
+        </div>
+
     </div>
 
 </div>
 
 <script>
-    // ⚠️ สำคัญมากพี่ห้ามลืม: เอาลิงก์ Web App ตัวยาวๆ อันล่าสุดที่พี่ Deploy มาวางสวมทับแทนที่ตรงคำว่า XXXXX นี้ด้วยนะครับ!
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxOBj8d2y9F8LWAQefbj6ztRGs3xnFnJMpm3UoC1tvpWtQHDbMNvwSY_7OkALDqmFQc6w/exec'; 
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby_g9gzFzx7Hf8K-T_0x7VuqpJx7S-bSnNE3_e_Mg75SAVtV9riFwmzcf1tPcJ0lrutSg/exec';
+    
+    let allData = []; 
+    let currentSelectedPatientName = ""; 
+    let currentSelectedPatientGender = "";
+    let currentSelectedPatientVillage = "";
 
-    // ระบบสลับแท็บเมนูอัจฉริยะ
-    function switchTab(tabName) {
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-        document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
-        
-        const eventBtn = document.querySelector(`[onclick="switchTab('${tabName}')"]`);
-        if(eventBtn) eventBtn.classList.add('active');
-        
-        const targetPane = document.getElementById(`tab-${tabName}`);
-        if(targetPane) targetPane.classList.add('active');
-        
-        // ดึงข้อมูลรายแท็บโดยยิงสลับตามพารามิเตอร์ action
-        if (tabName === 'patients') { loadPatientData(); }
-        else if (tabName === 'vhm') { loadVhmData(); }
-        else if (tabName === 'caregiver') { loadCaregiverData(); }
-        else if (tabName === 'feedback') { loadFeedbackData(); }
+    window.onload = () => {
+        const daySelect = document.getElementById('patientBirthDay');
+        for (let i = 1; i <= 31; i++) {
+            let opt = document.createElement('option');
+            opt.value = i; opt.innerText = i;
+            daySelect.appendChild(opt);
+        }
+    };
+
+    function calculateAge(d, m, yBE) {
+        if (!d || !m || !yBE) return "-";
+        const yCE = parseInt(yBE) - 543;
+        const today = new Date(); 
+        const birthDate = new Date(yCE, parseInt(m) - 1, parseInt(d));
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        return age >= 0 ? age + " ปี" : "-";
     }
 
-    // 🔄 ฟังก์ชันโหลด Feedback (ดึงจาก Sheet ชื่อ Feedback มาเรียงโชว์ล่าสุดขึ้นก่อน)
-    function loadFeedbackData() {
-        const container = document.getElementById('feedbackContainer');
-        container.innerHTML = "⏳ กำลังเชื่อมต่อฐานข้อมูลข้อเสนอแนะ...";
+    function getNumericAge(item) {
+        const ageStr = calculateAge(item.birthDay, item.birthMonth, item.birthYear);
+        if (ageStr === "-") return -1;
+        return parseInt(ageStr);
+    }
+
+    function changeStep(stepId) {
+        document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+        document.getElementById(stepId).classList.add('active');
+    }
+
+    // 🛠️ ปรับปรุงฟังก์ชันสลับแท็บเมนูหลักเพื่อเปิด-ปิดแท็บ Feedback ใหม่ได้อย่างสมบูรณ์แบบ
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
         
-        fetch(`${GOOGLE_SCRIPT_URL}?action=getFeedback`)
-        .then(res => res.json())
-        .then(data => {
-            if(!data || data.length === 0) {
-                container.innerHTML = `<p class="empty-state">📭 ยังไม่มีข้อเสนอแนะส่งเข้ามาในระบบครับ</p>`;
-                return;
-            }
-            
-            container.innerHTML = "";
-            data.reverse().forEach(item => {
-                const card = document.createElement('div');
-                card.className = "feedback-card";
-                card.innerHTML = `
-                    <div class="feedback-header">
-                        <span>👤 ผู้ส่งข้อมูล: ไม่ระบุตัวตน (Anonymous)</span>
-                        <span>⏰ วันที่ส่ง: ${item.timestamp} น.</span>
-                    </div>
-                    <div class="feedback-body">${item.text}</div>
-                `;
-                container.appendChild(card);
+        document.getElementById(tabId).classList.add('active');
+        if (tabId === 'patientsTab') {
+            document.getElementById('tabPatientsBtn').classList.add('active');
+            fetchPatientData();
+        } else if (tabId === 'vhmTab') {
+            document.getElementById('tabVhmBtn').classList.add('active');
+            fetchVhmData();
+        } else if (tabId === 'adminsTab') {
+            document.getElementById('tabAdminsBtn').classList.add('active');
+            fetchAdminData(); 
+        } else if (tabId === 'feedbackTab') {
+            document.getElementById('tabFeedbackBtn').classList.add('active');
+            fetchFeedbackData(); // ยิงฟังก์ชันไปดูดข้อความเสนอแนะ
+        }
+    }
+
+    function verifyAdminAuth() {
+        const u = document.getElementById('adminUsername').value.trim();
+        const p = document.getElementById('adminPassword').value;
+        const btn = document.getElementById('btnAdminLoginText');
+
+        if (!u || !p) { alert("⚠️ กรุณากรอกข้อมูลให้ครบถ้วน"); return; }
+        btn.innerText = "⏳ กำลังตรวจสอบสิทธิ์แอดมิน...";
+
+        fetch(`${GOOGLE_SCRIPT_URL}?action=checkAdminLogin&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}`)
+            .then(res => res.json())
+            .then(res => {
+                btn.innerText = "🔓 เข้าสู่ระบบแดชบอร์ด";
+                if (res.success) {
+                    document.getElementById('adminDisplayName').innerText = res.name;
+                    changeStep('dashboardStep'); 
+                    fetchPatientData(); 
+                } else {
+                    alert("❌ " + res.message);
+                }
+            })
+            .catch(err => {
+                btn.innerText = "🔓 เข้าสู่ระบบแดชบอร์ด";
+                alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูลแอดมินคลาวด์");
             });
-        })
-        .catch(err => {
-            container.innerHTML = `<p style="text-align:center; color:#ef4444; padding:20px;">❌ ดึงข้อมูลผิดพลาด กรุณาเช็กชื่อแท็บใน Google Sheet ว่าพิมพ์ว่า 'Feedback' ตรงกันไหม</p>`;
+    }
+
+    function handleAdminResetPassword() {
+        const u = document.getElementById('resetAdminUsername').value.trim();
+        const key = document.getElementById('resetAdminSecretKey').value.trim();
+        const newP = document.getElementById('resetAdminNewPassword').value;
+        const btn = document.getElementById('btnAdminResetText');
+
+        if(!u || !key || !newP) { alert("⚠️ กรุณากรอกข้อมูลดาวจันให้ครบถ้วนทุกช่องครับ"); return; }
+        if(newP.length < 4) { alert("⚠️ เพื่อความปลอดภัย รหัสผ่านใหม่ควรยาว 4 ตัวอักษรขึ้นไป"); return; }
+
+        btn.innerText = "⏳ กำลังบันทึกรหัสผ่านใหม่ลงคลาวด์...";
+
+        fetch(`${GOOGLE_SCRIPT_URL}?action=resetAdminPassword&username=${encodeURIComponent(u)}&secretKey=${encodeURIComponent(key)}&newPassword=${encodeURIComponent(newP)}`)
+            .then(res => res.json())
+            .then(res => {
+                btn.innerText = "💾 บันทึกและเปลี่ยนรหัสผ่าน";
+                if(res.success) {
+                    alert("🎉 รีเซ็ตรหัสผ่านแอดมินบน Google Sheet สำเร็จ! สามารถนำรหัสใหม่ไปใช้ล็อกอินได้ทันทีครับ");
+                    document.getElementById('adminUsername').value = u;
+                    document.getElementById('adminPassword').value = "";
+                    changeStep('loginStep');
+                } else {
+                    alert("❌ " + res.message);
+                }
+            })
+            .catch(err => {
+                btn.innerText = "💾 บันทึกและเปลี่ยนรหัสผ่าน";
+                alert("❌ เกิดข้อผิดพลาดระบบเครือข่าย ไม่สามารถเชื่อมต่อตารางแอดมินได้");
+            });
+    }
+
+    // ==========================================
+    // 👤 โซนระบบจัดการคนไข้ / ผู้รับตรวจ
+    // ==========================================
+    function fetchPatientData() {
+        const loading = document.getElementById('loadingText');
+        loading.style.display = 'block';
+        document.getElementById('patientListSection').style.display = 'block';
+        document.getElementById('patientDetailSection').style.display = 'none';
+
+        fetch(GOOGLE_SCRIPT_URL)
+            .then(res => {
+                if (!res.ok) throw new Error("HTTP Status " + res.status);
+                return res.text();
+            })
+            .then(text => {
+                try {
+                    allData = JSON.parse(text);
+                    loading.style.display = 'none';
+                    processData();
+                } catch(e) {
+                    loading.style.display = 'none';
+                    alert("❌ สคริปต์คืนข้อมูลผิดพลาด: " + text.substring(0, 150));
+                }
+            })
+            .catch(err => {
+                loading.style.display = 'none';
+                alert("❌ เกิดข้อผิดพลาดเครือข่าย/CORS: " + err.message);
+            });
+    }
+
+    function processData() {
+        const listViewDiv = document.getElementById('patientListView');
+        listViewDiv.innerHTML = '';
+        if (allData.length === 0) return;
+
+        let filteredData = [...allData];
+        const nameSearch = document.getElementById('searchInput').value.trim().toLowerCase();
+        if (nameSearch) filteredData = filteredData.filter(item => item.patientName.toLowerCase().includes(nameSearch));
+        
+        const ageSearch = document.getElementById('ageInput').value.trim();
+        if (ageSearch) filteredData = filteredData.filter(item => getNumericAge(item) === parseInt(ageSearch));
+
+        const sortType = document.getElementById('sortSelect').value;
+        filteredData.sort((a, b) => {
+            if (sortType === 'timeNewOld') return parseTimestamp(b.timestamp) - parseTimestamp(a.timestamp);
+            if (sortType === 'timeOldNew') return parseTimestamp(a.timestamp) - parseTimestamp(b.timestamp);
+            if (sortType === 'nameAZ') return a.patientName.localeCompare(b.patientName, 'th');
+            if (sortType === 'nameZA') return b.patientName.localeCompare(a.patientName, 'th');
+            if (sortType === 'ageMaxMin') return getNumericAge(b) - getNumericAge(a);
+            if (sortType === 'ageMinMax') {
+                let ageA = getNumericAge(a); let ageB = getNumericAge(b);
+                if (ageA === -1) ageA = 999; if (ageB === -1) ageB = 999;
+                return ageA - ageB;
+            }
+            return 0;
+        });
+
+        let uniquePatients = [];
+        let seenKeys = new Set(); 
+
+        filteredData.forEach(item => {
+            const compoundKey = `${item.patientName.trim()}|${item.patientGender.trim()}|${item.villageNo.trim()}`;
+            if (!seenKeys.has(compoundKey)) {
+                seenKeys.add(compoundKey);
+                uniquePatients.push({ 
+                    name: item.patientName, 
+                    gender: item.patientGender,
+                    village: item.villageNo,
+                    day: item.birthDay, 
+                    month: item.birthMonth, 
+                    year: item.birthYear 
+                });
+            }
+        });
+
+        if (uniquePatients.length === 0) {
+            listViewDiv.innerHTML = '<p style="text-align:center; color:#64748b; padding:20px;">❌ ไม่พบรายชื่อผู้ป่วยตามเงื่อนไขการค้นหา</p>';
+            return;
+        }
+
+        uniquePatients.forEach(p => {
+            let ageText = calculateAge(p.day, p.month, p.year);
+            let rowCard = document.createElement('div');
+            rowCard.className = 'patient-row-card';
+            rowCard.setAttribute('onclick', `showPatientDetail("${p.name.replace(/"/g, '&quot;')}", "${p.gender}", "${p.village}")`);
+            rowCard.innerHTML = `
+                <div>
+                    <span class="patient-row-name">👤 ${p.name}</span>
+                    <span class="patient-row-age" style="margin-left: 8px;">หมู่บ้าน: ${p.village} | เพศ: ${p.gender}</span>
+                    <span class="patient-row-age">อายุคำนวณ: ${ageText !== "-" ? ageText : "ยังไม่ระบุวันเกิด"}</span>
+                </div>
+                <span style="color: #3b82f6; font-weight: bold; font-size: 14px;">คลิกดูข้อมูลเชิงลึก ➡️</span>
+            `;
+            listViewDiv.appendChild(rowCard);
         });
     }
 
-    // 🔄 ฟังก์ชันโหลดข้อมูลผู้ป่วย
-    function loadPatientData() {
-        const container = document.getElementById('patientsContainer');
-        fetch(`${GOOGLE_SCRIPT_URL}?action=getPatients`)
-        .then(res => res.json())
-        .then(data => {
-            if(!data || data.length === 0) { container.innerHTML = `<p class="empty-state">📭 ไม่มีข้อมูลรายชื่อผู้รับตรวจ</p>`; return; }
-            let html = "<table><tr><th>ชื่อ-นามสกุล</th><th>หมู่บ้าน</th><th>เพศ</th><th>ผล 2Q</th><th>คะแนน 9Q</th><th>คะแนน 8Q</th></tr>";
-            data.forEach(row => {
-                html += `<tr>
-                    <td>${row['ชื่อ-นามสกุล'] || row['patientName'] || '-'}</td>
-                    <td>${row['หมู่บ้าน'] || row['villageNo'] || '-'}</td>
-                    <td>${row['เพศ'] || row['patientGender'] || '-'}</td>
-                    <td>${row['ผล 2Q'] || row['q2Result'] || '-'}</td>
-                    <td>${row['คะแนน 9Q'] || row['q9Score'] || '0'}</td>
-                    <td>${row['คะแนน 8Q'] || row['q8Result'] || '0'}</td>
-                </tr>`;
-            });
-            html += "</table>";
-            container.innerHTML = html;
-        }).catch(() => container.innerHTML = "❌ โหลดข้อมูลผู้ป่วยผิดพลาด");
+    function showPatientDetail(patientName, gender, village) {
+        currentSelectedPatientName = patientName;
+        currentSelectedPatientGender = gender;
+        currentSelectedPatientVillage = village;
+        document.getElementById('detailDateFilter').value = ""; 
+        renderPatientDetail();
     }
 
-    // 🔄 ฟังก์ชันโหลดข้อมูล อสม.
-    function loadVhmData() {
-        const container = document.getElementById('vhmContainer');
-        fetch(`${GOOGLE_SCRIPT_URL}?action=getVhm`)
-        .then(res => res.json())
-        .then(data => {
-            if(!data || data.length === 0) { container.innerHTML = "<p class='empty-state'>📭 ไม่มีข้อมูลรายชื่อ อสม.</p>"; return; }
-            let html = "<table><tr><th>ลำดับ</th><th>ชื่อ อสม.</th><th>พื้นที่ดูแล</th></tr>";
-            data.forEach((row, i) => {
-                html += `<tr><td>${i+1}</td><td>${row[0] || '-'}</td><td>${row[1] || '-'}</td></tr>`;
-            });
-            html += "</table>";
-            container.innerHTML = html;
-        }).catch(() => container.innerHTML = "❌ โหลดข้อมูล อสม. ผิดพลาด");
+    function renderPatientDetail() {
+        document.getElementById('patientListSection').style.display = 'none';
+        document.getElementById('patientDetailSection').style.display = 'block';
+
+        const historyCardsDiv = document.getElementById('patientHistoryCards');
+        historyCardsDiv.innerHTML = '';
+
+        let patientRecords = allData.filter(item => 
+            item.patientName === currentSelectedPatientName && 
+            item.patientGender === currentSelectedPatientGender && 
+            item.villageNo === currentSelectedPatientVillage
+        );
+
+        patientRecords.sort((a, b) => parseTimestamp(b.timestamp) - parseTimestamp(a.timestamp));
+
+        if (patientRecords.length === 0) return;
+
+        let latestRecord = patientRecords[0];
+        let ageText = calculateAge(latestRecord.birthDay, latestRecord.birthMonth, latestRecord.birthYear);
+        
+        document.getElementById('detPatientName').innerText = `👤 ชื่อผู้ป่วย: คุณ ${latestRecord.patientName}`;
+        document.getElementById('detPatientMeta').innerText = `ข้อมูลพื้นฐาน: อายุคำนวณ ${ageText !== "-" ? ageText : "ไม่ระบุ"} | เพศ: ${latestRecord.patientGender} | พิกัดพื้นที่: ${latestRecord.villageNo}`;
+
+        document.getElementById('patientBirthDay').value = latestRecord.birthDay || "";
+        document.getElementById('patientBirthMonth').value = latestRecord.birthMonth || "";
+        document.getElementById('patientBirthYear').value = latestRecord.birthYear || "";
+
+        const dateFilterVal = document.getElementById('detailDateFilter').value; 
+        if (dateFilterVal) {
+            const parts = dateFilterVal.split('-');
+            const formattedFilterDate = `${parts[2]}/${parts[1]}/${parts[0]}`; 
+            patientRecords = patientRecords.filter(item => item.timestamp.split(' ')[0] === formattedFilterDate);
+        }
+
+        if (patientRecords.length === 0) {
+            historyCardsDiv.innerHTML = '<p style="text-align:center; color:#64748b; padding:20px;">❌ ไม่พบประวัติการตรวจสุขภาพจิตในวันที่เลือกครับ</p>';
+            return;
+        }
+
+        patientRecords.forEach(item => {
+            let card = document.createElement('div');
+            card.className = 'history-card';
+            card.innerHTML = `
+                <div class="history-header">
+                    <span>📅 วันที่-เวลาประเมิน: ${item.timestamp}</span>
+                    <span>เครื่องมือหลัก: ${item.assessmentType}</span>
+                </div>
+                <div class="info-row"><span>ผู้คัดกรองลงพื้นที่ (อสม.):</span> <span><b>${item.vhmName}</b></span></div>
+                <div class="info-row"><span>ผลคัดกรองด่วน 2Q:</span> <span class="${item.q2Result.includes('เสี่ยง') ? 'danger' : ''}">${item.q2Result}</span></div>
+                <div class="info-row"><span>คะแนนคอลัมน์ 9Q:</span> <span>${item.q9Score || '-(ไม่ได้ประเมิน)-'}</span></div>
+                <div class="info-row"><span>ผลประเมินคอลัมน์ 8Q:</span> <span>${item.q8Result || '-(ไม่ได้ประเมิน)-'}</span></div>
+                <div class="info-row"><span>หมายเหตุ อสม. เพิ่มเติม:</span> <span>${item.comment || '-(ว่าง)-'}</span></div>
+            `;
+            historyCardsDiv.appendChild(card);
+        });
     }
 
-    // 🔄 ฟังก์ชันโหลดข้อมูลผู้ดูแล
-    function loadCaregiverData() {
-        const container = document.getElementById('caregiverContainer');
-        fetch(`${GOOGLE_SCRIPT_URL}?action=getCaregivers`)
-        .then(res => res.json())
-        .then(data => {
-            if(!data || data.length === 0) { container.innerHTML = "<p class='empty-state'>📭 ไม่มีข้อมูลผู้ดูแลระบบ</p>"; return; }
-            let html = "<table><tr><th>ลำดับ</th><th>ชื่อผู้ดูแล/พยาบาล</th><th>ตำแหน่ง</th></tr>";
-            data.forEach((row, i) => {
-                html += `<tr><td>${i+1}</td><td>${row[0] || '-'}</td><td>${row[1] || '-'}</td></tr>`;
-            });
-            html += "</table>";
-            container.innerHTML = html;
-        }).catch(() => container.innerHTML = "❌ โหลดข้อมูลผู้ดูแลผิดพลาด");
+    function clearDetailDateFilter() {
+        document.getElementById('detailDateFilter').value = "";
+        renderPatientDetail();
     }
 
-    // โหลดข้อมูลหน้าผู้ป่วยขึ้นมาสแตนด์บายรอเป็นอันดับแรกเสมอ
-    window.onload = function() {
-        loadPatientData();
-    };
+    function savePatientBirthdate() {
+        const d = document.getElementById('patientBirthDay').value;
+        const m = document.getElementById('patientBirthMonth').value;
+        const y = document.getElementById('patientBirthYear').value.trim();
+
+        const loading = document.getElementById('loadingText');
+        loading.style.display = 'block';
+
+        fetch(`${GOOGLE_SCRIPT_URL}?action=savePatientBirthdate&patientName=${encodeURIComponent(currentSelectedPatientName)}&birthDay=${encodeURIComponent(d)}&birthMonth=${encodeURIComponent(m)}&birthYear=${encodeURIComponent(y)}`)
+            .then(res => res.json())
+            .then(res => {
+                loading.style.display = 'none';
+                if(res.success) {
+                    alert("🎉 บันทึกข้อมูลประวัติวันเกิดและคำนวณอายุของผู้ป่วยคนนี้เรียบร้อยครับ!");
+                    fetchPatientData(); 
+                } else {
+                    alert("❌ เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+                }
+            })
+            .catch(err => {
+                loading.style.display = 'none';
+                alert("❌ ข้อผิดพลาดระบบเครือข่าย: " + err.message);
+            });
+    }
+
+    function backToPatientList() {
+        document.getElementById('patientListSection').style.display = 'block';
+        document.getElementById('patientDetailSection').style.display = 'none';
+        processData(); 
+    }
+
+    function parseTimestamp(tStr) { const parts = tStr.match(/(\d+)/g); return new Date(parts[2], parts[1]-1, parts[0], parts[3], parts[4]); }
+
+    // ==========================================
+    // 👥 โซนระบบจัดการข้อมูลรายชื่อ อสม.
+    // ==========================================
+    function fetchVhmData() {
+        const loading = document.getElementById('loadingText');
+        const listDiv = document.getElementById('vhmList');
+        loading.style.display = 'block'; listDiv.innerHTML = '';
+
+        fetch(`${GOOGLE_SCRIPT_URL}?action=getVhmList`)
+            .then(res => { if (!res.ok) throw new Error("HTTP Status " + res.status); return res.text(); })
+            .then(text => {
+                try {
+                    const data = JSON.parse(text); loading.style.display = 'none';
+                    if(data.length === 0) { listDiv.innerHTML = '<p style="text-align:center; color:#64748b;">❌ ไม่พบข้อมูลรายชื่อ อสม. ในระบบ</p>'; return; }
+                    data.forEach(vhm => {
+                        let card = document.createElement('div'); card.className = 'vhm-table-row';
+                        card.innerHTML = `
+                            <div class="vhm-row-header"><span>ชื่อ อสม: <b>${vhm.name}</b></span><span>Username: ${vhm.username}</span></div>
+                            <div class="info-row"><span>รหัสเข้าใช้งาน (Password):</span> <span>${vhm.password}</span></div>
+                            <div class="info-row"><span>รหัสลับกู้บัญชี:</span> <span>${vhm.secretKey}</span></div>
+                            <div style="text-align: right; margin-top: 10px;">
+                                <button class="btn-action edit" onclick="enableVhmEditMode('${vhm.username}', '${vhm.password}', '${vhm.name}', '${vhm.secretKey}')">✏️ แก้ไข</button>
+                                <button class="btn-action delete" onclick="deleteVhmData('${vhm.username}')">❌ ลบออก</button>
+                            </div>
+                        `;
+                        listDiv.appendChild(card);
+                    });
+                } catch(e) { loading.style.display = 'none'; alert("❌ คืนข้อมูล อสม. ผิดพลาด"); }
+            })
+            .catch(err => { loading.style.display = 'none'; alert("❌ ดึงข้อมูล อสม. ไม่ได้: " + err.message); });
+    }
+
+    function saveVhmData() {
+        const mode = document.getElementById('vhmFormMode').value;
+        const u = document.getElementById('vhmUsernameInput').value.trim();
+        const p = document.getElementById('vhmPasswordInput').value.trim();
+        const n = document.getElementById('vhmNameInput').value.trim();
+        const k = document.getElementById('vhmSecretKeyInput').value.trim();
+        if(!u || !p || !n || !k) { alert("⚠️ กรุณากรอกรายละเอียดของ อสม. ให้ครบทุกช่องครับ"); return; }
+        const loading = document.getElementById('loadingText'); loading.style.display = 'block';
+        fetch(`${GOOGLE_SCRIPT_URL}?action=saveVhm&mode=${mode}&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}&name=${encodeURIComponent(n)}&secretKey=${encodeURIComponent(k)}`)
+            .then(res => res.json())
+            .then(res => {
+                loading.style.display = 'none';
+                if(res.success) { alert("🎉 บันทึกปรับปรุงข้อมูล อสม. บนคลาวด์สำเร็จ!"); cancelVhmEditMode(); fetchVhmData(); } 
+                else { alert("❌ ข้อผิดพลาด: " + res.message); }
+            });
+    }
+
+    function deleteVhmData(username) {
+        if(!confirm(`🚨 คุณแน่ใจใช่ไหมว่าต้องการลบ Username: "${username}" ออกจากฐานข้อมูลระบบ?`)) return;
+        const loading = document.getElementById('loadingText'); loading.style.display = 'block';
+        fetch(`${GOOGLE_SCRIPT_URL}?action=deleteVhm&username=${encodeURIComponent(username)}`)
+            .then(res => res.json())
+            .then(res => {
+                loading.style.display = 'none';
+                if(res.success) { alert("🗑️ ลบรายชื่อ อสม. เรียบร้อยแล้วครับ"); fetchVhmData(); } 
+                else { alert("❌ ไม่สามารถลบได้: " + res.message); }
+            });
+    }
+
+    function enableVhmEditMode(username, password, name, secretKey) {
+        document.getElementById('formVhmTitle').innerText = `✏️ กำลังแก้ไขข้อมูลของ อสม. (${username})`;
+        document.getElementById('vhmFormMode').value = "edit";
+        document.getElementById('vhmUsernameInput').value = username; document.getElementById('vhmUsernameInput').disabled = true; 
+        document.getElementById('vhmPasswordInput').value = password; document.getElementById('vhmNameInput').value = name; document.getElementById('vhmSecretKeyInput').value = secretKey;
+        document.getElementById('btnCancelVhmEdit').style.display = 'inline-block'; window.scrollTo(0, 0);
+    }
+
+    function cancelVhmEditMode() {
+        document.getElementById('formVhmTitle').innerText = "➕ เพิ่ม อสม. รายใหม่เข้าระบบคลาวด์";
+        document.getElementById('vhmFormMode').value = "add";
+        document.getElementById('vhmUsernameInput').value = ""; document.getElementById('vhmUsernameInput').disabled = false;
+        document.getElementById('vhmPasswordInput').value = ""; document.getElementById('vhmNameInput').value = ""; document.getElementById('vhmSecretKeyInput').value = "";
+        document.getElementById('btnCancelVhmEdit').style.display = 'none';
+    }
+
+
+    // ==========================================
+    // 👥 โซนระบบจัดการข้อมูลรายชื่อผู้ดูแลระบบ (Admin)
+    // ==========================================
+    function fetchAdminData() {
+        const loading = document.getElementById('loadingText');
+        const listDiv = document.getElementById('adminList');
+        loading.style.display = 'block'; listDiv.innerHTML = '';
+
+        fetch(`${GOOGLE_SCRIPT_URL}?action=getAdminList`) 
+            .then(res => { if (!res.ok) throw new Error("HTTP Status " + res.status); return res.text(); })
+            .then(text => {
+                try {
+                    const data = JSON.parse(text); loading.style.display = 'none';
+                    if(data.length === 0) { listDiv.innerHTML = '<p style="text-align:center; color:#64748b;">❌ ไม่พบข้อมูลรายชื่อผู้ดูแลระบบ</p>'; return; }
+                    data.forEach(adm => {
+                        let card = document.createElement('div'); card.className = 'vhm-table-row';
+                        card.style.borderLeft = "4px solid #10b981"; 
+                        card.innerHTML = `
+                            <div class="vhm-row-header"><span style="color:#10b981;">ชื่อผู้ดูแล: <b>${adm.name}</b></span><span>Username: ${adm.username}</span></div>
+                            <div class="info-row"><span>รหัสเข้าใช้งาน (Password):</span> <span>${adm.password}</span></div>
+                            <div class="info-row"><span>รหัสลับกู้บัญชีแอดมิน:</span> <span>${adm.secretKey}</span></div>
+                            <div style="text-align: right; margin-top: 10px;">
+                                <button class="btn-action edit" style="background-color:#10b981;" onclick="enableAdminEditMode('${adm.username}', '${adm.password}', '${adm.name}', '${adm.secretKey}')">✏️ แก้ไข</button>
+                                <button class="btn-action delete" onclick="deleteAdminData('${adm.username}')">❌ ลบออก</button>
+                            </div>
+                        `;
+                        listDiv.appendChild(card);
+                    });
+                } catch(e) { loading.style.display = 'none'; alert("❌ คืนข้อมูลผู้ดูแลผิดพลาด โครงสร้างตอบกลับตารางไม่ตรง"); }
+            })
+            .catch(err => { loading.style.display = 'none'; alert("❌ ดึงข้อมูลผู้ดูแลระบบไม่ได้: " + err.message); });
+    }
+
+    function saveAdminData() {
+        const mode = document.getElementById('adminFormMode').value;
+        const u = document.getElementById('adminUsernameInput').value.trim();
+        const p = document.getElementById('adminPasswordInput').value.trim();
+        const n = document.getElementById('adminNameInput').value.trim();
+        const k = document.getElementById('adminSecretKeyInput').value.trim();
+
+        if(!u || !p || !n || !k) { alert("⚠️ กรุณากรอกรายละเอียดของผู้ดูแลระบบให้ครบถ้วนทุกช่องครับ"); return; }
+
+        const loading = document.getElementById('loadingText'); loading.style.display = 'block';
+
+        fetch(`${GOOGLE_SCRIPT_URL}?action=saveAdmin&mode=${mode}&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}&name=${encodeURIComponent(n)}&secretKey=${encodeURIComponent(k)}`)
+            .then(res => res.json())
+            .then(res => {
+                loading.style.display = 'none';
+                if(res.success) {
+                    alert("🎉 บันทึกการอัปเดตบัญชีสิทธิ์ผู้ดูแลระบบลง Google Sheet สำเร็จ!");
+                    cancelAdminEditMode();
+                    fetchAdminData();
+                } else {
+                    alert("❌ ข้อผิดพลาด: " + res.message);
+                }
+            });
+    }
+
+    function deleteAdminData(username) {
+        if(!confirm(`🚨 แจ้งเตือนความปลอดภัยสูงสุด: คุณต้องการลบสิทธิ์เข้าถึงของสิทธิ์แอดมิน Username: "${username}" ใช่หรือไม่?`)) return;
+        const loading = document.getElementById('loadingText'); loading.style.display = 'block';
+
+        fetch(`${GOOGLE_SCRIPT_URL}?action=deleteAdmin&username=${encodeURIComponent(username)}`)
+            .then(res => res.json())
+            .then(res => {
+                loading.style.display = 'none';
+                if(res.success) {
+                    alert("🗑️ ทำการเพิกถอนสิทธิ์และลบแอดมินรายดังกล่าวเรียบร้อยครับ");
+                    fetchAdminData();
+                } else {
+                    alert("❌ ไม่สามารถดำเนินการลบได้: " + res.message);
+                }
+            });
+    }
+
+    function enableAdminEditMode(username, password, name, secretKey) {
+        document.getElementById('formAdminTitle').innerText = `✏️ กำลังแก้ไขข้อมูลของผู้ดูแลระบบ (${username})`;
+        document.getElementById('adminFormMode').value = "edit";
+        document.getElementById('adminUsernameInput').value = username; document.getElementById('adminUsernameInput').disabled = true; 
+        document.getElementById('adminPasswordInput').value = password; document.getElementById('adminNameInput').value = name; document.getElementById('adminSecretKeyInput').value = secretKey;
+        document.getElementById('btnCancelAdminEdit').style.display = 'inline-block'; window.scrollTo(0, 0);
+    }
+
+    function cancelAdminEditMode() {
+        document.getElementById('formAdminTitle').innerText = "➕ เพิ่ม ผู้ดูแลระบบ (Admin) รายใหม่เข้าระบบคลาวด์";
+        document.getElementById('adminFormMode').value = "add";
+        document.getElementById('adminUsernameInput').value = ""; document.getElementById('adminUsernameInput').disabled = false;
+        document.getElementById('adminPasswordInput').value = ""; document.getElementById('adminNameInput').value = ""; document.getElementById('adminSecretKeyInput').value = "";
+        document.getElementById('btnCancelAdminEdit').style.display = 'none';
+    }
+
+    // ==========================================
+    // 💬 เพิ่มใหม่: โซนระบบดึงและแสดงข้อเสนอแนะระบบ (Feedback)
+    // ==========================================
+    function fetchFeedbackData() {
+        const loading = document.getElementById('loadingText');
+        const container = document.getElementById('feedbackContainer');
+        loading.style.display = 'block'; 
+        container.innerHTML = '';
+
+        fetch(`${GOOGLE_SCRIPT_URL}?action=getFeedback`)
+            .then(res => { if (!res.ok) throw new Error("HTTP Status " + res.status); return res.text(); })
+            .then(text => {
+                loading.style.display = 'none';
+                try {
+                    const data = JSON.parse(text);
+                    if(!data || data.length === 0) {
+                        container.innerHTML = '<p style="text-align:center; color:#64748b; padding:40px 0;">📭 ยังไม่มีข้อเสนอแนะส่งเข้ามาในระบบขณะนี้ครับ</p>';
+                        return;
+                    }
+                    
+                    container.innerHTML = "";
+                    // ใช้การกระจายค่าและสลับฝั่ง (Reverse) เพื่อเรียงลำดับดึงอันส่งล่าสุดขึ้นมาโชว์บนสุดก่อนเสมอ
+                    [...data].reverse().forEach(item => {
+                        let card = document.createElement('div');
+                        card.className = 'feedback-card';
+                        card.innerHTML = `
+                            <div class="feedback-header">
+                                <span>👤 แหล่งข้อมูล: ผู้ใช้งานระบบ (ไม่เผยตัวตน)</span>
+                                <span>⏰ เวลาบันทึก: ${item.timestamp || '-'} น.</span>
+                            </div>
+                            <div class="feedback-body">${item.text || '-'}</div>
+                        `;
+                        container.appendChild(card);
+                    });
+                } catch(e) {
+                    container.innerHTML = '<p style="text-align:center; color:#ef4444; padding:20px;">❌ คืนข้อมูลผิดพลาด โครงสร้างแท็บข้อความไม่สมบูรณ์</p>';
+                }
+            })
+            .catch(err => {
+                loading.style.display = 'none';
+                container.innerHTML = '<p style="text-align:center; color:#ef4444; padding:20px;">❌ ข้อผิดพลาดระบบเครือข่าย: ' + err.message + '</p>';
+            });
+    }
 </script>
 </body>
 </html>
