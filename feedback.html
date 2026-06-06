@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>กล่องรับฟังความคิดเห็นระบบ - รพ.สต.บ้านทองหลาง</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f8fafc; color: #334155; margin: 0; padding: 15px; }
+        .box { max-width: 500px; margin: 40px auto; background: #ffffff; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        .header { text-align: center; margin-bottom: 25px; }
+        textarea { width: 100%; padding: 15px; border: 2px solid #cbd5e1; border-radius: 12px; box-sizing: border-box; font-size: 16px; resize: vertical; }
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; background-color: #6366f1; color: white; margin-top: 15px; }
+        .note { font-size: 13px; color: #64748b; text-align: center; margin-top: 15px; font-style: italic; }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <div class="header">
+        <h2>📥 กล่องข้อเสนอแนะระบบ</h2>
+        <p>พบปัญหาการใช้งานตรงไหน หรืออยากให้ปรับปรุงอะไร พิมพ์บอกได้เลยครับ</p>
+    </div>
+    
+    <textarea id="fbText" rows="6" placeholder="พิมพ์ข้อเสนอแนะหรือปัญหาที่พบที่นี่..."></textarea>
+    <button class="btn" id="btnSubmit" onclick="sendFeedback()">📤 ส่งข้อเสนอแนะแบบไม่เผยตัวตน</button>
+    
+    <p class="note">🔒 ระบบนี้ตั้งค่าปิดการเก็บชื่อ บัญชีผู้ใช้ และสิทธิ์การเข้าถึงใด ๆ ข้อมูลจะถูกบันทึกแบบนิรนามร้อยเปอร์เซ็นต์</p>
+</div>
+
+<script>
+    // ⚠️ อย่าลืมเอาลิงก์ Web App ของพี่มาแปะตรงนี้ให้ถูกต้องนะครับ
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/XXXXX/exec'; 
+
+    function sendFeedback() {
+        const text = document.getElementById('fbText').value.trim();
+        const btn = document.getElementById('btnSubmit');
+        if(!text) { alert("⚠️ กรุณาพิมพ์ข้อเสนอก่อนกดส่งครับ"); return; }
+        
+        btn.innerText = "⏳ กำลังส่งข้อมูลแบบนิรนาม...";
+        btn.disabled = true;
+
+        const sendData = new URLSearchParams({
+            action: 'submitFeedback',
+            feedbackText: text
+        });
+
+        fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: sendData
+        })
+        .then(() => {
+            alert('🎉 ส่งข้อเสนอแนะเรียบร้อยแล้ว ขอบคุณสำหรับข้อมูลพัฒนาดูแลระบบครับ!');
+            document.getElementById('fbText').value = "";
+            btn.innerText = "📤 ส่งข้อเสนอแนะแบบไม่เผยตัวตน";
+            btn.disabled = false;
+        })
+        .catch(error => {
+            alert('❌ เกิดข้อผิดพลาดในระบบเครือข่าย');
+            btn.disabled = false;
+        });
+    }
+</script>
+</body>
+</html>
