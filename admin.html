@@ -331,6 +331,9 @@
             .then(res => {
                 btn.innerText = "🔓 เข้าสู่ระบบแดชบอร์ด";
                 if (res.success) {
+                    // แทรกบรรทัดนี้ลงไปตรงที่พี่เช็คว่า Login สำเร็จแล้ว
+                    saveLineIdToSheet(username);
+                    
                     document.getElementById('adminDisplayName').innerText = res.name;
                     changeStep('dashboardStep'); 
                     fetchPatientData(); 
