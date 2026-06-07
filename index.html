@@ -12,9 +12,7 @@
         .step.active { display: block; }
         .header { text-align: center; margin-bottom: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; }
         
-        /* 🛠️ ปรับแต่งแถบหัวข้อผู้ประเมินให้รองรับปุ่มออกจากระบบแบบ Flexbox */
         .vhm-info-header { display: none; justify-content: space-between; align-items: center; font-size: 14px; color: #475569; margin-bottom: 25px; font-weight: bold; background: #f8fafc; padding: 10px 15px; border-radius: 10px; border: 1px solid #e2e8f0; }
-        /* สไตล์ปุ่มออกจากระบบขนาดกะทัดรัด */
         .btn-logout { padding: 6px 12px; background-color: #ef4444; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
         .btn-logout:hover { background-color: #dc2626; }
 
@@ -108,7 +106,10 @@
         </div>
         <div class="form-group">
             <label>ชื่อ-นามสกุล ผู้รับตรวจ *</label>
-            <input type="text" id="patientName" placeholder="ตัวอย่าง : สุขภาพ จิตดี">
+            <div style="position: relative; width: 100%;">
+                <input type="text" id="patientName" oninput="searchPatientNameAutocomplete()" autocomplete="off" placeholder="ตัวอย่าง : สุขภาพ จิตดี">
+                <div id="nameSuggestionsBox" style="position: absolute; left: 0; right: 0; z-index: 9999; background: white; border: 1px solid #cbd5e1; border-radius: 10px; max-height: 230px; overflow-y: auto; display: none; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); margin-top: 5px;"></div>
+            </div>
         </div>
         <div class="form-group">
             <label>เพศ *</label>
@@ -222,6 +223,8 @@
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySImkthOaj1K3yK3QtFsc0qUNx7wFMF9gNaPjO_IL86H6JaywSU2ZnF4NPic_ypsW8ew/exec';
 
     let currentVhmName = "";
+    // 🎯 ตัวแปรเก็บประวัติคนไข้ในระบบเพื่อใช้ทำ Autocomplete
+    let localScreeningHistory = []; 
 
     liff.init({ liffId: LIFF_ID }).then(() => { console.log("LIFF Ready"); });
 
@@ -230,6 +233,99 @@
         document.getElementById('step' + step).classList.add('active');
         window.scrollTo(0, 0);
     }
+
+    // 🎯 เพิ่มฟังก์ชันดึงรายชื่อคนไข้ล่าสุดจากฐานข้อมูลคลาวด์
+    function fetchPatientHistoryForAutocomplete() {
+        fetch(GOOGLE_SCRIPT_URL)
+            .then(res => res.json())
+            .then(data => {
+                localScreeningHistory = data;
+            })
+            .catch(err => console.error("ไม่สามารถดาวน์โหลดประวัติคนไข้สำหรับระบบเดาชื่ออัตโนมัติได้:", err));
+    }
+
+    // 🎯 ระบบประมวลผลกล่องรายชื่อแนะนำขณะพิมพ์ (ตามหลักพจนานุกรม และจำกัด 5 รายชื่อแรก)
+    function searchPatientNameAutocomplete() {
+        const inputVal = document.getElementById('patientName').value.trim().toLowerCase();
+        const box = document.getElementById('nameSuggestionsBox');
+        box.innerHTML = '';
+
+        if (!inputVal) {
+            box.style.display = 'none';
+            return;
+        }
+
+        // กรองเฉพาะประวัติที่มีอักษรตรงกัน
+        let matches = localScreeningHistory.filter(item => 
+            item.patientName && item.patientName.toLowerCase().includes(inputVal)
+        );
+
+        // ทำลายข้อมูลที่ซ้ำซ้อนให้เหลือรายบุคคลเดี่ยว (Unique) เพื่อลดการแสดงผลซ้ำซ้อน
+        let uniquePatientsMap = {};
+        matches.forEach(item => {
+            const pName = item.patientName.trim();
+            if (!uniquePatientsMap[pName]) {
+                uniquePatientsMap[pName] = {
+                    name: item.patientName,
+                    gender: item.patientGender || '',
+                    village: item.villageNo || ''
+                };
+            }
+        });
+        let uniqueList = Object.values(uniquePatientsMap);
+
+        // เรียงข้อมูลตามลำดับพจนานุกรมภาษาไทย (ก -> ฮ)
+        uniqueList.sort((a, b) => a.name.localeCompare(b.name, 'th'));
+
+        // หั่นดึงเฉพาะ 5 รายชื่อแรกขึ้นมาแนะนำ
+        let top5Matches = uniqueList.slice(0, 5);
+
+        if (top5Matches.length === 0) {
+            box.style.display = 'none';
+            return;
+        }
+
+        // วาดแถวรายชื่อแนะนำลงบนกล่องอินเทอร์เฟซ
+        top5Matches.forEach(patient => {
+            let row = document.createElement('div');
+            row.style.padding = '12px 15px';
+            row.style.cursor = 'pointer';
+            row.style.borderBottom = '1px solid #f1f5f9';
+            row.style.fontSize = '15px';
+            row.style.color = '#334155';
+            row.innerHTML = `👤 <b>${patient.name}</b> <span style="font-size: 12px; color: #64748b; float: right;">${patient.village} (${patient.gender})</span>`;
+            
+            // จังหวะที่ อสม. คลิกเลือกชื่อแนะนำ
+            row.onclick = () => {
+                document.getElementById('patientName').value = patient.name;
+                document.getElementById('patientGender').value = patient.gender;
+                document.getElementById('villageNo').value = patient.village;
+                box.style.display = 'none';
+            };
+            
+            row.onmouseenter = () => row.style.backgroundColor = '#f0f7ff';
+            row.onmouseleave = () => row.style.backgroundColor = 'transparent';
+            
+            box.appendChild(row);
+        });
+
+        box.style.display = 'block';
+
+        // 💡 ดักกรณีพิมพ์เองจนครบ 100% ตรงกับประวัติเดิม ให้ระบบ auto fill ข้อมูลให้ทันที
+        const perfectMatch = uniqueList.find(p => p.name.toLowerCase() === inputVal);
+        if (perfectMatch) {
+            document.getElementById('patientGender').value = perfectMatch.gender;
+            document.getElementById('villageNo').value = perfectMatch.village;
+        }
+    }
+
+    // 🎯 ดักฟังคำสั่งคลิกนอกพื้นที่พิมพ์ เพื่อทำการหุบซ่อนกล่องข้อเสนอแนะอัตโนมัติ
+    document.addEventListener('click', (e) => {
+        if (e.target.id !== 'patientName') {
+            const box = document.getElementById('nameSuggestionsBox');
+            if (box) box.style.display = 'none';
+        }
+    });
 
     function verifyAuth() {
         const u = document.getElementById('vhmUsername').value.trim();
@@ -255,7 +351,11 @@
                         currentVhmName = res.name;
                         let roleTitle = (role === 'admin') ? 'ผู้ดูแลระบบ' : 'อสม.';
                         document.getElementById('vhmDisplayName').innerText = `${currentVhmName} (${roleTitle})`;
-                        document.getElementById('vhmInfoHeader').style.display = "flex"; // 🛠️ เปลี่ยนการแสดงผลเป็นแบบ flex เพื่อจัดวางปุ่ม
+                        document.getElementById('vhmInfoHeader').style.display = "flex"; 
+                        
+                        // 🎯 ดาวน์โหลดคลังรายชื่อเตรียมสแตนด์บายทำระบบค้นหาทันทีเมื่อ Login สำเร็จ
+                        fetchPatientHistoryForAutocomplete();
+                        
                         changeStep(1);
                     } else {
                         alert("❌ " + res.message);
@@ -271,46 +371,40 @@
             });
     }
 
-    // 🛠️ เพิ่มใหม่: ฟังก์ชันออกจากระบบนิรภัย ล้างฟอร์มเกลี้ยงและถีบกลับหน้าล็อกอินโดยไม่มีการบันทึกข้อมูล
     function logout() {
         if (!confirm("🚨 แจ้งเตือนความปลอดภัย:\nคุณต้องการออกจากระบบใช่หรือไม่? ข้อมูลผู้ป่วยทั้งหมดที่กำลังพิมพ์ค้างอยู่ ณ ตอนนี้จะถูกล้างทิ้งและไม่ถูกบันทึกลงฐานข้อมูลคลาวด์ครับ")) return;
         
-        // 1. ล้างสมองตัวแปรจำสิทธิ์
         currentVhmName = "";
+        localScreeningHistory = []; // ล้างคลังหน่วยความจำแคช
         
-        // 2. ซ่อนแถบแจ้งชื่อผู้ประเมิน
         document.getElementById('vhmInfoHeader').style.display = "none";
         
-        // 3. กวาดล้างข้อมูลประวัติที่พิมพ์ค้างอยู่ทั้งหมด
         document.getElementById('patientName').value = "";
         document.getElementById('patientGender').value = "";
         document.getElementById('villageNo').value = "";
         document.getElementById('comment').value = "";
         
-        // ล้างติ๊กเลือกวิทยุ 2Q
+        // ซ่อนกรอบแนะนำหากค้างอยู่
+        document.getElementById('nameSuggestionsBox').style.display = 'none';
+        
         document.querySelectorAll('input[name="q2q1"], input[name="q2q2"]').forEach(radio => radio.checked = false);
         
-        // ล้างตัวเลือก 9Q ทั้งหมด
         for (let i = 1; i <= 9; i++) {
             const el = document.getElementById('q9q' + i);
             if (el) el.value = "";
         }
         
-        // ล้างตัวเลือก 8Q ทั้งหมด
         for (let i = 1; i <= 8; i++) {
             const el = document.getElementById('q8q' + i);
             if (el) el.value = "";
         }
         
-        // 4. ตั้งพารามิเตอร์แบบคัดกรองถอยกลับไปที่ 2Q เคลียร์มุมมอง
         document.getElementById('assessmentTypeSelect').value = "2Q";
         switchAssessment();
         
-        // 5. ล้างช่องป้อนรหัสผ่านล็อกอินหน้าแรกเพื่อความปลอดภัย
         document.getElementById('vhmUsername').value = "";
         document.getElementById('vhmPassword').value = "";
         
-        // 6. ดีดเปลี่ยนหน้าจอถอยกลับไปล็อกหน้าล็อกอินที่ก้าวเข้ามาตอนแรกสุดทันที
         changeStep(0);
     }
 
@@ -362,6 +456,8 @@
             alert("⚠️ กรุณากรอกข้อมูลทั่วไปให้ครบทุกข้อ");
             return;
         }
+        // ตรวจสอบให้มั่นใจว่าหุบกล่องรายชื่อแนะนำก่อนย้ายหน้าจอ
+        document.getElementById('nameSuggestionsBox').style.display = 'none';
         switchAssessment(); 
         changeStep(2);
     }
@@ -480,6 +576,7 @@
             document.getElementById('patientGender').value = "";
             document.getElementById('villageNo').value = "";
             document.getElementById('comment').value = "";
+            document.getElementById('nameSuggestionsBox').style.display = 'none';
             
             document.querySelectorAll('input[name="q2q1"], input[name="q2q2"]').forEach(radio => radio.checked = false);
             
@@ -492,6 +589,9 @@
                 if (el) el.value = "";
             }
             
+            // 🎯 อัปเดตข้อมูลแคชคนไข้ในระบบใหม่ทันทีหลังบันทึก เพื่อเก็บรายชื่อล่าสุดไว้ใช้ตรวจเคสถัดไป
+            fetchPatientHistoryForAutocomplete();
+
             document.getElementById('assessmentTypeSelect').value = "2Q";
             switchAssessment();
             changeStep(1);
