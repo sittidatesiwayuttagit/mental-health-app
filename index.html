@@ -144,7 +144,7 @@
         <div id="indicationText" class="indication"></div>
 
         <div id="panel2Q" class="sub-questions">
-            <h4>📋 ส่วนที่ 1: ข้อคำถามคัดกรองซึมเศร้า 2Q (บังคับกรอก)</h4>
+            <h4>📋 ส่วนที่ 1: ข้อคำถามคัดกรองซึมเศร้า 2Q+ (บังคับกรอก)</h4>
             <div class="form-group">
                 <label>1. ใน 2 สัปดาห์ที่ผ่านมา รวมทั้งวันนี้ ท่านมีอาการหดหู่ เศร้า หรือท้อแท้สิ้นหวังหรือไม่?</label>
                 <div class="radio-group">
@@ -422,7 +422,7 @@
         // ซ่อนกรอบแนะนำหากค้างอยู่
         document.getElementById('nameSuggestionsBox').style.display = 'none';
         
-        document.querySelectorAll('input[name="q2q1"], input[name="q2q2"]').forEach(radio => radio.checked = false);
+        document.querySelectorAll('input[name="q2q1"], input[name="q2q2"], input[name="q2q3"]').forEach(radio => radio.checked = false);
         
         for (let i = 1; i <= 9; i++) {
             const el = document.getElementById('q9q' + i);
@@ -597,7 +597,7 @@
         document.getElementById('comment').value = "";
         document.getElementById('nameSuggestionsBox').style.display = 'none';
         
-        document.querySelectorAll('input[name="q2q1"], input[name="q2q2"]').forEach(radio => radio.checked = false);
+        document.querySelectorAll('input[name="q2q1"], input[name="q2q2"], input[name="q2q3"]').forEach(radio => radio.checked = false);
         
         for (let i = 1; i <= 9; i++) {
             const el = document.getElementById('q9q' + i);
