@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบแดชบอร์ดคนดูแล - รพ.สต.บ้านทองหลาง</title>
-    
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
     <style>
@@ -65,6 +64,11 @@
         .btn-logout { padding: 6px 12px; background-color: #ef4444; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
         .btn-logout:hover { background-color: #dc2626; }
 
+        .line-link-panel { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px; color: #475569; margin-bottom: 15px; background: #ecfdf5; padding: 10px 15px; border-radius: 8px; border: 1px solid #bbf7d0; }
+        .line-link-panel .status { font-weight: bold; color: #065f46; }
+        .btn-line { padding: 8px 12px; background-color: #06c755; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; white-space: nowrap; }
+        .btn-line:disabled { background-color: #94a3b8; cursor: not-allowed; }
+
         /* สไตล์กระดานการ์ด Feedback ข้อเสนอแนะ */
         .feedback-card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 15px; background-color: #ffffff; border-left: 5px solid #6366f1; box-shadow: 0 2px 8px rgba(0,0,0,0.02); text-align: left; }
         .feedback-header { display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 10px; font-weight: bold; color: #64748b; font-size: 13px; }
@@ -113,7 +117,7 @@
             <label style="display:block; font-weight:bold; margin-bottom:5px;">Password</label>
             <input type="password" id="adminPassword" placeholder="ระบุ Password ผู้ดูแลระบบ">
         </div>
-        <button class="btn-login" id="btnAdminLoginText" onclick="verifyAdminAuth()">🔓 เข้าสู่ระบบแดชบอร์ด</button>
+        <button class="btn-login" id="btnAdminLoginText" onclick="verifyAdminAuth()" disabled>⏳ กำลังตรวจสอบ LINE Login...</button>
         
         <p style="text-align:center; margin-top:15px; font-size:14px;">
             <a href="#" onclick="changeStep('resetAdminStep')" style="color:#3b82f6; font-weight:bold; text-decoration:none;">🔑 ลืมรหัสผ่าน? ตั้งรหัสใหม่ที่นี่</a>
@@ -146,6 +150,10 @@
         <div class="admin-info-header">
             <div>🖥️ ผู้ใช้งานปัจจุบัน: <span id="adminDisplayName" style="color: #3b82f6;">-</span></div>
             <button class="btn-logout" onclick="logoutAdmin()">🔒 ออกจากระบบ</button>
+        </div>
+
+        <div id="lineLinkPanel" class="line-link-panel">
+            <div>LINE แจ้งเตือน: <span id="lineLinkStatus" class="status">เชื่อมต่อ LINE แล้ว</span></div>
         </div>
 
         <div class="tabs-bar">
@@ -271,22 +279,20 @@
 
 <script>
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySImkthOaj1K3yK3QtFsc0qUNx7wFMF9gNaPjO_IL86H6JaywSU2ZnF4NPic_ypsW8ew/exec';
-    const LIFF_ID = "2010303347-dja2J8TA"; 
+    const LIFF_ID = "2010303347-dja2J8TA";
 
-    // 🎯 ปรับจังหวะโหลด: ดึงโปรไฟล์ LINE และ fetch ยิงข้อมูลทันที (เพราะย้าย liff.init ไปไว้ตอนโหลดหน้าเว็บแล้ว)
-    async function saveLineIdToSheet(username, password) {
-      try {
-        if (liff.isLoggedIn()) {
-          const profile = await liff.getProfile();
-          fetch(`${GOOGLE_SCRIPT_URL}?action=updateAdminLineId&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&lineId=${encodeURIComponent(profile.userId)}`)
-            .then(res => res.json())
-            .then(res => console.log("บันทึกสิทธิ์ LINE ID ลง Google Sheet สำเร็จ:", res))
-            .catch(err => console.error("ระบบคลาวด์ขัดข้องในการเซฟ ID:", err));
-        }
-      } catch (err) {
-        console.error("LIFF Error:", err);
-      }
-    }
+    // IMPORTANT:
+    // Mandatory automatic LINE Login works only when this URL exactly matches
+    // the Endpoint URL configured in LINE Developers > LIFF.
+    // If your real hosted admin URL is different, put the exact URL here, for example:
+    // const ADMIN_LIFF_ENDPOINT_URL = 'https://your-domain.com/admin.html';
+    const ADMIN_LIFF_ENDPOINT_URL = '';
+
+    let liffReady = false;
+    let mandatoryLineUserId = "";
+    let mandatoryLineDisplayName = "";
+    let currentAdminUsername = "";
+    let currentAdminPassword = "";
 
     let allData = []; 
     let currentSelectedPatientName = ""; 
@@ -306,25 +312,94 @@
             .replace(/'/g, "&#039;");
     }
 
-    // 🎯 ปรับปรุงจุดนี้: ให้แอปขอสิทธิ์และล็อกอิน LINE ค้างไว้ทันทีตั้งแต่เปิดหน้าเว็บ เพื่อไม่ให้เด้งรีโหลดตอนกดปุ่มล็อกอิน
+    function getCleanAdminLiffEndpointUrl() {
+        if (ADMIN_LIFF_ENDPOINT_URL && ADMIN_LIFF_ENDPOINT_URL.trim()) {
+            return ADMIN_LIFF_ENDPOINT_URL.trim();
+        }
+        // Use a clean URL without LINE query strings such as code/state/liff.state.
+        // Passing window.location.href may cause LINE 400 Bad Request.
+        return window.location.origin + window.location.pathname;
+    }
+
     window.onload = async () => {
         const daySelect = document.getElementById('patientBirthDay');
-        for (let i = 1; i <= 31; i++) {
-            let opt = document.createElement('option');
-            opt.value = i; opt.innerText = i;
-            daySelect.appendChild(opt);
+        if (daySelect && daySelect.options.length <= 1) {
+            for (let i = 1; i <= 31; i++) {
+                let opt = document.createElement('option');
+                opt.value = i;
+                opt.innerText = i;
+                daySelect.appendChild(opt);
+            }
         }
 
-        try {
-            await liff.init({ liffId: LIFF_ID });
-            if (!liff.isLoggedIn()) {
-                // บังคับให้เด้งกลับมาที่หน้า admin.html ตัวเองแน่นอน 100% ไม่หลุดไปหน้าอื่น
-                liff.login({ redirectUri: window.location.href }); 
-            }
-        } catch (err) {
-            console.error("LIFF Onload Init Error:", err);
-        }
+        await requireLineLoginBeforeAdmin();
     };
+
+    async function requireLineLoginBeforeAdmin() {
+        const loginBtn = document.getElementById('btnAdminLoginText');
+        if (loginBtn) {
+            loginBtn.disabled = true;
+            loginBtn.innerText = '⏳ กำลังตรวจสอบ LINE Login...';
+        }
+        updateLineLinkStatus('กำลังตรวจสอบ LINE Login...');
+
+        try {
+            if (typeof liff === 'undefined') {
+                updateLineLinkStatus('ไม่พบ LIFF SDK');
+                alert('❌ ไม่พบ LIFF SDK กรุณาตรวจสอบอินเทอร์เน็ตหรือไฟล์ LIFF SDK');
+                if (loginBtn) loginBtn.innerText = '❌ LINE Login ไม่พร้อมใช้งาน';
+                return;
+            }
+
+            await liff.init({ liffId: LIFF_ID });
+            liffReady = true;
+
+            if (!liff.isLoggedIn()) {
+                updateLineLinkStatus('กำลังเปิด LINE Login...');
+                liff.login({ redirectUri: getCleanAdminLiffEndpointUrl() });
+                return;
+            }
+
+            const profile = await liff.getProfile();
+            mandatoryLineUserId = profile.userId || "";
+            mandatoryLineDisplayName = profile.displayName || "LINE user";
+            updateLineLinkStatus('เชื่อมต่อแล้ว: ' + mandatoryLineDisplayName);
+
+            // Allow admin username/password login only after LINE Login is ready.
+            if (loginBtn) {
+                loginBtn.disabled = false;
+                loginBtn.innerText = '🔓 เข้าสู่ระบบแดชบอร์ด';
+            }
+
+        } catch (err) {
+            liffReady = false;
+            updateLineLinkStatus('LINE Login ไม่สำเร็จ');
+            console.error('Mandatory LIFF login error:', err);
+            alert('❌ LINE Login ไม่สำเร็จ: ' + err.message + '\n\nโปรดตรวจสอบว่า LIFF Endpoint URL ใน LINE Developers ตรงกับ URL หน้า admin.html แบบ 100%');
+            if (loginBtn) loginBtn.innerText = '❌ LINE Login ไม่สำเร็จ';
+        }
+    }
+
+    function updateLineLinkStatus(message) {
+        const status = document.getElementById('lineLinkStatus');
+        if (status) status.innerText = message;
+    }
+
+    async function saveAdminLineIdToSheet(username, password) {
+        if (!mandatoryLineUserId) {
+            throw new Error('ไม่พบ LINE User ID กรุณา Login ผ่าน LINE ก่อน');
+        }
+
+        const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=updateAdminLineId&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&lineId=${encodeURIComponent(mandatoryLineUserId)}&lineName=${encodeURIComponent(mandatoryLineDisplayName)}`);
+        const data = await res.json();
+
+        if (!data.success) {
+            throw new Error(data.message || 'ไม่สามารถบันทึก LINE ID ได้');
+        }
+
+        updateLineLinkStatus('บันทึก LINE แล้ว: ' + mandatoryLineDisplayName);
+        return data;
+    }
 
     function calculateAge(d, m, yBE) {
         if (!d || !m || !yBE) return "-";
@@ -370,33 +445,51 @@
         }
     }
 
-    function verifyAdminAuth() {
+    async function verifyAdminAuth() {
         const u = document.getElementById('adminUsername').value.trim();
         const p = document.getElementById('adminPassword').value;
         const btn = document.getElementById('btnAdminLoginText');
 
         if (!u || !p) { alert("⚠️ กรุณากรอกข้อมูลให้ครบถ้วน"); return; }
-        btn.innerText = "⏳ กำลังตรวจสอบสิทธิ์แอดมิน...";
+        if (!liffReady || !mandatoryLineUserId) {
+            alert("⚠️ ระบบนี้บังคับ LINE Login ก่อนเข้าใช้งานแอดมิน กรุณารอสักครู่หรือรีเฟรชหน้าเว็บ");
+            await requireLineLoginBeforeAdmin();
+            return;
+        }
 
-        fetch(`${GOOGLE_SCRIPT_URL}?action=checkAdminLogin&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}`)
-            .then(res => res.json())
-            .then(res => {
-                btn.innerText = "🔓 เข้าสู่ระบบแดชบอร์ด";
-                if (res.success) {
-                    // เรียกฟังก์ชันส่งคู่ Username และ Password ไปล็อกแถวบันทึกคอลัมน์ E ได้ทันที ไม่รีโหลดหน้าจอแล้ว
-                    saveLineIdToSheet(u, p);
-                    
-                    document.getElementById('adminDisplayName').innerText = res.name;
-                    changeStep('dashboardStep'); 
-                    fetchPatientData(); 
-                } else {
-                    alert("❌ " + res.message);
-                }
-            })
-            .catch(err => {
-                btn.innerText = "🔓 เข้าสู่ระบบแดชบอร์ด";
-                alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูลแอดมินคลาวด์");
-            });
+        try {
+            btn.disabled = true;
+            btn.innerText = "⏳ กำลังตรวจสอบสิทธิ์แอดมิน...";
+
+            const loginRes = await fetch(`${GOOGLE_SCRIPT_URL}?action=checkAdminLogin&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}`);
+            const loginData = await loginRes.json();
+
+            if (!loginData.success) {
+                alert("❌ " + (loginData.message || "Username หรือ Password ไม่ถูกต้อง"));
+                return;
+            }
+
+            currentAdminUsername = u;
+            currentAdminPassword = p;
+            btn.innerText = "⏳ กำลังบันทึก LINE ID สำหรับแจ้งเตือน...";
+
+            try {
+                await saveAdminLineIdToSheet(u, p);
+            } catch (lineErr) {
+                console.error('Save admin LINE ID error:', lineErr);
+                alert('⚠️ ล็อกอินแอดมินสำเร็จ แต่บันทึก LINE ID สำหรับแจ้งเตือนไม่สำเร็จ: ' + lineErr.message);
+            }
+
+            document.getElementById('adminDisplayName').innerText = loginData.name;
+            changeStep('dashboardStep');
+            fetchPatientData(); 
+
+        } catch (err) {
+            alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูลแอดมินคลาวด์: " + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "🔓 เข้าสู่ระบบแดชบอร์ด";
+        }
     }
 
     function handleAdminResetPassword() {
@@ -435,6 +528,9 @@
         document.getElementById('adminUsername').value = "";
         document.getElementById('adminPassword').value = "";
         document.getElementById('adminDisplayName').innerText = "-";
+        currentAdminUsername = "";
+        currentAdminPassword = "";
+        updateLineLinkStatus('ยังไม่ได้เชื่อมต่อ', true);
         
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
