@@ -159,6 +159,13 @@
                     <input type="radio" id="q2q2_yes" name="q2q2" value="มี"><label for="q2q2_yes" class="radio-label">มี</label>
                 </div>
             </div>
+            <div class="form-group">
+                <label>2. ใน 1 เดือนที่ผ่านมา รวมทั้งวันนี้ ท่านมีความรู้สึกทุกข์ใจจนไม่อยากมีชีวิตอยู่หรือไม่?</label>
+                <div class="radio-group">
+                    <input type="radio" id="q2q3_no" name="q2q2" value="ไม่มี"><label for="q2q3_no" class="radio-label">ไม่มี</label>
+                    <input type="radio" id="q2q3_yes" name="q2q2" value="มี"><label for="q2q3_yes" class="radio-label">มี</label>
+                </div>
+            </div>
         </div>
 
         <div id="panel9Q" class="sub-questions" style="display:none;">
@@ -512,10 +519,11 @@
     function goToStep3() {
         const q2q1 = document.querySelector('input[name="q2q1"]:checked');
         const q2q2 = document.querySelector('input[name="q2q2"]:checked');
-        if(!q2q1 || !q2q2) { alert("⚠️ กรุณาทำแบบคัดกรอง 2Q ให้ครบถ้วน"); return; }
+        const q2q3 = document.querySelector('input[name="q2q3"]:checked');
+        if(!q2q1 || !q2q2 || !q2q3) { alert("⚠️ กรุณาทำแบบคัดกรอง 2Q ให้ครบถ้วน"); return; }
         
         const type = document.getElementById('assessmentTypeSelect').value;
-        const q2Res = (q2q1.value === "มี" || q2q2.value === "มี") ? "🚨 มีความเสี่ยง" : "🟢 ปกติ";
+        const q2Res = (q2q1.value === "มี" || q2q2.value === "มี" || q2q3.value === "มี") ? "🚨 มีความเสี่ยง" : "🟢 ปกติ";
 
         if (q2Res === "🚨 มีความเสี่ยง" && type === "2Q") {
             alert("🚨 ผู้รับตรวจมีความเสี่ยงจากผล 2Q! ระบบบังคับให้ทำแบบประเมิน 9Q ต่อเพื่อตรวจสอบความรุนแรง กรุณากรอกแบบสอบถามหัวข้อ 9Q ที่เพิ่มขึ้นมาด้านล่างครับ");
