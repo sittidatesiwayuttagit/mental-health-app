@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบแดชบอร์ดคนดูแล - รพ.สต.บ้านทองหลาง</title>
+    
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
     <style>
@@ -64,11 +65,6 @@
         .btn-logout { padding: 6px 12px; background-color: #ef4444; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
         .btn-logout:hover { background-color: #dc2626; }
 
-        .line-link-panel { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px; color: #475569; margin-bottom: 15px; background: #ecfdf5; padding: 10px 15px; border-radius: 8px; border: 1px solid #bbf7d0; }
-        .line-link-panel .status { font-weight: bold; color: #065f46; }
-        .btn-line { padding: 8px 12px; background-color: #06c755; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; white-space: nowrap; }
-        .btn-line:disabled { background-color: #94a3b8; cursor: not-allowed; }
-
         /* สไตล์กระดานการ์ด Feedback ข้อเสนอแนะ */
         .feedback-card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 15px; background-color: #ffffff; border-left: 5px solid #6366f1; box-shadow: 0 2px 8px rgba(0,0,0,0.02); text-align: left; }
         .feedback-header { display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 10px; font-weight: bold; color: #64748b; font-size: 13px; }
@@ -117,7 +113,7 @@
             <label style="display:block; font-weight:bold; margin-bottom:5px;">Password</label>
             <input type="password" id="adminPassword" placeholder="ระบุ Password ผู้ดูแลระบบ">
         </div>
-        <button class="btn-login" id="btnAdminLoginText" onclick="verifyAdminAuth()" disabled>⏳ กำลังตรวจสอบ LINE Login...</button>
+        <button class="btn-login" id="btnAdminLoginText" onclick="verifyAdminAuth()">🔓 เข้าสู่ระบบแดชบอร์ด</button>
         
         <p style="text-align:center; margin-top:15px; font-size:14px;">
             <a href="#" onclick="changeStep('resetAdminStep')" style="color:#3b82f6; font-weight:bold; text-decoration:none;">🔑 ลืมรหัสผ่าน? ตั้งรหัสใหม่ที่นี่</a>
@@ -150,10 +146,6 @@
         <div class="admin-info-header">
             <div>🖥️ ผู้ใช้งานปัจจุบัน: <span id="adminDisplayName" style="color: #3b82f6;">-</span></div>
             <button class="btn-logout" onclick="logoutAdmin()">🔒 ออกจากระบบ</button>
-        </div>
-
-        <div id="lineLinkPanel" class="line-link-panel">
-            <div>LINE แจ้งเตือน: <span id="lineLinkStatus" class="status">เชื่อมต่อ LINE แล้ว</span></div>
         </div>
 
         <div class="tabs-bar">
@@ -279,127 +271,47 @@
 
 <script>
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySImkthOaj1K3yK3QtFsc0qUNx7wFMF9gNaPjO_IL86H6JaywSU2ZnF4NPic_ypsW8ew/exec';
-    const LIFF_ID = "2010303347-dja2J8TA";
+    const LIFF_ID = "2010303347-dja2J8TA"; 
 
-    // IMPORTANT:
-    // Mandatory automatic LINE Login works only when this URL exactly matches
-    // the Endpoint URL configured in LINE Developers > LIFF.
-    // If your real hosted admin URL is different, put the exact URL here, for example:
-    // const ADMIN_LIFF_ENDPOINT_URL = 'https://your-domain.com/admin.html';
-    const ADMIN_LIFF_ENDPOINT_URL = '';
-
-    let liffReady = false;
-    let mandatoryLineUserId = "";
-    let mandatoryLineDisplayName = "";
-    let currentAdminUsername = "";
-    let currentAdminPassword = "";
+    // 🎯 ปรับจังหวะโหลด: ดึงโปรไฟล์ LINE และ fetch ยิงข้อมูลทันที (เพราะย้าย liff.init ไปไว้ตอนโหลดหน้าเว็บแล้ว)
+    async function saveLineIdToSheet(username, password) {
+      try {
+        if (liff.isLoggedIn()) {
+          const profile = await liff.getProfile();
+          fetch(`${GOOGLE_SCRIPT_URL}?action=updateAdminLineId&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&lineId=${encodeURIComponent(profile.userId)}`)
+            .then(res => res.json())
+            .then(res => console.log("บันทึกสิทธิ์ LINE ID ลง Google Sheet สำเร็จ:", res))
+            .catch(err => console.error("ระบบคลาวด์ขัดข้องในการเซฟ ID:", err));
+        }
+      } catch (err) {
+        console.error("LIFF Error:", err);
+      }
+    }
 
     let allData = []; 
     let currentSelectedPatientName = ""; 
     let currentSelectedPatientGender = "";
     let currentSelectedPatientVillage = "";
 
-    function safeText(value) {
-        return value === undefined || value === null ? "" : String(value);
-    }
-
-    function escapeHTML(value) {
-        return safeText(value)
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-    }
-
-    function getCleanAdminLiffEndpointUrl() {
-        if (ADMIN_LIFF_ENDPOINT_URL && ADMIN_LIFF_ENDPOINT_URL.trim()) {
-            return ADMIN_LIFF_ENDPOINT_URL.trim();
-        }
-        // Use a clean URL without LINE query strings such as code/state/liff.state.
-        // Passing window.location.href may cause LINE 400 Bad Request.
-        return window.location.origin + window.location.pathname;
-    }
-
+    // 🎯 ปรับปรุงจุดนี้: ให้แอปขอสิทธิ์และล็อกอิน LINE ค้างไว้ทันทีตั้งแต่เปิดหน้าเว็บ เพื่อไม่ให้เด้งรีโหลดตอนกดปุ่มล็อกอิน
     window.onload = async () => {
         const daySelect = document.getElementById('patientBirthDay');
-        if (daySelect && daySelect.options.length <= 1) {
-            for (let i = 1; i <= 31; i++) {
-                let opt = document.createElement('option');
-                opt.value = i;
-                opt.innerText = i;
-                daySelect.appendChild(opt);
-            }
+        for (let i = 1; i <= 31; i++) {
+            let opt = document.createElement('option');
+            opt.value = i; opt.innerText = i;
+            daySelect.appendChild(opt);
         }
-
-        await requireLineLoginBeforeAdmin();
-    };
-
-    async function requireLineLoginBeforeAdmin() {
-        const loginBtn = document.getElementById('btnAdminLoginText');
-        if (loginBtn) {
-            loginBtn.disabled = true;
-            loginBtn.innerText = '⏳ กำลังตรวจสอบ LINE Login...';
-        }
-        updateLineLinkStatus('กำลังตรวจสอบ LINE Login...');
 
         try {
-            if (typeof liff === 'undefined') {
-                updateLineLinkStatus('ไม่พบ LIFF SDK');
-                alert('❌ ไม่พบ LIFF SDK กรุณาตรวจสอบอินเทอร์เน็ตหรือไฟล์ LIFF SDK');
-                if (loginBtn) loginBtn.innerText = '❌ LINE Login ไม่พร้อมใช้งาน';
-                return;
-            }
-
             await liff.init({ liffId: LIFF_ID });
-            liffReady = true;
-
             if (!liff.isLoggedIn()) {
-                updateLineLinkStatus('กำลังเปิด LINE Login...');
-                liff.login({ redirectUri: getCleanAdminLiffEndpointUrl() });
-                return;
+                // บังคับให้เด้งกลับมาที่หน้า admin.html ตัวเองแน่นอน 100% ไม่หลุดไปหน้าอื่น
+                liff.login({ redirectUri: window.location.href }); 
             }
-
-            const profile = await liff.getProfile();
-            mandatoryLineUserId = profile.userId || "";
-            mandatoryLineDisplayName = profile.displayName || "LINE user";
-            updateLineLinkStatus('เชื่อมต่อแล้ว: ' + mandatoryLineDisplayName);
-
-            // Allow admin username/password login only after LINE Login is ready.
-            if (loginBtn) {
-                loginBtn.disabled = false;
-                loginBtn.innerText = '🔓 เข้าสู่ระบบแดชบอร์ด';
-            }
-
         } catch (err) {
-            liffReady = false;
-            updateLineLinkStatus('LINE Login ไม่สำเร็จ');
-            console.error('Mandatory LIFF login error:', err);
-            alert('❌ LINE Login ไม่สำเร็จ: ' + err.message + '\n\nโปรดตรวจสอบว่า LIFF Endpoint URL ใน LINE Developers ตรงกับ URL หน้า admin.html แบบ 100%');
-            if (loginBtn) loginBtn.innerText = '❌ LINE Login ไม่สำเร็จ';
+            console.error("LIFF Onload Init Error:", err);
         }
-    }
-
-    function updateLineLinkStatus(message) {
-        const status = document.getElementById('lineLinkStatus');
-        if (status) status.innerText = message;
-    }
-
-    async function saveAdminLineIdToSheet(username, password) {
-        if (!mandatoryLineUserId) {
-            throw new Error('ไม่พบ LINE User ID กรุณา Login ผ่าน LINE ก่อน');
-        }
-
-        const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=updateAdminLineId&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&lineId=${encodeURIComponent(mandatoryLineUserId)}&lineName=${encodeURIComponent(mandatoryLineDisplayName)}`);
-        const data = await res.json();
-
-        if (!data.success) {
-            throw new Error(data.message || 'ไม่สามารถบันทึก LINE ID ได้');
-        }
-
-        updateLineLinkStatus('บันทึก LINE แล้ว: ' + mandatoryLineDisplayName);
-        return data;
-    }
+    };
 
     function calculateAge(d, m, yBE) {
         if (!d || !m || !yBE) return "-";
@@ -445,51 +357,33 @@
         }
     }
 
-    async function verifyAdminAuth() {
+    function verifyAdminAuth() {
         const u = document.getElementById('adminUsername').value.trim();
         const p = document.getElementById('adminPassword').value;
         const btn = document.getElementById('btnAdminLoginText');
 
         if (!u || !p) { alert("⚠️ กรุณากรอกข้อมูลให้ครบถ้วน"); return; }
-        if (!liffReady || !mandatoryLineUserId) {
-            alert("⚠️ ระบบนี้บังคับ LINE Login ก่อนเข้าใช้งานแอดมิน กรุณารอสักครู่หรือรีเฟรชหน้าเว็บ");
-            await requireLineLoginBeforeAdmin();
-            return;
-        }
+        btn.innerText = "⏳ กำลังตรวจสอบสิทธิ์แอดมิน...";
 
-        try {
-            btn.disabled = true;
-            btn.innerText = "⏳ กำลังตรวจสอบสิทธิ์แอดมิน...";
-
-            const loginRes = await fetch(`${GOOGLE_SCRIPT_URL}?action=checkAdminLogin&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}`);
-            const loginData = await loginRes.json();
-
-            if (!loginData.success) {
-                alert("❌ " + (loginData.message || "Username หรือ Password ไม่ถูกต้อง"));
-                return;
-            }
-
-            currentAdminUsername = u;
-            currentAdminPassword = p;
-            btn.innerText = "⏳ กำลังบันทึก LINE ID สำหรับแจ้งเตือน...";
-
-            try {
-                await saveAdminLineIdToSheet(u, p);
-            } catch (lineErr) {
-                console.error('Save admin LINE ID error:', lineErr);
-                alert('⚠️ ล็อกอินแอดมินสำเร็จ แต่บันทึก LINE ID สำหรับแจ้งเตือนไม่สำเร็จ: ' + lineErr.message);
-            }
-
-            document.getElementById('adminDisplayName').innerText = loginData.name;
-            changeStep('dashboardStep');
-            fetchPatientData(); 
-
-        } catch (err) {
-            alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูลแอดมินคลาวด์: " + err.message);
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "🔓 เข้าสู่ระบบแดชบอร์ด";
-        }
+        fetch(`${GOOGLE_SCRIPT_URL}?action=checkAdminLogin&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}`)
+            .then(res => res.json())
+            .then(res => {
+                btn.innerText = "🔓 เข้าสู่ระบบแดชบอร์ด";
+                if (res.success) {
+                    // เรียกฟังก์ชันส่งคู่ Username และ Password ไปล็อกแถวบันทึกคอลัมน์ E ได้ทันที ไม่รีโหลดหน้าจอแล้ว
+                    saveLineIdToSheet(u, p);
+                    
+                    document.getElementById('adminDisplayName').innerText = res.name;
+                    changeStep('dashboardStep'); 
+                    fetchPatientData(); 
+                } else {
+                    alert("❌ " + res.message);
+                }
+            })
+            .catch(err => {
+                btn.innerText = "🔓 เข้าสู่ระบบแดชบอร์ด";
+                alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูลแอดมินคลาวด์");
+            });
     }
 
     function handleAdminResetPassword() {
@@ -528,9 +422,6 @@
         document.getElementById('adminUsername').value = "";
         document.getElementById('adminPassword').value = "";
         document.getElementById('adminDisplayName').innerText = "-";
-        currentAdminUsername = "";
-        currentAdminPassword = "";
-        updateLineLinkStatus('ยังไม่ได้เชื่อมต่อ', true);
         
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -570,25 +461,21 @@
     function processData() {
         const listViewDiv = document.getElementById('patientListView');
         listViewDiv.innerHTML = '';
-        if (!Array.isArray(allData) || allData.length === 0) return;
+        if (allData.length === 0) return;
 
         let filteredData = [...allData];
         const nameSearch = document.getElementById('searchInput').value.trim().toLowerCase();
-        if (nameSearch) {
-            filteredData = filteredData.filter(item =>
-                safeText(item.patientName).toLowerCase().includes(nameSearch)
-            );
-        }
+        if (nameSearch) filteredData = filteredData.filter(item => item.patientName.toLowerCase().includes(nameSearch));
         
         const ageSearch = document.getElementById('ageInput').value.trim();
-        if (ageSearch) filteredData = filteredData.filter(item => getNumericAge(item) === parseInt(ageSearch, 10));
+        if (ageSearch) filteredData = filteredData.filter(item => getNumericAge(item) === parseInt(ageSearch));
 
         const sortType = document.getElementById('sortSelect').value;
         filteredData.sort((a, b) => {
             if (sortType === 'timeNewOld') return parseTimestamp(b.timestamp) - parseTimestamp(a.timestamp);
             if (sortType === 'timeOldNew') return parseTimestamp(a.timestamp) - parseTimestamp(b.timestamp);
-            if (sortType === 'nameAZ') return safeText(a.patientName).localeCompare(safeText(b.patientName), 'th');
-            if (sortType === 'nameZA') return safeText(b.patientName).localeCompare(safeText(a.patientName), 'th');
+            if (sortType === 'nameAZ') return a.patientName.localeCompare(b.patientName, 'th');
+            if (sortType === 'nameZA') return b.patientName.localeCompare(b.patientName, 'th');
             if (sortType === 'ageMaxMin') return getNumericAge(b) - getNumericAge(a);
             if (sortType === 'ageMinMax') {
                 let ageA = getNumericAge(a); let ageB = getNumericAge(b);
@@ -602,16 +489,13 @@
         let seenKeys = new Set(); 
 
         filteredData.forEach(item => {
-            const patientName = safeText(item.patientName).trim();
-            const patientGender = safeText(item.patientGender).trim();
-            const villageNo = safeText(item.villageNo).trim();
-            const compoundKey = `${patientName}|${patientGender}|${villageNo}`;
+            const compoundKey = `${item.patientName.trim()}|${item.patientGender.trim()}|${item.villageNo.trim()}`;
             if (!seenKeys.has(compoundKey)) {
                 seenKeys.add(compoundKey);
                 uniquePatients.push({ 
-                    name: patientName || '-', 
-                    gender: patientGender || '-',
-                    village: villageNo || '-',
+                    name: item.patientName, 
+                    gender: item.patientGender,
+                    village: item.villageNo,
                     day: item.birthDay, 
                     month: item.birthMonth, 
                     year: item.birthYear 
@@ -628,12 +512,12 @@
             let ageText = calculateAge(p.day, p.month, p.year);
             let rowCard = document.createElement('div');
             rowCard.className = 'patient-row-card';
-            rowCard.addEventListener('click', () => showPatientDetail(p.name, p.gender, p.village));
+            rowCard.setAttribute('onclick', `showPatientDetail("${p.name.replace(/"/g, '&quot;')}", "${p.gender}", "${p.village}")`);
             rowCard.innerHTML = `
                 <div>
-                    <span class="patient-row-name">👤 ${escapeHTML(p.name)}</span>
-                    <span class="patient-row-age" style="margin-left: 8px;">หมู่บ้าน: ${escapeHTML(p.village)} | เพศ: ${escapeHTML(p.gender)}</span>
-                    <span class="patient-row-age">อายุคำนวณ: ${ageText !== "-" ? escapeHTML(ageText) : "ยังไม่ระบุวันเกิด"}</span>
+                    <span class="patient-row-name">👤 ${p.name}</span>
+                    <span class="patient-row-age" style="margin-left: 8px;">หมู่บ้าน: ${p.village} | เพศ: ${p.gender}</span>
+                    <span class="patient-row-age">อายุคำนวณ: ${ageText !== "-" ? ageText : "ยังไม่ระบุวันเกิด"}</span>
                 </div>
                 <span style="color: #3b82f6; font-weight: bold; font-size: 14px;">คลิกดูข้อมูลเชิงลึก ➡️</span>
             `;
@@ -680,7 +564,7 @@
         if (dateFilterVal) {
             const parts = dateFilterVal.split('-');
             const formattedFilterDate = `${parts[2]}/${parts[1]}/${parts[0]}`; 
-            patientRecords = patientRecords.filter(item => safeText(item.timestamp).split(' ')[0] === formattedFilterDate);
+            patientRecords = patientRecords.filter(item => item.timestamp.split(' ')[0] === formattedFilterDate);
         }
 
         if (patientRecords.length === 0) {
@@ -691,17 +575,16 @@
         patientRecords.forEach(item => {
             let card = document.createElement('div');
             card.className = 'history-card';
-            const q2Result = safeText(item.q2Result);
             card.innerHTML = `
                 <div class="history-header">
-                    <span>📅 วันที่-เวลาประเมิน: ${escapeHTML(item.timestamp || '-')}</span>
-                    <span>เครื่องมือหลัก: ${escapeHTML(item.assessmentType || '-')}</span>
+                    <span>📅 วันที่-เวลาประเมิน: ${item.timestamp}</span>
+                    <span>เครื่องมือหลัก: ${item.assessmentType}</span>
                 </div>
-                <div class="info-row"><span>ผู้คัดกรองลงพื้นที่ (อสม.):</span> <span><b>${escapeHTML(item.vhmName || '-')}</b></span></div>
-                <div class="info-row"><span>ผลคัดกรองด่วน 2Q:</span> <span class="${q2Result.includes('เสี่ยง') ? 'danger' : ''}">${escapeHTML(q2Result || '-')}</span></div>
-                <div class="info-row"><span>คะแนนคอลัมน์ 9Q:</span> <span>${escapeHTML(item.q9Score || '-(ไม่ได้ประเมิน)-')}</span></div>
-                <div class="info-row"><span>ผลประเมินคอลัมน์ 8Q:</span> <span>${escapeHTML(item.q8Result || '-(ไม่ได้ประเมิน)-')}</span></div>
-                <div class="info-row"><span>หมายเหตุ อสม. เพิ่มเติม:</span> <span>${escapeHTML(item.comment || '-(ว่าง)-')}</span></div>
+                <div class="info-row"><span>ผู้คัดกรองลงพื้นที่ (อสม.):</span> <span><b>${item.vhmName}</b></span></div>
+                <div class="info-row"><span>ผลคัดกรองด่วน 2Q:</span> <span class="${item.q2Result.includes('เสี่ยง') ? 'danger' : ''}">${item.q2Result}</span></div>
+                <div class="info-row"><span>คะแนนคอลัมน์ 9Q:</span> <span>${item.q9Score || '-(ไม่ได้ประเมิน)-'}</span></div>
+                <div class="info-row"><span>ผลประเมินคอลัมน์ 8Q:</span> <span>${item.q8Result || '-(ไม่ได้ประเมิน)-'}</span></div>
+                <div class="info-row"><span>หมายเหตุ อสม. เพิ่มเติม:</span> <span>${item.comment || '-(ว่าง)-'}</span></div>
             `;
             historyCardsDiv.appendChild(card);
         });
@@ -717,39 +600,23 @@
         const m = document.getElementById('patientBirthMonth').value;
         const y = document.getElementById('patientBirthYear').value.trim();
 
-        if (!d || !m || !y) {
-            alert("⚠️ กรุณาระบุวัน เดือน และปีเกิดให้ครบถ้วนก่อนบันทึกครับ");
-            return;
-        }
-
         const loading = document.getElementById('loadingText');
         loading.style.display = 'block';
 
-        const url = `${GOOGLE_SCRIPT_URL}?action=savePatientBirthdate` +
-            `&patientName=${encodeURIComponent(currentSelectedPatientName)}` +
-            `&patientGender=${encodeURIComponent(currentSelectedPatientGender)}` +
-            `&villageNo=${encodeURIComponent(currentSelectedPatientVillage)}` +
-            `&birthDay=${encodeURIComponent(d)}` +
-            `&birthMonth=${encodeURIComponent(m)}` +
-            `&birthYear=${encodeURIComponent(y)}`;
-
-        fetch(url)
-            .then(res => {
-                if (!res.ok) throw new Error("HTTP Status " + res.status);
-                return res.json();
-            })
+        fetch(`${GOOGLE_SCRIPT_URL}?action=savePatientBirthdate&patientName=${encodeURIComponent(currentSelectedPatientName)}&birthDay=${encodeURIComponent(d)}&birthMonth=${encodeURIComponent(m)}&birthYear=${encodeURIComponent(y)}`)
+            .then(res => res.json())
             .then(res => {
                 loading.style.display = 'none';
                 if(res.success) {
                     alert("🎉 บันทึกข้อมูลประวัติวันเกิดและคำนวณอายุของผู้ป่วยคนนี้เรียบร้อยครับ!");
                     fetchPatientData(); 
                 } else {
-                    alert("❌ เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + (res.message || "ไม่ทราบสาเหตุ"));
+                    alert("❌ เกิดข้อผิดพลาดในการบันทึกข้อมูล");
                 }
             })
             .catch(err => {
                 loading.style.display = 'none';
-                alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อเพื่อบันทึกวันเกิด: " + err.message);
+                alert("❌ ข้อผิดพลาดระบบเครือข่าย: " + err.message);
             });
     }
 
@@ -759,16 +626,7 @@
         processData(); 
     }
 
-    function parseTimestamp(tStr) {
-        const parts = safeText(tStr).match(/(\d+)/g);
-        if (!parts || parts.length < 3) return new Date(0);
-        const day = parseInt(parts[0], 10);
-        const month = parseInt(parts[1], 10) - 1;
-        const year = parseInt(parts[2], 10);
-        const hour = parseInt(parts[3] || '0', 10);
-        const minute = parseInt(parts[4] || '0', 10);
-        return new Date(year, month, day, hour, minute);
-    }
+    function parseTimestamp(tStr) { const parts = tStr.match(/(\d+)/g); return new Date(parts[2], parts[1]-1, parts[0], parts[3], parts[4]); }
 
     function fetchVhmData() {
         const loading = document.getElementById('loadingText');
@@ -780,35 +638,18 @@
             .then(text => {
                 try {
                     const data = JSON.parse(text); loading.style.display = 'none';
-                    if(!Array.isArray(data) || data.length === 0) { listDiv.innerHTML = '<p style="text-align:center; color:#64748b;">❌ ไม่พบข้อมูลรายชื่อ อสม. ในระบบ</p>'; return; }
+                    if(data.length === 0) { listDiv.innerHTML = '<p style="text-align:center; color:#64748b;">❌ ไม่พบข้อมูลรายชื่อ อสม. ในระบบ</p>'; return; }
                     data.forEach(vhm => {
-                        const username = safeText(vhm.username);
-                        const password = safeText(vhm.password);
-                        const name = safeText(vhm.name);
-                        const secretKey = safeText(vhm.secretKey);
-
-                        let card = document.createElement('div');
-                        card.className = 'vhm-table-row';
+                        let card = document.createElement('div'); card.className = 'vhm-table-row';
                         card.innerHTML = `
-                            <div class="vhm-row-header"><span>ชื่อ อสม: <b>${escapeHTML(name)}</b></span><span>Username: ${escapeHTML(username)}</span></div>
-                            <div class="info-row"><span>รหัสเข้าใช้งาน (Password):</span> <span>${escapeHTML(password)}</span></div>
-                            <div class="info-row"><span>รหัสลับกู้บัญชี:</span> <span>${escapeHTML(secretKey)}</span></div>
-                            <div class="row-actions" style="text-align: right; margin-top: 10px;"></div>
+                            <div class="vhm-row-header"><span>ชื่อ อสม: <b>${vhm.name}</b></span><span>Username: ${vhm.username}</span></div>
+                            <div class="info-row"><span>รหัสเข้าใช้งาน (Password):</span> <span>${vhm.password}</span></div>
+                            <div class="info-row"><span>รหัสลับกู้บัญชี:</span> <span>${vhm.secretKey}</span></div>
+                            <div style="text-align: right; margin-top: 10px;">
+                                <button class="btn-action edit" onclick="enableVhmEditMode('${vhm.username}', '${vhm.password}', '${vhm.name}', '${vhm.secretKey}')">✏️ แก้ไข</button>
+                                <button class="btn-action delete" onclick="deleteVhmData('${vhm.username}')">❌ ลบออก</button>
+                            </div>
                         `;
-
-                        const actions = card.querySelector('.row-actions');
-                        const editBtn = document.createElement('button');
-                        editBtn.className = 'btn-action edit';
-                        editBtn.textContent = '✏️ แก้ไข';
-                        editBtn.addEventListener('click', () => enableVhmEditMode(username, password, name, secretKey));
-
-                        const deleteBtn = document.createElement('button');
-                        deleteBtn.className = 'btn-action delete';
-                        deleteBtn.textContent = '❌ ลบออก';
-                        deleteBtn.addEventListener('click', () => deleteVhmData(username));
-
-                        actions.appendChild(editBtn);
-                        actions.appendChild(deleteBtn);
                         listDiv.appendChild(card);
                     });
                 } catch(e) { loading.style.display = 'none'; alert("❌ คืนข้อมูล อสม. ผิดพลาด"); }
@@ -871,37 +712,19 @@
             .then(text => {
                 try {
                     const data = JSON.parse(text); loading.style.display = 'none';
-                    if(!Array.isArray(data) || data.length === 0) { listDiv.innerHTML = '<p style="text-align:center; color:#64748b;">❌ ไม่พบข้อมูลรายชื่อผู้ดูแลระบบ</p>'; return; }
+                    if(data.length === 0) { listDiv.innerHTML = '<p style="text-align:center; color:#64748b;">❌ ไม่พบข้อมูลรายชื่อผู้ดูแลระบบ</p>'; return; }
                     data.forEach(adm => {
-                        const username = safeText(adm.username);
-                        const password = safeText(adm.password);
-                        const name = safeText(adm.name);
-                        const secretKey = safeText(adm.secretKey);
-
-                        let card = document.createElement('div');
-                        card.className = 'vhm-table-row';
+                        let card = document.createElement('div'); card.className = 'vhm-table-row';
                         card.style.borderLeft = "4px solid #10b981"; 
                         card.innerHTML = `
-                            <div class="vhm-row-header"><span style="color:#10b981;">ชื่อผู้ดูแล: <b>${escapeHTML(name)}</b></span><span>Username: ${escapeHTML(username)}</span></div>
-                            <div class="info-row"><span>รหัสเข้าใช้งาน (Password):</span> <span>${escapeHTML(password)}</span></div>
-                            <div class="info-row"><span>รหัสลับกู้บัญชีแอดมิน:</span> <span>${escapeHTML(secretKey)}</span></div>
-                            <div class="row-actions" style="text-align: right; margin-top: 10px;"></div>
+                            <div class="vhm-row-header"><span style="color:#10b981;">ชื่อผู้ดูแล: <b>${adm.name}</b></span><span>Username: ${adm.username}</span></div>
+                            <div class="info-row"><span>รหัสเข้าใช้งาน (Password):</span> <span>${adm.password}</span></div>
+                            <div class="info-row"><span>รหัสลับกู้บัญชีแอดมิน:</span> <span>${adm.secretKey}</span></div>
+                            <div style="text-align: right; margin-top: 10px;">
+                                <button class="btn-action edit" style="background-color:#10b981;" onclick="enableAdminEditMode('${adm.username}', '${adm.password}', '${adm.name}', '${adm.secretKey}')">✏️ แก้ไข</button>
+                                <button class="btn-action delete" onclick="deleteAdminData('${adm.username}')">❌ ลบออก</button>
+                            </div>
                         `;
-
-                        const actions = card.querySelector('.row-actions');
-                        const editBtn = document.createElement('button');
-                        editBtn.className = 'btn-action edit';
-                        editBtn.style.backgroundColor = '#10b981';
-                        editBtn.textContent = '✏️ แก้ไข';
-                        editBtn.addEventListener('click', () => enableAdminEditMode(username, password, name, secretKey));
-
-                        const deleteBtn = document.createElement('button');
-                        deleteBtn.className = 'btn-action delete';
-                        deleteBtn.textContent = '❌ ลบออก';
-                        deleteBtn.addEventListener('click', () => deleteAdminData(username));
-
-                        actions.appendChild(editBtn);
-                        actions.appendChild(deleteBtn);
                         listDiv.appendChild(card);
                     });
                 } catch(e) { loading.style.display = 'none'; alert("❌ คืนข้อมูลผู้ดูแลผิดพลาด โครงสร้างตอบกลับตารางไม่ตรง"); }
@@ -979,7 +802,7 @@
                 loading.style.display = 'none';
                 try {
                     const data = JSON.parse(text);
-                    if(!Array.isArray(data) || data.length === 0) {
+                    if(!data || data.length === 0) {
                         container.innerHTML = '<p style="text-align:center; color:#64748b; padding:40px 0;">📭 ยังไม่มีข้อเสนอแนะส่งเข้ามาในระบบขณะนี้ครับ</p>';
                         return;
                     }
@@ -988,24 +811,13 @@
                     [...data].reverse().forEach(item => {
                         let card = document.createElement('div');
                         card.className = 'feedback-card';
-
-                        const header = document.createElement('div');
-                        header.className = 'feedback-header';
-
-                        const sourceSpan = document.createElement('span');
-                        sourceSpan.textContent = '👤 แหล่งข้อมูล: ผู้ใช้งานระบบ (ไม่เผยตัวตน)';
-
-                        const timeSpan = document.createElement('span');
-                        timeSpan.textContent = `⏰ เวลาบันทึก: ${safeText(item.timestamp) || '-'} น.`;
-
-                        const body = document.createElement('div');
-                        body.className = 'feedback-body';
-                        body.textContent = safeText(item.text) || '-';
-
-                        header.appendChild(sourceSpan);
-                        header.appendChild(timeSpan);
-                        card.appendChild(header);
-                        card.appendChild(body);
+                        card.innerHTML = `
+                            <div class="feedback-header">
+                                <span>👤 แหล่งข้อมูล: ผู้ใช้งานระบบ (ไม่เผยตัวตน)</span>
+                                <span>⏰ เวลาบันทึก: ${item.timestamp || '-'} น.</span>
+                            </div>
+                            <div class="feedback-body">${item.text || '-'}</div>
+                        `;
                         container.appendChild(card);
                     });
                 } catch(e) {
@@ -1014,13 +826,7 @@
             })
             .catch(err => {
                 loading.style.display = 'none';
-                container.textContent = '';
-                const msg = document.createElement('p');
-                msg.style.textAlign = 'center';
-                msg.style.color = '#ef4444';
-                msg.style.padding = '20px';
-                msg.textContent = '❌ ข้อผิดพลาดระบบเครือข่าย: ' + err.message;
-                container.appendChild(msg);
+                container.innerHTML = '<p style="text-align:center; color:#ef4444; padding:20px;">❌ ข้อผิดพลาดระบบเครือข่าย: ' + err.message + '</p>';
             });
     }
 </script>
