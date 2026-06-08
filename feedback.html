@@ -31,7 +31,7 @@
     // ⚠️ อย่าลืมเอาลิงก์ Web App ของพี่มาแปะตรงนี้ให้ถูกต้องนะครับ
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySImkthOaj1K3yK3QtFsc0qUNx7wFMF9gNaPjO_IL86H6JaywSU2ZnF4NPic_ypsW8ew/exec'; 
 
-    function sendFeedback() {
+    async function sendFeedback() {
         const text = document.getElementById('fbText').value.trim();
         const btn = document.getElementById('btnSubmit');
         if(!text) { alert("⚠️ กรุณาพิมพ์ข้อเสนอก่อนกดส่งครับ"); return; }
@@ -44,22 +44,29 @@
             feedbackText: text
         });
 
-        fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: sendData
-        })
-        .then(res => res.json())
-        .then(res => {
-            if (res.success) {
-                alert('🎉 ส่งข้อเสนอแนะเรียบร้อยแล้ว');
+        try {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                body: sendData
+            });
+
+            if (!response.ok) throw new Error("HTTP Status " + response.status);
+            const result = await response.json();
+
+            if (result.success) {
+                alert('🎉 ส่งข้อเสนอแนะเรียบร้อยแล้ว ขอบคุณสำหรับข้อมูลพัฒนาดูแลระบบครับ!');
+                document.getElementById('fbText').value = "";
             } else {
-                alert('❌ ส่งไม่สำเร็จ: ' + (res.message || 'Unknown error'));
+                alert('❌ ส่งไม่สำเร็จ: ' + (result.message || 'ไม่ทราบสาเหตุ'));
             }
-        })
-        .catch(error => {
-            alert('❌ เกิดข้อผิดพลาดในระบบเครือข่าย');
-        });
+        } catch(error) {
+            alert('❌ เกิดข้อผิดพลาดในระบบเครือข่ายหรือ Apps Script');
+            console.error("Feedback submit error:", error);
+        } finally {
+            btn.innerText = "📤 ส่งข้อเสนอแนะแบบไม่เผยตัวตน";
+            btn.disabled = false;
+        }
     }
 </script>
 </body>
