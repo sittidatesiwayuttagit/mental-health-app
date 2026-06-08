@@ -226,6 +226,19 @@
     // 🎯 ตัวแปรเก็บประวัติคนไข้ในระบบเพื่อใช้ทำ Autocomplete
     let localScreeningHistory = []; 
 
+    function safeText(value) {
+        return value === undefined || value === null ? "" : String(value);
+    }
+
+    function escapeHTML(value) {
+        return safeText(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
     liff.init({ liffId: LIFF_ID }).then(() => { console.log("LIFF Ready"); });
 
     function changeStep(step) {
@@ -239,7 +252,7 @@
         fetch(GOOGLE_SCRIPT_URL)
             .then(res => res.json())
             .then(data => {
-                localScreeningHistory = data;
+                localScreeningHistory = Array.isArray(data) ? data : [];
             })
             .catch(err => console.error("ไม่สามารถดาวน์โหลดประวัติคนไข้สำหรับระบบเดาชื่ออัตโนมัติได้:", err));
     }
@@ -257,25 +270,28 @@
 
         // กรองเฉพาะประวัติที่มีอักษรตรงกัน
         let matches = localScreeningHistory.filter(item => 
-            item.patientName && item.patientName.toLowerCase().includes(inputVal)
+            safeText(item.patientName).toLowerCase().includes(inputVal)
         );
 
-        // ทำลายข้อมูลที่ซ้ำซ้อนให้เหลือรายบุคคลเดี่ยว (Unique) เพื่อลดการแสดงผลซ้ำซ้อน
+        // ทำลายข้อมูลที่ซ้ำซ้อนโดยใช้ ชื่อ + เพศ + หมู่บ้าน เพื่อไม่ให้คนชื่อซ้ำถูกทับกัน
         let uniquePatientsMap = {};
         matches.forEach(item => {
-            const pName = item.patientName.trim();
-            if (!uniquePatientsMap[pName]) {
-                uniquePatientsMap[pName] = {
-                    name: item.patientName,
-                    gender: item.patientGender || '',
-                    village: item.villageNo || ''
+            const pName = safeText(item.patientName).trim();
+            const gender = safeText(item.patientGender).trim();
+            const village = safeText(item.villageNo).trim();
+            const key = `${pName}|${gender}|${village}`;
+            if (!uniquePatientsMap[key]) {
+                uniquePatientsMap[key] = {
+                    name: pName,
+                    gender: gender,
+                    village: village
                 };
             }
         });
         let uniqueList = Object.values(uniquePatientsMap);
 
         // เรียงข้อมูลตามลำดับพจนานุกรมภาษาไทย (ก -> ฮ)
-        uniqueList.sort((a, b) => a.name.localeCompare(b.name, 'th'));
+        uniqueList.sort((a, b) => safeText(a.name).localeCompare(safeText(b.name), 'th'));
 
         // หั่นดึงเฉพาะ 5 รายชื่อแรกขึ้นมาแนะนำ
         let top5Matches = uniqueList.slice(0, 5);
@@ -285,7 +301,7 @@
             return;
         }
 
-        // วาดแถวรายชื่อแนะนำลงบนกล่องอินเทอร์เฟซ
+        // วาดแถวรายชื่อแนะนำลงบนกล่องอินเทอร์เฟซแบบปลอดภัย ไม่ใส่ข้อมูลผู้ใช้ผ่าน innerHTML
         top5Matches.forEach(patient => {
             let row = document.createElement('div');
             row.style.padding = '12px 15px';
@@ -293,7 +309,19 @@
             row.style.borderBottom = '1px solid #f1f5f9';
             row.style.fontSize = '15px';
             row.style.color = '#334155';
-            row.innerHTML = `👤 <b>${patient.name}</b> <span style="font-size: 12px; color: #64748b; float: right;">${patient.village} (${patient.gender})</span>`;
+
+            const icon = document.createTextNode('👤 ');
+            const nameEl = document.createElement('b');
+            nameEl.textContent = patient.name || '-';
+            const metaEl = document.createElement('span');
+            metaEl.style.fontSize = '12px';
+            metaEl.style.color = '#64748b';
+            metaEl.style.float = 'right';
+            metaEl.textContent = `${patient.village || '-'} (${patient.gender || '-'})`;
+
+            row.appendChild(icon);
+            row.appendChild(nameEl);
+            row.appendChild(metaEl);
             
             // จังหวะที่ อสม. คลิกเลือกชื่อแนะนำ
             row.onclick = () => {
@@ -312,7 +340,7 @@
         box.style.display = 'block';
 
         // 💡 ดักกรณีพิมพ์เองจนครบ 100% ตรงกับประวัติเดิม ให้ระบบ auto fill ข้อมูลให้ทันที
-        const perfectMatch = uniqueList.find(p => p.name.toLowerCase() === inputVal);
+        const perfectMatch = uniqueList.find(p => safeText(p.name).toLowerCase() === inputVal);
         if (perfectMatch) {
             document.getElementById('patientGender').value = perfectMatch.gender;
             document.getElementById('villageNo').value = perfectMatch.village;
@@ -554,11 +582,36 @@
         changeStep(3);
     }
 
-    function submitData() {
+    function resetScreeningFormAfterSuccess() {
+        document.getElementById('patientName').value = "";
+        document.getElementById('patientGender').value = "";
+        document.getElementById('villageNo').value = "";
+        document.getElementById('comment').value = "";
+        document.getElementById('nameSuggestionsBox').style.display = 'none';
+        
+        document.querySelectorAll('input[name="q2q1"], input[name="q2q2"]').forEach(radio => radio.checked = false);
+        
+        for (let i = 1; i <= 9; i++) {
+            const el = document.getElementById('q9q' + i);
+            if (el) el.value = "";
+        }
+        for (let i = 1; i <= 8; i++) {
+            const el = document.getElementById('q8q' + i);
+            if (el) el.value = "";
+        }
+
+        document.getElementById('assessmentTypeSelect').value = "2Q";
+        switchAssessment();
+        changeStep(1);
+    }
+
+    async function submitData() {
         const type = document.getElementById('assessmentTypeSelect').value;
+        const btn = document.getElementById('btnSubmitScreening');
         const sendData = new URLSearchParams({
+            action: 'submitScreening',
             vhmName: currentVhmName, 
-            patientName: document.getElementById('patientName').value,
+            patientName: document.getElementById('patientName').value.trim(),
             patientAge: '', 
             patientGender: document.getElementById('patientGender').value,
             villageNo: document.getElementById('villageNo').value, 
@@ -566,40 +619,37 @@
             q2Result: document.getElementById('smQ2Result').innerText,
             q9Score: (type === '9Q' || type === '8Q') ? document.getElementById('smQ9Score').innerText : '',
             q8Result: (type === '8Q') ? document.getElementById('smQ8Result').innerText : '',
-            comment: document.getElementById('comment').value
+            comment: document.getElementById('comment').value.trim()
         });
-        fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: sendData })
-        .then(() => { 
-            alert('🎉 ส่งรายงานการคัดกรองขึ้นระบบคลาวด์ รพ.สต. สำเร็จเรียบร้อยครับ!'); 
-            
-            document.getElementById('patientName').value = "";
-            document.getElementById('patientGender').value = "";
-            document.getElementById('villageNo').value = "";
-            document.getElementById('comment').value = "";
-            document.getElementById('nameSuggestionsBox').style.display = 'none';
-            
-            document.querySelectorAll('input[name="q2q1"], input[name="q2q2"]').forEach(radio => radio.checked = false);
-            
-            for (let i = 1; i <= 9; i++) {
-                const el = document.getElementById('q9q' + i);
-                if (el) el.value = "";
-            }
-            for (let i = 1; i <= 8; i++) {
-                const el = document.getElementById('q8q' + i);
-                if (el) el.value = "";
-            }
-            
-            // 🎯 อัปเดตข้อมูลแคชคนไข้ในระบบใหม่ทันทีหลังบันทึก เพื่อเก็บรายชื่อล่าสุดไว้ใช้ตรวจเคสถัดไป
-            fetchPatientHistoryForAutocomplete();
 
-            document.getElementById('assessmentTypeSelect').value = "2Q";
-            switchAssessment();
-            changeStep(1);
-        })
-        .catch(error => { 
-            alert('❌ เกิดข้อผิดพลาดในเครือข่าย'); 
-            console.error(error); 
-        });
+        try {
+            btn.disabled = true;
+            btn.innerText = "⏳ กำลังบันทึกข้อมูล...";
+
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                body: sendData
+            });
+
+            if (!response.ok) throw new Error("HTTP Status " + response.status);
+            const result = await response.json();
+
+            if (result.success) {
+                alert('🎉 ส่งรายงานการคัดกรองขึ้นระบบคลาวด์ รพ.สต. สำเร็จเรียบร้อยครับ!');
+                resetScreeningFormAfterSuccess();
+                // 🎯 อัปเดตข้อมูลแคชคนไข้ในระบบใหม่หลังบันทึกสำเร็จจริงเท่านั้น
+                fetchPatientHistoryForAutocomplete();
+            } else {
+                alert('❌ บันทึกไม่สำเร็จ: ' + (result.message || 'ไม่ทราบสาเหตุ'));
+            }
+        } catch (error) { 
+            alert('❌ เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาตรวจสอบอินเทอร์เน็ตหรือ Apps Script'); 
+            console.error("Submit error:", error); 
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "📤 ส่งข้อมูลบันทึกคลาวด์";
+        }
     }
 </script>
 </body>
