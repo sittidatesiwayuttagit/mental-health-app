@@ -280,11 +280,12 @@
 <script>
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySImkthOaj1K3yK3QtFsc0qUNx7wFMF9gNaPjO_IL86H6JaywSU2ZnF4NPic_ypsW8ew/exec';
     const LIFF_ID = "2010303347-dja2J8TA";
+    const ADMIN_LIFF_ENDPOINT_URL = "https://mental-health-app-lovat.vercel.app/admin.html";
 
     // Mandatory automatic LINE Login.
-    // Do NOT pass redirectUri manually here. The LIFF SDK will use the Endpoint URL
-    // configured in LINE Developers for this LIFF ID. Passing a custom redirectUri is
-    // the most common cause of LINE 400 Bad Request when the URL is not registered.
+    // This must match LINE Developers > LIFF > Endpoint URL exactly.
+    // Using a fixed clean admin URL prevents LINE from receiving query strings such as
+    // ?code=...&state=..., which commonly causes 400 Bad Request.
 
     let liffReady = false;
     let mandatoryLineUserId = "";
@@ -354,9 +355,9 @@
 
             if (!liff.isLoggedIn()) {
                 updateLineLinkStatus('กำลังเปิด LINE Login...');
-                // IMPORTANT: Do not set redirectUri manually.
-                // The current LIFF ID must have its Endpoint URL set to this admin page URL.
-                liff.login();
+                // Use the exact clean admin endpoint. This URL must be registered
+                // as the LIFF Endpoint URL in LINE Developers for this LIFF ID.
+                liff.login({ redirectUri: ADMIN_LIFF_ENDPOINT_URL });
                 return;
             }
 
@@ -378,7 +379,7 @@
             alert(
                 '❌ LINE Login ไม่สำเร็จ: ' + err.message +
                 '\n\nสาเหตุที่พบบ่อยที่สุดของ 400 Bad Request คือ LIFF Endpoint URL ใน LINE Developers ไม่ตรงกับ URL หน้า admin.html หรือใช้ LIFF ID เดียวกับหน้าอื่น เช่น index.html' +
-                '\n\nวิธีแก้: สร้าง LIFF app แยกสำหรับ admin.html หรือแก้ Endpoint URL ของ LIFF ID นี้ให้ตรงกับหน้า admin.html แบบ 100%'
+                '\n\nวิธีแก้: สร้าง LIFF app แยกสำหรับ admin.html หรือแก้ Endpoint URL ของ LIFF ID นี้ให้เป็น https://mental-health-app-lovat.vercel.app/admin.html แบบ 100%'
             );
             if (loginBtn) loginBtn.innerText = '❌ LINE Login ไม่สำเร็จ';
         }
