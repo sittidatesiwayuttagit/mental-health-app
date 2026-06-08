@@ -293,6 +293,19 @@
     let currentSelectedPatientGender = "";
     let currentSelectedPatientVillage = "";
 
+    function safeText(value) {
+        return value === undefined || value === null ? "" : String(value);
+    }
+
+    function escapeHTML(value) {
+        return safeText(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
     // 🎯 ปรับปรุงจุดนี้: ให้แอปขอสิทธิ์และล็อกอิน LINE ค้างไว้ทันทีตั้งแต่เปิดหน้าเว็บ เพื่อไม่ให้เด้งรีโหลดตอนกดปุ่มล็อกอิน
     window.onload = async () => {
         const daySelect = document.getElementById('patientBirthDay');
@@ -461,21 +474,25 @@
     function processData() {
         const listViewDiv = document.getElementById('patientListView');
         listViewDiv.innerHTML = '';
-        if (allData.length === 0) return;
+        if (!Array.isArray(allData) || allData.length === 0) return;
 
         let filteredData = [...allData];
         const nameSearch = document.getElementById('searchInput').value.trim().toLowerCase();
-        if (nameSearch) filteredData = filteredData.filter(item => item.patientName.toLowerCase().includes(nameSearch));
+        if (nameSearch) {
+            filteredData = filteredData.filter(item =>
+                safeText(item.patientName).toLowerCase().includes(nameSearch)
+            );
+        }
         
         const ageSearch = document.getElementById('ageInput').value.trim();
-        if (ageSearch) filteredData = filteredData.filter(item => getNumericAge(item) === parseInt(ageSearch));
+        if (ageSearch) filteredData = filteredData.filter(item => getNumericAge(item) === parseInt(ageSearch, 10));
 
         const sortType = document.getElementById('sortSelect').value;
         filteredData.sort((a, b) => {
             if (sortType === 'timeNewOld') return parseTimestamp(b.timestamp) - parseTimestamp(a.timestamp);
             if (sortType === 'timeOldNew') return parseTimestamp(a.timestamp) - parseTimestamp(b.timestamp);
-            if (sortType === 'nameAZ') return a.patientName.localeCompare(b.patientName, 'th');
-            if (sortType === 'nameZA') return b.patientName.localeCompare(a.patientName, 'th');
+            if (sortType === 'nameAZ') return safeText(a.patientName).localeCompare(safeText(b.patientName), 'th');
+            if (sortType === 'nameZA') return safeText(b.patientName).localeCompare(safeText(a.patientName), 'th');
             if (sortType === 'ageMaxMin') return getNumericAge(b) - getNumericAge(a);
             if (sortType === 'ageMinMax') {
                 let ageA = getNumericAge(a); let ageB = getNumericAge(b);
@@ -489,13 +506,16 @@
         let seenKeys = new Set(); 
 
         filteredData.forEach(item => {
-            const compoundKey = `${item.patientName.trim()}|${item.patientGender.trim()}|${item.villageNo.trim()}`;
+            const patientName = safeText(item.patientName).trim();
+            const patientGender = safeText(item.patientGender).trim();
+            const villageNo = safeText(item.villageNo).trim();
+            const compoundKey = `${patientName}|${patientGender}|${villageNo}`;
             if (!seenKeys.has(compoundKey)) {
                 seenKeys.add(compoundKey);
                 uniquePatients.push({ 
-                    name: item.patientName, 
-                    gender: item.patientGender,
-                    village: item.villageNo,
+                    name: patientName || '-', 
+                    gender: patientGender || '-',
+                    village: villageNo || '-',
                     day: item.birthDay, 
                     month: item.birthMonth, 
                     year: item.birthYear 
@@ -512,12 +532,12 @@
             let ageText = calculateAge(p.day, p.month, p.year);
             let rowCard = document.createElement('div');
             rowCard.className = 'patient-row-card';
-            rowCard.setAttribute('onclick', `showPatientDetail("${p.name.replace(/"/g, '&quot;')}", "${p.gender}", "${p.village}")`);
+            rowCard.addEventListener('click', () => showPatientDetail(p.name, p.gender, p.village));
             rowCard.innerHTML = `
                 <div>
-                    <span class="patient-row-name">👤 ${p.name}</span>
-                    <span class="patient-row-age" style="margin-left: 8px;">หมู่บ้าน: ${p.village} | เพศ: ${p.gender}</span>
-                    <span class="patient-row-age">อายุคำนวณ: ${ageText !== "-" ? ageText : "ยังไม่ระบุวันเกิด"}</span>
+                    <span class="patient-row-name">👤 ${escapeHTML(p.name)}</span>
+                    <span class="patient-row-age" style="margin-left: 8px;">หมู่บ้าน: ${escapeHTML(p.village)} | เพศ: ${escapeHTML(p.gender)}</span>
+                    <span class="patient-row-age">อายุคำนวณ: ${ageText !== "-" ? escapeHTML(ageText) : "ยังไม่ระบุวันเกิด"}</span>
                 </div>
                 <span style="color: #3b82f6; font-weight: bold; font-size: 14px;">คลิกดูข้อมูลเชิงลึก ➡️</span>
             `;
@@ -564,7 +584,7 @@
         if (dateFilterVal) {
             const parts = dateFilterVal.split('-');
             const formattedFilterDate = `${parts[2]}/${parts[1]}/${parts[0]}`; 
-            patientRecords = patientRecords.filter(item => item.timestamp.split(' ')[0] === formattedFilterDate);
+            patientRecords = patientRecords.filter(item => safeText(item.timestamp).split(' ')[0] === formattedFilterDate);
         }
 
         if (patientRecords.length === 0) {
@@ -575,16 +595,17 @@
         patientRecords.forEach(item => {
             let card = document.createElement('div');
             card.className = 'history-card';
+            const q2Result = safeText(item.q2Result);
             card.innerHTML = `
                 <div class="history-header">
-                    <span>📅 วันที่-เวลาประเมิน: ${item.timestamp}</span>
-                    <span>เครื่องมือหลัก: ${item.assessmentType}</span>
+                    <span>📅 วันที่-เวลาประเมิน: ${escapeHTML(item.timestamp || '-')}</span>
+                    <span>เครื่องมือหลัก: ${escapeHTML(item.assessmentType || '-')}</span>
                 </div>
-                <div class="info-row"><span>ผู้คัดกรองลงพื้นที่ (อสม.):</span> <span><b>${item.vhmName}</b></span></div>
-                <div class="info-row"><span>ผลคัดกรองด่วน 2Q:</span> <span class="${item.q2Result.includes('เสี่ยง') ? 'danger' : ''}">${item.q2Result}</span></div>
-                <div class="info-row"><span>คะแนนคอลัมน์ 9Q:</span> <span>${item.q9Score || '-(ไม่ได้ประเมิน)-'}</span></div>
-                <div class="info-row"><span>ผลประเมินคอลัมน์ 8Q:</span> <span>${item.q8Result || '-(ไม่ได้ประเมิน)-'}</span></div>
-                <div class="info-row"><span>หมายเหตุ อสม. เพิ่มเติม:</span> <span>${item.comment || '-(ว่าง)-'}</span></div>
+                <div class="info-row"><span>ผู้คัดกรองลงพื้นที่ (อสม.):</span> <span><b>${escapeHTML(item.vhmName || '-')}</b></span></div>
+                <div class="info-row"><span>ผลคัดกรองด่วน 2Q:</span> <span class="${q2Result.includes('เสี่ยง') ? 'danger' : ''}">${escapeHTML(q2Result || '-')}</span></div>
+                <div class="info-row"><span>คะแนนคอลัมน์ 9Q:</span> <span>${escapeHTML(item.q9Score || '-(ไม่ได้ประเมิน)-')}</span></div>
+                <div class="info-row"><span>ผลประเมินคอลัมน์ 8Q:</span> <span>${escapeHTML(item.q8Result || '-(ไม่ได้ประเมิน)-')}</span></div>
+                <div class="info-row"><span>หมายเหตุ อสม. เพิ่มเติม:</span> <span>${escapeHTML(item.comment || '-(ว่าง)-')}</span></div>
             `;
             historyCardsDiv.appendChild(card);
         });
@@ -600,23 +621,39 @@
         const m = document.getElementById('patientBirthMonth').value;
         const y = document.getElementById('patientBirthYear').value.trim();
 
+        if (!d || !m || !y) {
+            alert("⚠️ กรุณาระบุวัน เดือน และปีเกิดให้ครบถ้วนก่อนบันทึกครับ");
+            return;
+        }
+
         const loading = document.getElementById('loadingText');
         loading.style.display = 'block';
 
-        fetch(`${GOOGLE_SCRIPT_URL}?action=savePatientBirthdate&patientName=${encodeURIComponent(currentSelectedPatientName)}&birthDay=${encodeURIComponent(d)}&birthMonth=${encodeURIComponent(m)}&birthYear=${encodeURIComponent(y)}`)
-            .then(res => res.json())
+        const url = `${GOOGLE_SCRIPT_URL}?action=savePatientBirthdate` +
+            `&patientName=${encodeURIComponent(currentSelectedPatientName)}` +
+            `&patientGender=${encodeURIComponent(currentSelectedPatientGender)}` +
+            `&villageNo=${encodeURIComponent(currentSelectedPatientVillage)}` +
+            `&birthDay=${encodeURIComponent(d)}` +
+            `&birthMonth=${encodeURIComponent(m)}` +
+            `&birthYear=${encodeURIComponent(y)}`;
+
+        fetch(url)
+            .then(res => {
+                if (!res.ok) throw new Error("HTTP Status " + res.status);
+                return res.json();
+            })
             .then(res => {
                 loading.style.display = 'none';
                 if(res.success) {
                     alert("🎉 บันทึกข้อมูลประวัติวันเกิดและคำนวณอายุของผู้ป่วยคนนี้เรียบร้อยครับ!");
                     fetchPatientData(); 
                 } else {
-                    alert("❌ เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+                    alert("❌ เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + (res.message || "ไม่ทราบสาเหตุ"));
                 }
             })
             .catch(err => {
                 loading.style.display = 'none';
-                alert("❌ ข้อผิดพลาดระบบเครือข่าย: " + err.message);
+                alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อเพื่อบันทึกวันเกิด: " + err.message);
             });
     }
 
@@ -626,7 +663,16 @@
         processData(); 
     }
 
-    function parseTimestamp(tStr) { const parts = tStr.match(/(\d+)/g); return new Date(parts[2], parts[1]-1, parts[0], parts[3], parts[4]); }
+    function parseTimestamp(tStr) {
+        const parts = safeText(tStr).match(/(\d+)/g);
+        if (!parts || parts.length < 3) return new Date(0);
+        const day = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const year = parseInt(parts[2], 10);
+        const hour = parseInt(parts[3] || '0', 10);
+        const minute = parseInt(parts[4] || '0', 10);
+        return new Date(year, month, day, hour, minute);
+    }
 
     function fetchVhmData() {
         const loading = document.getElementById('loadingText');
@@ -638,18 +684,35 @@
             .then(text => {
                 try {
                     const data = JSON.parse(text); loading.style.display = 'none';
-                    if(data.length === 0) { listDiv.innerHTML = '<p style="text-align:center; color:#64748b;">❌ ไม่พบข้อมูลรายชื่อ อสม. ในระบบ</p>'; return; }
+                    if(!Array.isArray(data) || data.length === 0) { listDiv.innerHTML = '<p style="text-align:center; color:#64748b;">❌ ไม่พบข้อมูลรายชื่อ อสม. ในระบบ</p>'; return; }
                     data.forEach(vhm => {
-                        let card = document.createElement('div'); card.className = 'vhm-table-row';
+                        const username = safeText(vhm.username);
+                        const password = safeText(vhm.password);
+                        const name = safeText(vhm.name);
+                        const secretKey = safeText(vhm.secretKey);
+
+                        let card = document.createElement('div');
+                        card.className = 'vhm-table-row';
                         card.innerHTML = `
-                            <div class="vhm-row-header"><span>ชื่อ อสม: <b>${vhm.name}</b></span><span>Username: ${vhm.username}</span></div>
-                            <div class="info-row"><span>รหัสเข้าใช้งาน (Password):</span> <span>${vhm.password}</span></div>
-                            <div class="info-row"><span>รหัสลับกู้บัญชี:</span> <span>${vhm.secretKey}</span></div>
-                            <div style="text-align: right; margin-top: 10px;">
-                                <button class="btn-action edit" onclick="enableVhmEditMode('${vhm.username}', '${vhm.password}', '${vhm.name}', '${vhm.secretKey}')">✏️ แก้ไข</button>
-                                <button class="btn-action delete" onclick="deleteVhmData('${vhm.username}')">❌ ลบออก</button>
-                            </div>
+                            <div class="vhm-row-header"><span>ชื่อ อสม: <b>${escapeHTML(name)}</b></span><span>Username: ${escapeHTML(username)}</span></div>
+                            <div class="info-row"><span>รหัสเข้าใช้งาน (Password):</span> <span>${escapeHTML(password)}</span></div>
+                            <div class="info-row"><span>รหัสลับกู้บัญชี:</span> <span>${escapeHTML(secretKey)}</span></div>
+                            <div class="row-actions" style="text-align: right; margin-top: 10px;"></div>
                         `;
+
+                        const actions = card.querySelector('.row-actions');
+                        const editBtn = document.createElement('button');
+                        editBtn.className = 'btn-action edit';
+                        editBtn.textContent = '✏️ แก้ไข';
+                        editBtn.addEventListener('click', () => enableVhmEditMode(username, password, name, secretKey));
+
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.className = 'btn-action delete';
+                        deleteBtn.textContent = '❌ ลบออก';
+                        deleteBtn.addEventListener('click', () => deleteVhmData(username));
+
+                        actions.appendChild(editBtn);
+                        actions.appendChild(deleteBtn);
                         listDiv.appendChild(card);
                     });
                 } catch(e) { loading.style.display = 'none'; alert("❌ คืนข้อมูล อสม. ผิดพลาด"); }
@@ -712,19 +775,37 @@
             .then(text => {
                 try {
                     const data = JSON.parse(text); loading.style.display = 'none';
-                    if(data.length === 0) { listDiv.innerHTML = '<p style="text-align:center; color:#64748b;">❌ ไม่พบข้อมูลรายชื่อผู้ดูแลระบบ</p>'; return; }
+                    if(!Array.isArray(data) || data.length === 0) { listDiv.innerHTML = '<p style="text-align:center; color:#64748b;">❌ ไม่พบข้อมูลรายชื่อผู้ดูแลระบบ</p>'; return; }
                     data.forEach(adm => {
-                        let card = document.createElement('div'); card.className = 'vhm-table-row';
+                        const username = safeText(adm.username);
+                        const password = safeText(adm.password);
+                        const name = safeText(adm.name);
+                        const secretKey = safeText(adm.secretKey);
+
+                        let card = document.createElement('div');
+                        card.className = 'vhm-table-row';
                         card.style.borderLeft = "4px solid #10b981"; 
                         card.innerHTML = `
-                            <div class="vhm-row-header"><span style="color:#10b981;">ชื่อผู้ดูแล: <b>${adm.name}</b></span><span>Username: ${adm.username}</span></div>
-                            <div class="info-row"><span>รหัสเข้าใช้งาน (Password):</span> <span>${adm.password}</span></div>
-                            <div class="info-row"><span>รหัสลับกู้บัญชีแอดมิน:</span> <span>${adm.secretKey}</span></div>
-                            <div style="text-align: right; margin-top: 10px;">
-                                <button class="btn-action edit" style="background-color:#10b981;" onclick="enableAdminEditMode('${adm.username}', '${adm.password}', '${adm.name}', '${adm.secretKey}')">✏️ แก้ไข</button>
-                                <button class="btn-action delete" onclick="deleteAdminData('${adm.username}')">❌ ลบออก</button>
-                            </div>
+                            <div class="vhm-row-header"><span style="color:#10b981;">ชื่อผู้ดูแล: <b>${escapeHTML(name)}</b></span><span>Username: ${escapeHTML(username)}</span></div>
+                            <div class="info-row"><span>รหัสเข้าใช้งาน (Password):</span> <span>${escapeHTML(password)}</span></div>
+                            <div class="info-row"><span>รหัสลับกู้บัญชีแอดมิน:</span> <span>${escapeHTML(secretKey)}</span></div>
+                            <div class="row-actions" style="text-align: right; margin-top: 10px;"></div>
                         `;
+
+                        const actions = card.querySelector('.row-actions');
+                        const editBtn = document.createElement('button');
+                        editBtn.className = 'btn-action edit';
+                        editBtn.style.backgroundColor = '#10b981';
+                        editBtn.textContent = '✏️ แก้ไข';
+                        editBtn.addEventListener('click', () => enableAdminEditMode(username, password, name, secretKey));
+
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.className = 'btn-action delete';
+                        deleteBtn.textContent = '❌ ลบออก';
+                        deleteBtn.addEventListener('click', () => deleteAdminData(username));
+
+                        actions.appendChild(editBtn);
+                        actions.appendChild(deleteBtn);
                         listDiv.appendChild(card);
                     });
                 } catch(e) { loading.style.display = 'none'; alert("❌ คืนข้อมูลผู้ดูแลผิดพลาด โครงสร้างตอบกลับตารางไม่ตรง"); }
@@ -802,7 +883,7 @@
                 loading.style.display = 'none';
                 try {
                     const data = JSON.parse(text);
-                    if(!data || data.length === 0) {
+                    if(!Array.isArray(data) || data.length === 0) {
                         container.innerHTML = '<p style="text-align:center; color:#64748b; padding:40px 0;">📭 ยังไม่มีข้อเสนอแนะส่งเข้ามาในระบบขณะนี้ครับ</p>';
                         return;
                     }
@@ -811,13 +892,24 @@
                     [...data].reverse().forEach(item => {
                         let card = document.createElement('div');
                         card.className = 'feedback-card';
-                        card.innerHTML = `
-                            <div class="feedback-header">
-                                <span>👤 แหล่งข้อมูล: ผู้ใช้งานระบบ (ไม่เผยตัวตน)</span>
-                                <span>⏰ เวลาบันทึก: ${item.timestamp || '-'} น.</span>
-                            </div>
-                            <div class="feedback-body">${item.text || '-'}</div>
-                        `;
+
+                        const header = document.createElement('div');
+                        header.className = 'feedback-header';
+
+                        const sourceSpan = document.createElement('span');
+                        sourceSpan.textContent = '👤 แหล่งข้อมูล: ผู้ใช้งานระบบ (ไม่เผยตัวตน)';
+
+                        const timeSpan = document.createElement('span');
+                        timeSpan.textContent = `⏰ เวลาบันทึก: ${safeText(item.timestamp) || '-'} น.`;
+
+                        const body = document.createElement('div');
+                        body.className = 'feedback-body';
+                        body.textContent = safeText(item.text) || '-';
+
+                        header.appendChild(sourceSpan);
+                        header.appendChild(timeSpan);
+                        card.appendChild(header);
+                        card.appendChild(body);
                         container.appendChild(card);
                     });
                 } catch(e) {
@@ -826,7 +918,13 @@
             })
             .catch(err => {
                 loading.style.display = 'none';
-                container.innerHTML = '<p style="text-align:center; color:#ef4444; padding:20px;">❌ ข้อผิดพลาดระบบเครือข่าย: ' + err.message + '</p>';
+                container.textContent = '';
+                const msg = document.createElement('p');
+                msg.style.textAlign = 'center';
+                msg.style.color = '#ef4444';
+                msg.style.padding = '20px';
+                msg.textContent = '❌ ข้อผิดพลาดระบบเครือข่าย: ' + err.message;
+                container.appendChild(msg);
             });
     }
 </script>
