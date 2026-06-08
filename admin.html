@@ -107,7 +107,7 @@
     <div id="loginStep" class="step active">
         <div class="header">
             <h2>🔐 ระบบยืนยันตัวตนผู้ดูแลข้อมูล (Admin)</h2>
-            <p>ระบบจะยืนยันตัวตนผ่าน LINE Login อัตโนมัติก่อน จากนั้นกรอก Username/Password แอดมิน</p>
+            <p>กรุณา Login ด้วย Username/Password แอดมินก่อน จากนั้นระบบจะพาไป LINE Login เพื่อผูกบัญชีรับแจ้งเตือน</p>
         </div>
         <div class="form-group" style="margin-bottom: 15px;">
             <label style="display:block; font-weight:bold; margin-bottom:5px;">Username</label>
@@ -117,7 +117,7 @@
             <label style="display:block; font-weight:bold; margin-bottom:5px;">Password</label>
             <input type="password" id="adminPassword" placeholder="ระบุ Password ผู้ดูแลระบบ">
         </div>
-        <button class="btn-login" id="btnAdminLoginText" onclick="verifyAdminAuth()" disabled>⏳ กำลังตรวจสอบ LINE Login...</button>
+        <button class="btn-login" id="btnAdminLoginText" onclick="verifyAdminAuth()">🔓 เข้าสู่ระบบแดชบอร์ด</button>
         
         <p style="text-align:center; margin-top:15px; font-size:14px;">
             <a href="#" onclick="changeStep('resetAdminStep')" style="color:#3b82f6; font-weight:bold; text-decoration:none;">🔑 ลืมรหัสผ่าน? ตั้งรหัสใหม่ที่นี่</a>
@@ -282,16 +282,19 @@
     const LIFF_ID = "2010303347-dja2J8TA";
     const ADMIN_LIFF_ENDPOINT_URL = "https://mental-health-app-lovat.vercel.app/admin.html";
 
-    // Mandatory automatic LINE Login.
-    // This must match LINE Developers > LIFF > Endpoint URL exactly.
-    // Using a fixed clean admin URL prevents LINE from receiving query strings such as
-    // ?code=...&state=..., which commonly causes 400 Bad Request.
+    // Admin-first flow:
+    // 1) Admin enters username/password first.
+    // 2) After admin credentials are verified, LINE Login becomes mandatory.
+    // 3) After LINE returns to this clean endpoint, the LINE User ID is saved for notifications.
+    // This URL must match LINE Developers > LIFF > Endpoint URL exactly.
 
     let liffReady = false;
     let mandatoryLineUserId = "";
     let mandatoryLineDisplayName = "";
     let currentAdminUsername = "";
     let currentAdminPassword = "";
+
+    const PENDING_ADMIN_LINE_KEY = "pendingAdminLineLoginV1";
 
     let allData = []; 
     let currentSelectedPatientName = ""; 
@@ -331,42 +334,31 @@
             }
         }
 
-        await requireLineLoginBeforeAdmin();
+        await initializeLiffForAdminAfterPasswordFlow();
     };
 
-    async function requireLineLoginBeforeAdmin() {
+    async function initializeLiffForAdminAfterPasswordFlow() {
         const loginBtn = document.getElementById('btnAdminLoginText');
-        if (loginBtn) {
-            loginBtn.disabled = true;
-            loginBtn.innerText = '⏳ กำลังตรวจสอบ LINE Login...';
-        }
-        updateLineLinkStatus('กำลังตรวจสอบ LINE Login...');
 
         try {
             if (typeof liff === 'undefined') {
-                updateLineLinkStatus('ไม่พบ LIFF SDK');
-                alert('❌ ไม่พบ LIFF SDK กรุณาตรวจสอบอินเทอร์เน็ตหรือไฟล์ LIFF SDK');
-                if (loginBtn) loginBtn.innerText = '❌ LINE Login ไม่พร้อมใช้งาน';
+                liffReady = false;
+                console.warn('LIFF SDK not found. Admin password login can still start, but LINE notification binding will fail.');
                 return;
             }
 
             await liff.init({ liffId: LIFF_ID });
             liffReady = true;
 
-            if (!liff.isLoggedIn()) {
-                updateLineLinkStatus('กำลังเปิด LINE Login...');
-                // Use the exact clean admin endpoint. This URL must be registered
-                // as the LIFF Endpoint URL in LINE Developers for this LIFF ID.
-                liff.login({ redirectUri: ADMIN_LIFF_ENDPOINT_URL });
-                return;
+            if (liff.isLoggedIn()) {
+                const profile = await liff.getProfile();
+                mandatoryLineUserId = profile.userId || "";
+                mandatoryLineDisplayName = profile.displayName || "LINE user";
+
+                // If this page is opening after returning from LINE Login, finish the pending admin login.
+                await completePendingAdminLineLoginIfAny();
             }
 
-            const profile = await liff.getProfile();
-            mandatoryLineUserId = profile.userId || "";
-            mandatoryLineDisplayName = profile.displayName || "LINE user";
-            updateLineLinkStatus('เชื่อมต่อแล้ว: ' + mandatoryLineDisplayName);
-
-            // Allow admin username/password login only after LINE Login is ready.
             if (loginBtn) {
                 loginBtn.disabled = false;
                 loginBtn.innerText = '🔓 เข้าสู่ระบบแดชบอร์ด';
@@ -374,15 +366,77 @@
 
         } catch (err) {
             liffReady = false;
-            updateLineLinkStatus('LINE Login ไม่สำเร็จ');
-            console.error('Mandatory LIFF login error:', err);
-            alert(
-                '❌ LINE Login ไม่สำเร็จ: ' + err.message +
-                '\n\nสาเหตุที่พบบ่อยที่สุดของ 400 Bad Request คือ LIFF Endpoint URL ใน LINE Developers ไม่ตรงกับ URL หน้า admin.html หรือใช้ LIFF ID เดียวกับหน้าอื่น เช่น index.html' +
-                '\n\nวิธีแก้: สร้าง LIFF app แยกสำหรับ admin.html หรือแก้ Endpoint URL ของ LIFF ID นี้ให้เป็น https://mental-health-app-lovat.vercel.app/admin.html แบบ 100%'
-            );
-            if (loginBtn) loginBtn.innerText = '❌ LINE Login ไม่สำเร็จ';
+            console.error('LIFF init error:', err);
+            if (loginBtn) {
+                loginBtn.disabled = false;
+                loginBtn.innerText = '🔓 เข้าสู่ระบบแดชบอร์ด';
+            }
         }
+    }
+
+    async function completePendingAdminLineLoginIfAny() {
+        const pendingRaw = sessionStorage.getItem(PENDING_ADMIN_LINE_KEY);
+        if (!pendingRaw || !mandatoryLineUserId) return false;
+
+        let pending;
+        try {
+            pending = JSON.parse(pendingRaw);
+        } catch (err) {
+            sessionStorage.removeItem(PENDING_ADMIN_LINE_KEY);
+            return false;
+        }
+
+        if (!pending || !pending.username || !pending.password) {
+            sessionStorage.removeItem(PENDING_ADMIN_LINE_KEY);
+            return false;
+        }
+
+        currentAdminUsername = pending.username;
+        currentAdminPassword = pending.password;
+
+        const btn = document.getElementById('btnAdminLoginText');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerText = '⏳ กำลังบันทึก LINE ID สำหรับแจ้งเตือน...';
+        }
+
+        try {
+            await saveAdminLineIdToSheet(pending.username, pending.password);
+            sessionStorage.removeItem(PENDING_ADMIN_LINE_KEY);
+
+            document.getElementById('adminDisplayName').innerText = pending.adminName || pending.username;
+            changeStep('dashboardStep');
+            fetchPatientData();
+            return true;
+
+        } catch (err) {
+            console.error('Complete pending admin LINE login error:', err);
+            alert('⚠️ LINE Login สำเร็จ แต่บันทึก LINE ID สำหรับแจ้งเตือนไม่สำเร็จ: ' + err.message);
+            sessionStorage.removeItem(PENDING_ADMIN_LINE_KEY);
+            return false;
+
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerText = '🔓 เข้าสู่ระบบแดชบอร์ด';
+            }
+        }
+    }
+
+    function startMandatoryLineLoginAfterAdminVerified(username, password, adminName) {
+        sessionStorage.setItem(PENDING_ADMIN_LINE_KEY, JSON.stringify({
+            username: username,
+            password: password,
+            adminName: adminName || username,
+            createdAt: Date.now()
+        }));
+
+        if (typeof liff === 'undefined' || !liffReady) {
+            alert('❌ ไม่พบ LIFF SDK หรือ LINE Login ยังไม่พร้อม กรุณารีเฟรชหน้าเว็บแล้วลองใหม่');
+            return;
+        }
+
+        liff.login({ redirectUri: ADMIN_LIFF_ENDPOINT_URL });
     }
 
     function updateLineLinkStatus(message) {
@@ -456,11 +510,6 @@
         const btn = document.getElementById('btnAdminLoginText');
 
         if (!u || !p) { alert("⚠️ กรุณากรอกข้อมูลให้ครบถ้วน"); return; }
-        if (!liffReady || !mandatoryLineUserId) {
-            alert("⚠️ ระบบนี้บังคับ LINE Login ก่อนเข้าใช้งานแอดมิน กรุณารอสักครู่หรือรีเฟรชหน้าเว็บ");
-            await requireLineLoginBeforeAdmin();
-            return;
-        }
 
         try {
             btn.disabled = true;
@@ -476,21 +525,36 @@
 
             currentAdminUsername = u;
             currentAdminPassword = p;
-            btn.innerText = "⏳ กำลังบันทึก LINE ID สำหรับแจ้งเตือน...";
 
-            try {
-                await saveAdminLineIdToSheet(u, p);
-            } catch (lineErr) {
-                console.error('Save admin LINE ID error:', lineErr);
-                alert('⚠️ ล็อกอินแอดมินสำเร็จ แต่บันทึก LINE ID สำหรับแจ้งเตือนไม่สำเร็จ: ' + lineErr.message);
+            // Admin password is correct. LINE Login is now mandatory for notification binding.
+            if (!liffReady && typeof liff !== 'undefined') {
+                try {
+                    await liff.init({ liffId: LIFF_ID });
+                    liffReady = true;
+                } catch (liffInitErr) {
+                    console.error('LIFF init before login error:', liffInitErr);
+                }
             }
 
-            document.getElementById('adminDisplayName').innerText = loginData.name;
-            changeStep('dashboardStep');
-            fetchPatientData(); 
+            if (liffReady && typeof liff !== 'undefined' && liff.isLoggedIn()) {
+                const profile = await liff.getProfile();
+                mandatoryLineUserId = profile.userId || "";
+                mandatoryLineDisplayName = profile.displayName || "LINE user";
+
+                btn.innerText = "⏳ กำลังบันทึก LINE ID สำหรับแจ้งเตือน...";
+                await saveAdminLineIdToSheet(u, p);
+
+                document.getElementById('adminDisplayName').innerText = loginData.name;
+                changeStep('dashboardStep');
+                fetchPatientData();
+                return;
+            }
+
+            btn.innerText = "⏳ Admin ถูกต้อง กำลังเปิด LINE Login...";
+            startMandatoryLineLoginAfterAdminVerified(u, p, loginData.name);
 
         } catch (err) {
-            alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูลแอดมินคลาวด์: " + err.message);
+            alert("❌ เกิดข้อผิดพลาดในการเข้าสู่ระบบ: " + err.message);
         } finally {
             btn.disabled = false;
             btn.innerText = "🔓 เข้าสู่ระบบแดชบอร์ด";
