@@ -475,7 +475,7 @@
             if (sortType === 'timeNewOld') return parseTimestamp(b.timestamp) - parseTimestamp(a.timestamp);
             if (sortType === 'timeOldNew') return parseTimestamp(a.timestamp) - parseTimestamp(b.timestamp);
             if (sortType === 'nameAZ') return a.patientName.localeCompare(b.patientName, 'th');
-            if (sortType === 'nameZA') return b.patientName.localeCompare(b.patientName, 'th');
+            if (sortType === 'nameZA') return b.patientName.localeCompare(a.patientName, 'th');
             if (sortType === 'ageMaxMin') return getNumericAge(b) - getNumericAge(a);
             if (sortType === 'ageMinMax') {
                 let ageA = getNumericAge(a); let ageB = getNumericAge(b);
