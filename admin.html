@@ -500,27 +500,25 @@
             });
     }
 
-    const CASE_STATUSES = ["ยังไม่รับ", "กำลังรับ", "รับแล้ว"];
+    const CASE_STATUSES = ["ยังไม่รับเคส", "จองคิวแล้ว"];
 
     function normalizeCaseStatus(status) {
         const s = safeText(status).trim();
-        if (s === "ไม่มีใครรับ") return "ยังไม่รับ";
-        if (s === "กำลังรับเรื่อง") return "กำลังรับ";
-        if (s === "แก้ไขแล้ว") return "รับแล้ว";
-        return CASE_STATUSES.includes(s) ? s : "ยังไม่รับ";
+        // Map old status words into the new two-status workflow.
+        if (s === "ไม่มีใครรับ" || s === "ยังไม่รับ") return "ยังไม่รับเคส";
+        if (s === "กำลังรับเรื่อง" || s === "กำลังรับ" || s === "รับแล้ว" || s === "แก้ไขแล้ว") return "จองคิวแล้ว";
+        return CASE_STATUSES.includes(s) ? s : "ยังไม่รับเคส";
     }
 
     function getCaseStatusClass(status) {
         const s = normalizeCaseStatus(status);
-        if (s === "กำลังรับ") return "case-status-progress";
-        if (s === "รับแล้ว") return "case-status-done";
+        if (s === "จองคิวแล้ว") return "case-status-done";
         return "case-status-unaccepted";
     }
 
     function getCaseButtonClass(status) {
         const s = normalizeCaseStatus(status);
-        if (s === "กำลังรับ") return "progress";
-        if (s === "รับแล้ว") return "done";
+        if (s === "จองคิวแล้ว") return "done";
         return "unaccepted";
     }
 
@@ -532,7 +530,7 @@
     function getPatientCaseSummary(records) {
         const sorted = [...records].sort((a, b) => parseTimestamp(b.timestamp) - parseTimestamp(a.timestamp));
         const latest = sorted[0] || {};
-        const counts = { "ยังไม่รับ": 0, "กำลังรับ": 0, "รับแล้ว": 0 };
+        const counts = { "ยังไม่รับเคส": 0, "จองคิวแล้ว": 0 };
 
         sorted.forEach(record => {
             const status = normalizeCaseStatus(record.alertStatus);
@@ -682,7 +680,7 @@
             const summary = getPatientCaseSummary(p.records);
             const ageText = calculateAge(p.day, p.month, p.year);
             const statusClass = getCaseStatusClass(summary.latestStatus);
-            const countText = `รวม ${summary.total} เคส | ยังไม่รับ ${summary.counts['ยังไม่รับ'] || 0} | กำลังรับ ${summary.counts['กำลังรับ'] || 0} | รับแล้ว ${summary.counts['รับแล้ว'] || 0}`;
+            const countText = `รวม ${summary.total} เคส | ยังไม่รับเคส ${summary.counts['ยังไม่รับเคส'] || 0} | จองคิวแล้ว ${summary.counts['จองคิวแล้ว'] || 0}`;
 
             const rowCard = document.createElement('div');
             rowCard.className = 'patient-row-card';
@@ -695,7 +693,7 @@
                         <span class="patient-row-age">อายุคำนวณ: ${ageText !== "-" ? escapeHTML(ageText) : "ยังไม่ระบุวันเกิด"}</span>
                     </div>
                     <div class="case-status-summary">
-                        <span>📌 สถานะเคสล่าสุด:</span>
+                        <span>📌 สถานะการรับเคสล่าสุด:</span>
                         <span class="case-status-pill ${statusClass}">${escapeHTML(summary.latestStatus)}</span>
                         <span class="case-status-muted">${escapeHTML(countText)}</span>
                     </div>
@@ -776,7 +774,7 @@
                 </div>
                 <div class="case-status-box">
                     <div class="case-status-line">
-                        <div><b>📌 สถานะเคสนี้:</b> <span class="case-status-pill ${statusClass}">${escapeHTML(caseStatus)}</span></div>
+                        <div><b>📌 สถานะการรับเคสนี้:</b> <span class="case-status-pill ${statusClass}">${escapeHTML(caseStatus)}</span></div>
                         <div class="case-status-muted">${escapeHTML(updatedText)}</div>
                     </div>
                     <div class="case-status-buttons"></div>
@@ -792,7 +790,7 @@
             CASE_STATUSES.forEach(status => {
                 const btn = document.createElement('button');
                 btn.className = `case-status-btn ${getCaseButtonClass(status)}`;
-                btn.textContent = status;
+                btn.textContent = status === "จองคิวแล้ว" ? "รับจองคิว" : "ยังไม่รับเคส";
                 btn.disabled = caseStatus === status || !item.rowId;
                 btn.addEventListener('click', () => updatePatientAlertStatusFromWeb(item.rowId, status, btn));
                 buttons.appendChild(btn);
