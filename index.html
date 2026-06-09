@@ -124,7 +124,10 @@
             <label>หมู่บ้าน *</label>
             <select id="villageNo">
                 <option value="">-- เลือกหมู่ที่ --</option>
-                <option value="หมู่ 1">หมู่ 1</option><option value="หมู่ 2">หมู่ 2</option><option value="หมู่ 5">หมู่ 5</option><option value="หมู่ 8">หมู่ 8</option>
+                <option value="หมู่ 1">หมู่ 1</option>
+                <option value="หมู่ 2">หมู่ 2</option>
+                <option value="หมู่ 5">หมู่ 5</option>
+                <option value="หมู่ 8">หมู่ 8</option>
             </select>
         </div>
         <button class="btn-nav btn-next" onclick="goToStep2()">ถัดไป ➡️</button>
@@ -185,7 +188,7 @@
             <div class="form-group"><label>5. คิดฆ่าตัวตาย โดยมีการวางแผนไว้เรียบร้อยแล้ว</label><select id="q8q5"><option value="">-- เลือกคำตอบ --</option><option value="0">ไม่มี</option><option value="8">มี</option></select></div>
             <div class="form-group"><label>6. มีความตั้งใจจริงที่จะฆ่าตัวตาย</label><select id="q8q6"><option value="">-- เลือกคำตอบ --</option><option value="0">ไม่มี</option><option value="9">มี</option></select></div>
             <div class="form-group"><label>7. มีความมั่นใจว่าจะทำได้สำเร็จ</label><select id="q8q7"><option value="">-- เลือกคำตอบ --</option><option value="0">ไม่มี</option><option value="10">มี</option></select></div>
-            <div class="form-group"><label>8. มีปัญหาเรื่องการควบคุมตนเองไม่ได้ จนคิดหรือพยายามฆ่าตัวตาย</label><select id="q8q8"><option value="">-- เลือกคำตอบ --</option><option value="0">ไม่มี</option><option value="12">มี</option></select></div>
+            <div class="form-group"><label>8. มีใจต้องการควบคุมตนเองไม่ได้ จนคิดหรือพยายามฆ่าตัวตาย</label><select id="q8q8"><option value="">-- เลือกคำตอบ --</option><option value="0">ไม่มี</option><option value="12">มี</option></select></div>
         </div>
 
         <div class="form-group" style="margin-top:20px;">
@@ -231,10 +234,14 @@
 
     function escapeHTML(value) {
         return safeText(value)
-            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     }
 
-    // 🎯 ระบบเริ่มต้นใช้งาน LIFF ผูกเข้ากับฟังก์ชันตรวจสอบสิทธิ์ล็อกอินค้างอัตโนมัติ
+    // 🎯 เริ่มต้นระบบการทำงานของ LINE LIFF SDK
     liff.init({ liffId: LIFF_ID }).then(async () => { 
         console.log("LIFF Ready"); 
         if (!liff.isLoggedIn()) {
@@ -244,7 +251,7 @@
         }
     }).catch(err => console.error("LIFF Init Error:", err));
 
-    // 🎯 ฟังก์ชันสแกนโปรไฟล์ปัจจุบันเพื่อสวมรอยล็อกอินค้างอย่างปลอดภัย
+    // 🎯 ระบบสแกนจำสิทธิ์ล็อกอินค้างอัตโนมัติ (ข้ามหน้าล็อกอินทันทีหากตรวจพบ LINE ID เดิม)
     async function checkAutoLogin() {
         try {
             if (liff.isLoggedIn()) {
@@ -254,13 +261,12 @@
                 
                 if (savedSession) {
                     const session = JSON.parse(savedSession);
-                    // ตรวจจับสิทธิ์: ถ้า LINE ไอดีเดิมตรงกัน ข้ามหน้าล็อกอินทันที
                     if (session.lineId === currentLineId) {
                         currentVhmName = session.name;
                         document.getElementById('vhmDisplayName').innerText = `${currentVhmName} (${session.roleTitle})`;
                         document.getElementById('vhmInfoHeader').style.display = "flex"; 
                         fetchPatientHistoryForAutocomplete();
-                        changeStep(1); // เด้งไปหน้าแรกของ อสม. (Step 1)
+                        changeStep(1); // ข้ามไปเปิดหน้าบันทึกข้อมูลผู้ป่วยทันที
                     } else {
                         localStorage.removeItem("vhm_session");
                     }
@@ -278,11 +284,13 @@
     }
 
     function fetchPatientHistoryForAutocomplete() {
-        // ✨ ใส่พารามิเตอร์เพื่อให้ HTTP Request สมบูรณ์ ป้องกันบั๊ก 400 จากเกตเวย์
-        fetch(`${GOOGLE_SCRIPT_URL}?action=load`)
+        // 🎯 ดึงข้อมูลโครงสร้างหลักแบบดั้งเดิมตามคำสั่งแรกสุดเพื่อให้กูเกิลประมวลผลผ่านฉลุย
+        fetch(GOOGLE_SCRIPT_URL)
             .then(res => res.json())
-            .then(data => { localScreeningHistory = Array.isArray(data) ? data : []; })
-            .catch(err => console.error("ไม่สามารถดาวน์โหลดข้อมูลเดาชื่อได้:", err));
+            .then(data => {
+                localScreeningHistory = Array.isArray(data) ? data : [];
+            })
+            .catch(err => console.error("ดาวน์โหลดข้อมูลล้มเหลว:", err));
     }
 
     function searchPatientNameAutocomplete() {
@@ -290,35 +298,54 @@
         const box = document.getElementById('nameSuggestionsBox');
         box.innerHTML = '';
 
-        if (!inputVal) { box.style.display = 'none'; return; }
+        if (!inputVal) {
+            box.style.display = 'none';
+            return;
+        }
 
-        let matches = localScreeningHistory.filter(item => safeText(item.patientName).toLowerCase().includes(inputVal));
+        let matches = localScreeningHistory.filter(item => 
+            safeText(item.patientName).toLowerCase().includes(inputVal)
+        );
+
         let uniquePatientsMap = {};
-        
         matches.forEach(item => {
             const pName = safeText(item.patientName).trim();
             const gender = safeText(item.patientGender).trim();
             const village = safeText(item.villageNo).trim();
             const key = `${pName}|${gender}|${village}`;
-            if (!uniquePatientsMap[key]) uniquePatientsMap[key] = { name: pName, gender: gender, village: village };
+            if (!uniquePatientsMap[key]) {
+                uniquePatientsMap[key] = { name: pName, gender: gender, village: village };
+            }
         });
-        
         let uniqueList = Object.values(uniquePatientsMap);
         uniqueList.sort((a, b) => safeText(a.name).localeCompare(safeText(b.name), 'th'));
 
         let top5Matches = uniqueList.slice(0, 5);
-        if (top5Matches.length === 0) { box.style.display = 'none'; return; }
+        if (top5Matches.length === 0) {
+            box.style.display = 'none';
+            return;
+        }
 
         top5Matches.forEach(patient => {
             let row = document.createElement('div');
-            row.style.padding = '12px 15px'; row.style.cursor = 'pointer'; row.style.borderBottom = '1px solid #f1f5f9'; row.style.fontSize = '15px'; row.style.color = '#334155';
+            row.style.padding = '12px 15px';
+            row.style.cursor = 'pointer';
+            row.style.borderBottom = '1px solid #f1f5f9';
+            row.style.fontSize = '15px';
+            row.style.color = '#334155';
 
             const icon = document.createTextNode('👤 ');
-            const nameEl = document.createElement('b'); nameEl.textContent = patient.name || '-';
-            const metaEl = document.createElement('span'); metaEl.style.fontSize = '12px'; metaEl.style.color = '#64748b'; metaEl.style.float = 'right';
+            const nameEl = document.createElement('b');
+            nameEl.textContent = patient.name || '-';
+            const metaEl = document.createElement('span');
+            metaEl.style.fontSize = '12px';
+            metaEl.style.color = '#64748b';
+            metaEl.style.float = 'right';
             metaEl.textContent = `${patient.village || '-'} (${patient.gender || '-'})`;
 
-            row.appendChild(icon); row.appendChild(nameEl); row.appendChild(metaEl);
+            row.appendChild(icon);
+            row.appendChild(nameEl);
+            row.appendChild(metaEl);
             
             row.onclick = () => {
                 document.getElementById('patientName').value = patient.name;
@@ -348,7 +375,6 @@
         }
     });
 
-    // 🎯 อัปเกรดระบบยืนยันตัวตนใหม่เป็น Async/Await เพื่อป้องกันเบราว์เซอร์ LINE ค้างหน่วง
     async function verifyAuth() {
         const u = document.getElementById('vhmUsername').value.trim();
         const p = document.getElementById('vhmPassword').value;
@@ -374,7 +400,6 @@
                 document.getElementById('vhmDisplayName').innerText = `${currentVhmName} (${roleTitle})`;
                 document.getElementById('vhmInfoHeader').style.display = "flex"; 
                 
-                // สแตมป์สิทธิ์การจำเซสชันบันทึกค้างไว้ในระบบคอมพิวเตอร์หน้าบ้านร่วมกับไอดีไลน์
                 if (liff.isLoggedIn()) {
                     const profile = await liff.getProfile();
                     const sessionData = {
@@ -398,23 +423,36 @@
     }
 
     function logout() {
-        if (!confirm("🚨 แจ้งเตือนความปลอดภัย:\nคุณต้องการออกจากระบบใช่หรือไม่? ข้อมูลประเมินที่พิมพ์ค้างอยู่จะถูกล้างทิ้งทั้งหมดครับ")) return;
+        if (!confirm("🚨 แจ้งเตือนความปลอดภัย:\nคุณต้องการออกจากระบบใช่หรือไม่? ข้อมูลผู้ป่วยทั้งหมดที่กำลังพิมพ์ค้างอยู่ ณ ตอนนี้จะถูกล้างทิ้งครับ")) return;
         
         currentVhmName = "";
         localScreeningHistory = []; 
-        localStorage.removeItem("vhm_session"); // เคลียร์สิทธิ์ล็อกอินค้างอย่างปลอดภัย
+        localStorage.removeItem("vhm_session"); 
         
         document.getElementById('vhmInfoHeader').style.display = "none";
-        document.getElementById('patientName').value = ""; document.getElementById('patientGender').value = ""; document.getElementById('villageNo').value = ""; document.getElementById('comment').value = "";
+        document.getElementById('patientName').value = "";
+        document.getElementById('patientGender').value = "";
+        document.getElementById('villageNo').value = "";
+        document.getElementById('comment').value = "";
         document.getElementById('nameSuggestionsBox').style.display = 'none';
         
         document.querySelectorAll('input[name="q2q1"], input[name="q2q2"]').forEach(radio => radio.checked = false);
-        for (let i = 1; i <= 9; i++) { const el = document.getElementById('q9q' + i); if (el) el.value = ""; }
-        for (let i = 1; i <= 8; i++) { const el = document.getElementById('q8q' + i); if (el) el.value = ""; }
+        
+        for (let i = 1; i <= 9; i++) {
+            const el = document.getElementById('q9q' + i);
+            if (el) el.value = "";
+        }
+        
+        for (let i = 1; i <= 8; i++) {
+            const el = document.getElementById('q8q' + i);
+            if (el) el.value = "";
+        }
         
         document.getElementById('assessmentTypeSelect').value = "2Q";
         switchAssessment();
-        document.getElementById('vhmUsername').value = ""; document.getElementById('vhmPassword').value = "";
+        
+        document.getElementById('vhmUsername').value = "";
+        document.getElementById('vhmPassword').value = "";
         changeStep(0);
     }
 
@@ -439,17 +477,28 @@
                     btn.innerText = "💾 บันทึกและเปลี่ยนรหัสผ่าน";
                     if(res.success) {
                         alert("🎉 อัปเดตรหัสผ่านใหม่ลงตารางคลาวด์เรียบร้อย! สามารถนำรหัสใหม่ไปใช้เข้าสู่ระบบได้ทันทีครับ");
-                        document.getElementById('vhmUsername').value = u; document.getElementById('vhmPassword').value = ""; document.getElementById('userRole').value = role; 
+                        document.getElementById('vhmUsername').value = u;
+                        document.getElementById('vhmPassword').value = "";
+                        document.getElementById('userRole').value = role; 
                         changeStep(0);
-                    } else { alert("❌ " + res.message); }
-                } catch(e) { btn.innerText = "💾 บันทึกและเปลี่ยนรหัสผ่าน"; alert("❌ หลังบ้านปฏิเสธการบันทึกรหัสผ่านใหม่"); }
+                    } else {
+                        alert("❌ " + res.message);
+                    }
+                } catch(e) {
+                    btn.innerText = "💾 บันทึกและเปลี่ยนรหัสผ่าน";
+                    alert("❌ Google Apps Script ปฏิเสธการบันทึกรหัสผ่านใหม่");
+                }
             })
-            .catch(err => { btn.innerText = "💾 บันทึกและเปลี่ยนรหัสผ่าน"; alert("❌ เกิดข้อผิดพลาดระบบเครือข่าย: " + err.message); });
+            .catch(err => {
+                btn.innerText = "💾 บันทึกและเปลี่ยนรหัสผ่าน";
+                alert("❌ เกิดข้อผิดพลาดระบบเครือข่าย: " + err.message);
+            });
     }
 
     function goToStep2() {
         if(!document.getElementById('patientName').value.trim() || !document.getElementById('patientGender').value || !document.getElementById('villageNo').value) {
-            alert("⚠️ กรุณากรอกข้อมูลทั่วไปให้ครบทุกข้อ"); return;
+            alert("⚠️ กรุณากรอกข้อมูลทั่วไปให้ครบทุกข้อ");
+            return;
         }
         document.getElementById('nameSuggestionsBox').style.display = 'none';
         switchAssessment(); 
@@ -459,14 +508,18 @@
     function switchAssessment() {
         const type = document.getElementById('assessmentTypeSelect').value;
         const inText = document.getElementById('indicationText');
+        
         if (type === '2Q') {
-            document.getElementById('panel9Q').style.display = 'none'; document.getElementById('panel8Q').style.display = 'none';
+            document.getElementById('panel9Q').style.display = 'none';
+            document.getElementById('panel8Q').style.display = 'none';
             inText.innerText = '💡 ใช้คัดกรองความเสี่ยงซึมเศร้าเบื้องต้น';
         } else if (type === '9Q') {
-            document.getElementById('panel9Q').style.display = 'block'; document.getElementById('panel8Q').style.display = 'none';
+            document.getElementById('panel9Q').style.display = 'block';
+            document.getElementById('panel8Q').style.display = 'none';
             inText.innerText = '💡 ใช้ประเมินระดับโรคซึมเศร้าเมื่อพบความเสี่ยงจาก 2Q';
         } else if (type === '8Q') {
-            document.getElementById('panel9Q').style.display = 'block'; document.getElementById('panel8Q').style.display = 'block';
+            document.getElementById('panel9Q').style.display = 'block';
+            document.getElementById('panel8Q').style.display = 'block';
             inText.innerText = '⚠️ บังคับกรอกข้อมูลข้ามขั้นเพื่อหาความเสี่ยงในการฆ่าตัวตายเชิงลึก (2Q + 9Q + 8Q)';
         }
     }
@@ -480,30 +533,42 @@
         const q2Res = (q2q1.value === "มี" || q2q2.value === "มี") ? "🚨 มีความเสี่ยง" : "🟢 ปกติ";
 
         if (q2Res === "🚨 มีความเสี่ยง" && type === "2Q") {
-            alert("🚨 ผู้ที่ได้รับการประเมินมีความเสี่ยงจากผล 2Q! ระบบบังคับให้ทำแบบประเมิน 9Q ต่อเพื่อตรวจสอบความรุนแรง กรุณากรอกแบบสอบถามหัวข้อ 9Q ด้านล่างครับ");
-            document.getElementById('assessmentTypeSelect').value = "9Q"; switchAssessment(); return; 
+            alert("🚨 ผู้ที่ได้รับการประเมินมีความเสี่ยงจากผล 2Q! ระบบบังคับให้ทำแบบประเมิน 9Q ต่อเพื่อตรวจสอบความรุนแรง กรุณากรอกแบบสอบถามหัวข้อ 9Q ที่เพิ่มขึ้นมาด้านล่างครับ");
+            document.getElementById('assessmentTypeSelect').value = "9Q"; 
+            switchAssessment(); 
+            return; 
         }
 
-        let score9Q = 0; let q9Value = 0;
+        let score9Q = 0;
+        let q9Value = 0;
+
         if (type === '9Q' || type === '8Q') {
             for (let i = 1; i <= 9; i++) {
                 const val = document.getElementById(`q9q${i}`).value;
-                if (val === "") { alert(`⚠️ กรุณากรอกแบบประเมิน 9Q ข้อที่ ${i} ให้เรียบร้อยก่อนครับ`); return; }
+                if (val === "") {
+                    alert(`⚠️ กรุณากรอกแบบประเมิน 9Q ข้อที่ ${i} ให้เรียบร้อยก่อนครับ`);
+                    return;
+                }
                 score9Q += parseInt(val);
                 if (i === 9) q9Value = parseInt(val); 
             }
         }
 
         if ((score9Q >= 7 || q9Value > 0) && type !== '8Q') {
-            alert(`🚨 ผลการประเมินวิกฤต! (คะแนนรวม 9Q = ${score9Q} คะแนน หรือ มีภาวะคิดทำร้ายตัวเองในข้อ 9)\n\nระบบตามหลักสาธารณสุขบังคับล็อกฟอร์ม และต้องทำแบบประเมินความเสี่ยงฆ่าตัวตาย 8Q เพิ่มเติมทันทีเพื่อป้องกันเหตุร้าย กรุณากรอกแผงข้อคำถาม 8Q ด้านล่างให้ครบถ้วนครับ`);
-            document.getElementById('assessmentTypeSelect').value = "8Q"; switchAssessment(); return;
+            alert(`🚨 ผลการประเมินวิกฤต! (คะแนนรวม 9Q = ${score9Q} คะแนน หรือ มีภาวะคิดทำร้ายตัวเองในข้อ 9)\n\nระบบตามหลักสาธารณสุขบังคับล็อกฟอร์ม ไม่ยอมให้ส่งข้อมูล และต้องทำแบบประเมินความเสี่ยงฆ่าตัวตาย 8Q เพิ่มเติมทันทีเพื่อป้องกันเหตุร้าย กรุณากรอกแผงข้อคำถาม 8Q ด้านล่างให้ครบถ้วนครับ`);
+            document.getElementById('assessmentTypeSelect').value = "8Q";
+            switchAssessment();
+            return;
         }
 
         let score8Q = 0;
         if (type === '8Q') {
             for (let i = 1; i <= 8; i++) {
                 const val = document.getElementById(`q8q${i}`).value;
-                if (val === "") { alert(`⚠️ กรุณากรอกแบบประเมินสถิติความเสี่ยง 8Q ข้อที่ ${i} ให้ครบถ้วนครับ`); return; }
+                if (val === "") {
+                    alert(`⚠️ กรุณากรอกแบบประเมินสถิติความเสี่ยง 8Q ข้อที่ ${i} ให้ครบถ้วนครับ`);
+                    return;
+                }
                 score8Q += parseInt(val);
             }
         }
@@ -517,24 +582,38 @@
         if (type === '9Q' || type === '8Q') {
             let severity9Q = (score9Q >= 19) ? "รุนแรงมาก" : (score9Q >= 14) ? "รุนแรงปานกลาง" : (score9Q >= 7) ? "น้อย" : "ปกติ";
             document.getElementById('smQ9Score').innerText = `${score9Q} คะแนน (${severity9Q})`;
-        } else { document.getElementById('smQ9Score').innerText = "-(ไม่ได้ประเมิน)-"; }
+        } else {
+            document.getElementById('smQ9Score').innerText = "-(ไม่ได้ประเมิน)-";
+        }
 
         if (type === '8Q') {
             let severity8Q = (score8Q >= 17) ? "🚨 รุนแรงมาก" : (score8Q >= 9) ? "🟡 ปานกลาง" : (score8Q >= 1) ? "🟢 น้อย" : "🟢 ไม่มีพฤติกรรมเสี่ยง";
             document.getElementById('smQ8Result').innerText = `${score8Q} คะแนน (${severity8Q})`;
-        } else { document.getElementById('smQ8Result').innerText = "-(ไม่ได้ประเมิน)-"; }
+        } else {
+            document.getElementById('smQ8Result').innerText = "-(ไม่ได้ประเมิน)-";
+        }
 
         document.getElementById('smComment').innerText = document.getElementById('comment').value.trim() || "-(ว่าง)-";
         changeStep(3);
     }
 
     function resetScreeningFormAfterSuccess() {
-        document.getElementById('patientName').value = ""; document.getElementById('patientGender').value = ""; document.getElementById('villageNo').value = ""; document.getElementById('comment').value = "";
+        document.getElementById('patientName').value = "";
+        document.getElementById('patientGender').value = "";
+        document.getElementById('villageNo').value = "";
+        document.getElementById('comment').value = "";
         document.getElementById('nameSuggestionsBox').style.display = 'none';
         
         document.querySelectorAll('input[name="q2q1"], input[name="q2q2"]').forEach(radio => radio.checked = false);
-        for (let i = 1; i <= 9; i++) { const el = document.getElementById('q9q' + i); if (el) el.value = ""; }
-        for (let i = 1; i <= 8; i++) { const el = document.getElementById('q8q' + i); if (el) el.value = ""; }
+        
+        for (let i = 1; i <= 9; i++) {
+            const el = document.getElementById('q9q' + i);
+            if (el) el.value = "";
+        }
+        for (let i = 1; i <= 8; i++) {
+            const el = document.getElementById('q8q' + i);
+            if (el) el.value = "";
+        }
 
         document.getElementById('assessmentTypeSelect').value = "2Q";
         switchAssessment();
@@ -562,11 +641,10 @@
             btn.disabled = true;
             btn.innerText = "⏳ กำลังบันทึกข้อมูล...";
 
-            // ✨ บังคับแปลงออบเจกต์เป็นข้อความดิบ (.toString()) ก่อนส่ง ป้องกันเออร์เรอร์ 400 Bad Request บนเบราว์เซอร์แอป LINE
+            // 🎯 [จุดแก้ไขบั๊ก] ส่งก้อนออบเจกต์ตรงๆ และปล่อยให้เบราว์เซอร์ LINE จัดการ Header เองเพื่อเคลียร์บั๊ก 400 Bad Request
             const response = await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-                body: sendData.toString()
+                body: sendData
             });
 
             if (!response.ok) throw new Error("HTTP Status " + response.status);
