@@ -105,7 +105,7 @@
             <p>กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง</p>
         </div>
         <div class="form-group">
-            <label>ชื่อ-นามสกุล ผู้รับตรวจ *</label>
+            <label>ชื่อ-นามสกุล ผู้ที่ได้รับการประเมิน *</label>
             <div style="position: relative; width: 100%;">
                 <input type="text" id="patientName" oninput="searchPatientNameAutocomplete()" autocomplete="off" placeholder="ตัวอย่าง : สุขภาพ จิตดี">
                 <div id="nameSuggestionsBox" style="position: absolute; left: 0; right: 0; z-index: 9999; background: white; border: 1px solid #cbd5e1; border-radius: 10px; max-height: 230px; overflow-y: auto; display: none; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); margin-top: 5px;"></div>
@@ -144,7 +144,7 @@
         <div id="indicationText" class="indication"></div>
 
         <div id="panel2Q" class="sub-questions">
-            <h4>📋 ส่วนที่ 1: ข้อคำถามคัดกรองซึมเศร้า 2Q+ (บังคับกรอก)</h4>
+            <h4>📋 ส่วนที่ 1: ข้อคำถามคัดกรองซึมเศร้า 2Q (บังคับกรอก)</h4>
             <div class="form-group">
                 <label>1. ใน 2 สัปดาห์ที่ผ่านมา รวมทั้งวันนี้ ท่านมีอาการหดหู่ เศร้า หรือท้อแท้สิ้นหวังหรือไม่?</label>
                 <div class="radio-group">
@@ -157,13 +157,6 @@
                 <div class="radio-group">
                     <input type="radio" id="q2q2_no" name="q2q2" value="ไม่มี"><label for="q2q2_no" class="radio-label">ไม่มี</label>
                     <input type="radio" id="q2q2_yes" name="q2q2" value="มี"><label for="q2q2_yes" class="radio-label">มี</label>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>3. ใน 1 เดือนที่ผ่านมา รวมทั้งวันนี้ ท่านมีความรู้สึกทุกข์ใจจนไม่อยากมีชีวิตอยู่หรือไม่?</label>
-                <div class="radio-group">
-                    <input type="radio" id="q2q3_no" name="q2q3" value="ไม่มี"><label for="q2q3_no" class="radio-label">ไม่มี</label>
-                    <input type="radio" id="q2q3_yes" name="q2q3" value="มี"><label for="q2q3_yes" class="radio-label">มี</label>
                 </div>
             </div>
         </div>
@@ -422,7 +415,7 @@
         // ซ่อนกรอบแนะนำหากค้างอยู่
         document.getElementById('nameSuggestionsBox').style.display = 'none';
         
-        document.querySelectorAll('input[name="q2q1"], input[name="q2q2"], input[name="q2q3"]').forEach(radio => radio.checked = false);
+        document.querySelectorAll('input[name="q2q1"], input[name="q2q2"]').forEach(radio => radio.checked = false);
         
         for (let i = 1; i <= 9; i++) {
             const el = document.getElementById('q9q' + i);
@@ -519,14 +512,13 @@
     function goToStep3() {
         const q2q1 = document.querySelector('input[name="q2q1"]:checked');
         const q2q2 = document.querySelector('input[name="q2q2"]:checked');
-        const q2q3 = document.querySelector('input[name="q2q3"]:checked');
-        if(!q2q1 || !q2q2 || !q2q3) { alert("⚠️ กรุณาทำแบบคัดกรอง 2Q ให้ครบถ้วน"); return; }
+        if(!q2q1 || !q2q2) { alert("⚠️ กรุณาทำแบบคัดกรอง 2Q ให้ครบถ้วน"); return; }
         
         const type = document.getElementById('assessmentTypeSelect').value;
-        const q2Res = (q2q1.value === "มี" || q2q2.value === "มี" || q2q3.value === "มี") ? "🚨 มีความเสี่ยง" : "🟢 ปกติ";
+        const q2Res = (q2q1.value === "มี" || q2q2.value === "มี") ? "🚨 มีความเสี่ยง" : "🟢 ปกติ";
 
         if (q2Res === "🚨 มีความเสี่ยง" && type === "2Q") {
-            alert("🚨 ผู้รับตรวจมีความเสี่ยงจากผล 2Q! ระบบบังคับให้ทำแบบประเมิน 9Q ต่อเพื่อตรวจสอบความรุนแรง กรุณากรอกแบบสอบถามหัวข้อ 9Q ที่เพิ่มขึ้นมาด้านล่างครับ");
+            alert("🚨 ผู้ที่ได้รับการประเมินมีความเสี่ยงจากผล 2Q! ระบบบังคับให้ทำแบบประเมิน 9Q ต่อเพื่อตรวจสอบความรุนแรง กรุณากรอกแบบสอบถามหัวข้อ 9Q ที่เพิ่มขึ้นมาด้านล่างครับ");
             document.getElementById('assessmentTypeSelect').value = "9Q"; 
             switchAssessment(); 
             return; 
@@ -597,7 +589,7 @@
         document.getElementById('comment').value = "";
         document.getElementById('nameSuggestionsBox').style.display = 'none';
         
-        document.querySelectorAll('input[name="q2q1"], input[name="q2q2"], input[name="q2q3"]').forEach(radio => radio.checked = false);
+        document.querySelectorAll('input[name="q2q1"], input[name="q2q2"]').forEach(radio => radio.checked = false);
         
         for (let i = 1; i <= 9; i++) {
             const el = document.getElementById('q9q' + i);
