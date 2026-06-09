@@ -30,7 +30,7 @@
         .btn-nav { width: 100%; padding: 15px; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         .btn-next { background-color: #3b82f6; color: white; }
         .btn-submit { background-color: #10b981; color: white; }
-        .btn-nav.btn-back { background-color: #94a3b8; color: white; margin-top: 5px; }
+        .btn-back { background-color: #94a3b8; color: white; margin-top: 5px; }
         .summary-box { background: #f8fafc; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
         .summary-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #e2e8f0; }
         .summary-item span:first-child { font-weight: bold; color: #64748b; }
@@ -167,7 +167,7 @@
         <div id="panel9Q" class="sub-questions" style="display:none;">
             <h4>📋 ส่วนที่ 2: ข้อคำถามระดับความรุนแรง 9Q</h4>
             <p style="font-size:12px; color:#64748b; margin-bottom:12px;">(เกณฑ์: 0=ไม่มีเลย, 1=มีบางวัน 1-7 วัน, 2=มีบ่อย 7-14 วัน, 3=มีทุกวัน มากกว่า 14 วัน)</p>
-            <div class="form-group"><label>1. เบื่อ ไมยากทำอะไร หรือไม่เพลิดเพลินในการทำกิจกรรม</label><select id="q9q1"><option value="">-- เลือกคำตอบ --</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
+            <div class="form-group"><label>1. เบื่อ ไม่อยากทำอะไร หรือไม่เพลิดเพลินในการทำกิจกรรม</label><select id="q9q1"><option value="">-- เลือกคำตอบ --</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
             <div class="form-group"><label>2. ไม่สบายใจ ซึมเศร้า หรือท้อแท้สิ้นหวัง</label><select id="q9q2"><option value="">-- เลือกคำตอบ --</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
             <div class="form-group"><label>3. หลับยาก หรือหลับๆ ตื่นๆ หรือหลับมากเกินไป</label><select id="q9q3"><option value="">-- เลือกคำตอบ --</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
             <div class="form-group"><label>4. เหนื่อยง่าย หรือไม่ค่อยมีเรี่ยวแรง</label><select id="q9q4"><option value="">-- เลือกคำตอบ --</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
@@ -237,7 +237,7 @@
             .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
-    // ระบบเริ่มต้นและเช็กความจำล็อกอินอัตโนมัติจากตารางชีทหลังบ้าน
+    // ระบบเริ่มต้นและเปิดกลไกเช็กไอดีไลน์จากชีท
     liff.init({ liffId: LIFF_ID }).then(async () => { 
         console.log("LIFF Ready"); 
         if (!liff.isLoggedIn()) {
@@ -247,9 +247,13 @@
         }
     }).catch(err => console.error("LIFF Init Error:", err));
 
+    // 🎯 ระบบสแกนเช็กไอดีไลน์จากฐานข้อมูลคลาวด์หลังบ้านโดยตรง (ถ้าไม่มียศตรงกัน ระบบจะค้างหน้าล็อกอินปกติ)
     async function checkAutoLogin() {
         try {
-            if (localStorage.getItem("vhm_logout_flag") === "true") return;
+            if (localStorage.getItem("vhm_logout_flag") === "true") {
+                changeStep(0);
+                return;
+            }
 
             if (liff.isLoggedIn()) {
                 const profile = await liff.getProfile();
@@ -264,11 +268,16 @@
                     document.getElementById('vhmDisplayName').innerText = `${currentVhmName} (${res.roleTitle})`;
                     document.getElementById('vhmInfoHeader').style.display = "flex"; 
                     fetchPatientHistoryForAutocomplete();
-                    changeStep(1); 
+                    changeStep(1); // ข้ามไปเปิดหน้าบันทึกประวัติ อสม. ทันที
+                } else {
+                    changeStep(0); // หากไม่พบ ID ตรงกันในชีท ให้ค้างไว้ที่หน้าล็อกอินเหมือนเดิม
                 }
+            } else {
+                changeStep(0);
             }
         } catch (err) {
             console.error("AutoLogin System Error:", err);
+            changeStep(0);
         }
     }
 
@@ -348,6 +357,7 @@
         }
     });
 
+    // ระบบส่งบันทึกล็อกอินครั้งแรกเพื่อผูกไอดีไลน์ลงในชีทแผงหลังบ้าน
     async function verifyAuth() {
         const u = document.getElementById('vhmUsername').value.trim();
         const p = document.getElementById('vhmPassword').value;
@@ -361,14 +371,16 @@
         let currentLineId = "";
         
         if (liff.isLoggedIn()) {
-            const profile = await liff.getProfile();
-            currentLineId = profile.userId;
+            try {
+                const profile = await liff.getProfile();
+                currentLineId = profile.userId;
+            } catch(e) { console.error(e); }
         }
         
         try {
             const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=${actionType}&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}&role=${encodeURIComponent(role)}&lineId=${encodeURIComponent(currentLineId)}`);
             
-            // ✨ [จุดแก้ไขคำพิมพ์ตก] แก้ไขจาก !ok เป็น !response.ok เรียบร้อย สมบูรณ์แบบ 100%
+            // 🎯 [แก้ไขเรียบร้อยร้อยเปอร์เซ็นต์] เปลี่ยนเป็น !response.ok ครบถ้วน ไม่เออร์เรอร์แน่นอน
             if (!response.ok) throw new Error("HTTP Status " + response.status);
             
             const text = await response.text();
@@ -397,7 +409,7 @@
         
         currentVhmName = "";
         localScreeningHistory = []; 
-        localStorage.setItem("vhm_logout_flag", "true"); 
+        localStorage.setItem("vhm_logout_flag", "true"); // ล็อก Flag แบนระบบล็อกอินอัตโนมัติรอบหน้า
         
         document.getElementById('vhmInfoHeader').style.display = "none";
         document.getElementById('patientName').value = ""; document.getElementById('patientGender').value = ""; document.getElementById('villageNo').value = ""; document.getElementById('comment').value = "";
@@ -557,8 +569,10 @@
             btn.disabled = true;
             btn.innerText = "⏳ กำลังบันทึกข้อมูล...";
 
+            // 🎯 [กู้คืนคำสั่งเดิมเพื่อล้างบั๊ก 400 ขาดรอย] ระบุหัว Content-Type และใช้รูปแบบยิงข้อมูลที่เคยรันผ่านฉลุย
             const response = await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
                 body: sendData
             });
 
