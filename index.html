@@ -193,7 +193,7 @@
             <textarea id="comment" rows="2" placeholder="กรอกข้อมูลเพิ่มเติม..."></textarea>
         </div>
 
-        <button class="btn-nav btn-next" onclick="goToStep3()">ถัดไป ➡️</button>
+        <button class="btn-nav btn-next" onclick="goToStep2()">ถัดไป ➡️</button>
         <button class="btn-nav btn-back" onclick="changeStep(1)">⬅️ ย้อนกลับ</button>
     </div>
 
@@ -223,7 +223,6 @@
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySImkthOaj1K3yK3QtFsc0qUNx7wFMF9gNaPjO_IL86H6JaywSU2ZnF4NPic_ypsW8ew/exec';
 
     let currentVhmName = "";
-    // 🎯 ตัวแปรเก็บประวัติคนไข้ในระบบเพื่อใช้ทำ Autocomplete
     let localScreeningHistory = []; 
 
     function safeText(value) {
@@ -239,7 +238,42 @@
             .replace(/'/g, "&#039;");
     }
 
-    liff.init({ liffId: LIFF_ID }).then(() => { console.log("LIFF Ready"); });
+    // 🎯 ปรับโครงสร้างโหลดหน้าเว็บ: เช็กระบบ LINE และรันกระบวนการล็อกอินค้างอัตโนมัติ
+    liff.init({ liffId: LIFF_ID }).then(async () => { 
+        console.log("LIFF Ready"); 
+        if (!liff.isLoggedIn()) {
+            liff.login({ redirectUri: window.location.href });
+        } else {
+            await checkAutoLogin();
+        }
+    }).catch(err => console.error("LIFF Init Error:", err));
+
+    // 🎯 ฟังก์ชันตรวจสอบการจำสถานะล็อกอินเดิมจาก LINE ID บัญชีเดิม
+    async function checkAutoLogin() {
+        try {
+            if (liff.isLoggedIn()) {
+                const profile = await liff.getProfile();
+                const currentLineId = profile.userId;
+                const savedSession = localStorage.getItem("vhm_session");
+                
+                if (savedSession) {
+                    const session = JSON.parse(savedSession);
+                    // หาก LINE User ID ตรงกับเซสชันเดิม ให้ข้ามหน้าล็อกอินทันที
+                    if (session.lineId === currentLineId) {
+                        currentVhmName = session.name;
+                        document.getElementById('vhmDisplayName').innerText = `${currentVhmName} (${session.roleTitle})`;
+                        document.getElementById('vhmInfoHeader').style.display = "flex"; 
+                        fetchPatientHistoryForAutocomplete();
+                        changeStep(1); // เด้งไปหน้ากรอกข้อมูลทั่วไป (Step 1)
+                    } else {
+                        localStorage.removeItem("vhm_session");
+                    }
+                }
+            }
+        } catch (err) {
+            console.error("AutoLogin System Error:", err);
+        }
+    }
 
     function changeStep(step) {
         document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
@@ -247,7 +281,6 @@
         window.scrollTo(0, 0);
     }
 
-    // 🎯 เพิ่มฟังก์ชันดึงรายชื่อคนไข้ล่าสุดจากฐานข้อมูลคลาวด์
     function fetchPatientHistoryForAutocomplete() {
         fetch(GOOGLE_SCRIPT_URL)
             .then(res => res.json())
@@ -257,7 +290,6 @@
             .catch(err => console.error("ไม่สามารถดาวน์โหลดประวัติคนไข้สำหรับระบบเดาชื่ออัตโนมัติได้:", err));
     }
 
-    // 🎯 ระบบประมวลผลกล่องรายชื่อแนะนำขณะพิมพ์ (ตามหลักพจนานุกรม และจำกัด 5 รายชื่อแรก)
     function searchPatientNameAutocomplete() {
         const inputVal = document.getElementById('patientName').value.trim().toLowerCase();
         const box = document.getElementById('nameSuggestionsBox');
@@ -268,12 +300,10 @@
             return;
         }
 
-        // กรองเฉพาะประวัติที่มีอักษรตรงกัน
         let matches = localScreeningHistory.filter(item => 
             safeText(item.patientName).toLowerCase().includes(inputVal)
         );
 
-        // ทำลายข้อมูลที่ซ้ำซ้อนโดยใช้ ชื่อ + เพศ + หมู่บ้าน เพื่อไม่ให้คนชื่อซ้ำถูกทับกัน
         let uniquePatientsMap = {};
         matches.forEach(item => {
             const pName = safeText(item.patientName).trim();
@@ -281,27 +311,18 @@
             const village = safeText(item.villageNo).trim();
             const key = `${pName}|${gender}|${village}`;
             if (!uniquePatientsMap[key]) {
-                uniquePatientsMap[key] = {
-                    name: pName,
-                    gender: gender,
-                    village: village
-                };
+                uniquePatientsMap[key] = { name: pName, gender: gender, village: village };
             }
         });
         let uniqueList = Object.values(uniquePatientsMap);
-
-        // เรียงข้อมูลตามลำดับพจนานุกรมภาษาไทย (ก -> ฮ)
         uniqueList.sort((a, b) => safeText(a.name).localeCompare(safeText(b.name), 'th'));
 
-        // หั่นดึงเฉพาะ 5 รายชื่อแรกขึ้นมาแนะนำ
         let top5Matches = uniqueList.slice(0, 5);
-
         if (top5Matches.length === 0) {
             box.style.display = 'none';
             return;
         }
 
-        // วาดแถวรายชื่อแนะนำลงบนกล่องอินเทอร์เฟซแบบปลอดภัย ไม่ใส่ข้อมูลผู้ใช้ผ่าน innerHTML
         top5Matches.forEach(patient => {
             let row = document.createElement('div');
             row.style.padding = '12px 15px';
@@ -323,7 +344,6 @@
             row.appendChild(nameEl);
             row.appendChild(metaEl);
             
-            // จังหวะที่ อสม. คลิกเลือกชื่อแนะนำ
             row.onclick = () => {
                 document.getElementById('patientName').value = patient.name;
                 document.getElementById('patientGender').value = patient.gender;
@@ -333,13 +353,11 @@
             
             row.onmouseenter = () => row.style.backgroundColor = '#f0f7ff';
             row.onmouseleave = () => row.style.backgroundColor = 'transparent';
-            
             box.appendChild(row);
         });
 
         box.style.display = 'block';
 
-        // 💡 ดักกรณีพิมพ์เองจนครบ 100% ตรงกับประวัติเดิม ให้ระบบ auto fill ข้อมูลให้ทันที
         const perfectMatch = uniqueList.find(p => safeText(p.name).toLowerCase() === inputVal);
         if (perfectMatch) {
             document.getElementById('patientGender').value = perfectMatch.gender;
@@ -347,7 +365,6 @@
         }
     }
 
-    // 🎯 ดักฟังคำสั่งคลิกนอกพื้นที่พิมพ์ เพื่อทำการหุบซ่อนกล่องข้อเสนอแนะอัตโนมัติ
     document.addEventListener('click', (e) => {
         if (e.target.id !== 'patientName') {
             const box = document.getElementById('nameSuggestionsBox');
@@ -355,6 +372,7 @@
         }
     });
 
+    // 🎯 ปรับเป็น async เพื่อรอรับค่า Profile LINE ID มาสแตมป์ล็อกอินค้าง
     function verifyAuth() {
         const u = document.getElementById('vhmUsername').value.trim();
         const p = document.getElementById('vhmPassword').value;
@@ -371,7 +389,7 @@
                 if (!res.ok) throw new Error("HTTP Status " + res.status);
                 return res.text(); 
             })
-            .then(text => {
+            .then(async (text) => {
                 try {
                     const res = JSON.parse(text); 
                     btn.innerText = "🔓 เข้าสู่ระบบ";
@@ -381,9 +399,19 @@
                         document.getElementById('vhmDisplayName').innerText = `${currentVhmName} (${roleTitle})`;
                         document.getElementById('vhmInfoHeader').style.display = "flex"; 
                         
-                        // 🎯 ดาวน์โหลดคลังรายชื่อเตรียมสแตนด์บายทำระบบค้นหาทันทีเมื่อ Login สำเร็จ
-                        fetchPatientHistoryForAutocomplete();
+                        // 🎯 ทำการสแตมป์ข้อมูลลง LocalStorage ร่วมกับคีย์ไลน์ปัจจุบันเพื่อจำสถานะล็อกอินค้าง
+                        if (liff.isLoggedIn()) {
+                            const profile = await liff.getProfile();
+                            const sessionData = {
+                                username: u,
+                                name: currentVhmName,
+                                roleTitle: roleTitle,
+                                lineId: profile.userId
+                            };
+                            localStorage.setItem("vhm_session", JSON.stringify(sessionData));
+                        }
                         
+                        fetchPatientHistoryForAutocomplete();
                         changeStep(1);
                     } else {
                         alert("❌ " + res.message);
@@ -403,16 +431,14 @@
         if (!confirm("🚨 แจ้งเตือนความปลอดภัย:\nคุณต้องการออกจากระบบใช่หรือไม่? ข้อมูลผู้ป่วยทั้งหมดที่กำลังพิมพ์ค้างอยู่ ณ ตอนนี้จะถูกล้างทิ้งและไม่ถูกบันทึกลงฐานข้อมูลคลาวด์ครับ")) return;
         
         currentVhmName = "";
-        localScreeningHistory = []; // ล้างคลังหน่วยความจำแคช
+        localScreeningHistory = []; 
+        localStorage.removeItem("vhm_session"); // 🎯 ล้างหน่วยความจำล็อกอินค้างอย่างปลอดภัย
         
         document.getElementById('vhmInfoHeader').style.display = "none";
-        
         document.getElementById('patientName').value = "";
         document.getElementById('patientGender').value = "";
         document.getElementById('villageNo').value = "";
         document.getElementById('comment').value = "";
-        
-        // ซ่อนกรอบแนะนำหากค้างอยู่
         document.getElementById('nameSuggestionsBox').style.display = 'none';
         
         document.querySelectorAll('input[name="q2q1"], input[name="q2q2"]').forEach(radio => radio.checked = false);
@@ -421,7 +447,6 @@
             const el = document.getElementById('q9q' + i);
             if (el) el.value = "";
         }
-        
         for (let i = 1; i <= 8; i++) {
             const el = document.getElementById('q8q' + i);
             if (el) el.value = "";
@@ -432,7 +457,6 @@
         
         document.getElementById('vhmUsername').value = "";
         document.getElementById('vhmPassword').value = "";
-        
         changeStep(0);
     }
 
@@ -447,7 +471,6 @@
         if(newP.length < 4) { alert("⚠️ รหัสผ่านใหม่ควรยาว 4 ตัวอักษรขึ้นไป"); return; }
 
         btn.innerText = "⏳ กำลังบันทึกรหัสผ่านใหม่...";
-
         let actionType = (role === 'admin') ? 'resetAdminPassword' : 'resetPassword';
 
         fetch(`${GOOGLE_SCRIPT_URL}?action=${actionType}&username=${encodeURIComponent(u)}&secretKey=${encodeURIComponent(key)}&newPassword=${encodeURIComponent(newP)}`)
@@ -484,7 +507,6 @@
             alert("⚠️ กรุณากรอกข้อมูลทั่วไปให้ครบทุกข้อ");
             return;
         }
-        // ตรวจสอบให้มั่นใจว่าหุบกล่องรายชื่อแนะนำก่อนย้ายหน้าจอ
         document.getElementById('nameSuggestionsBox').style.display = 'none';
         switchAssessment(); 
         changeStep(2);
@@ -638,7 +660,6 @@
             if (result.success) {
                 alert('🎉 ส่งรายงานการคัดกรองขึ้นระบบคลาวด์ รพ.สต. สำเร็จเรียบร้อยครับ!');
                 resetScreeningFormAfterSuccess();
-                // 🎯 อัปเดตข้อมูลแคชคนไข้ในระบบใหม่หลังบันทึกสำเร็จจริงเท่านั้น
                 fetchPatientHistoryForAutocomplete();
             } else {
                 alert('❌ บันทึกไม่สำเร็จ: ' + (result.message || 'ไม่ทราบสาเหตุ'));
