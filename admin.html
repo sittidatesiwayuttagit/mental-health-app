@@ -50,7 +50,7 @@
         .info-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; }
         .danger { color: #ef4444; font-weight: bold; }
 
-        /* สไตล์แถบปุ่มรายชื่อผู้ป่วย */
+        /* สไตล์กระดานรายชื่อผู้ป่วย */
         .patient-row-card {
             display: flex; justify-content: space-between; align-items: center; 
             padding: 16px 20px; background: white; border: 1px solid #e2e8f0; 
@@ -96,9 +96,7 @@
         .feedback-header { display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 10px; font-weight: bold; color: #64748b; font-size: 13px; }
         .feedback-body { font-size: 15px; color: #1e293b; line-height: 1.6; white-space: pre-wrap; }
 
-        /* ===================================================
-           🎯 โค้ดแก้บั๊กการแสดงผลบนโทรศัพท์มือถือ (จอแคบกว่า 600px)
-           =================================================== */
+        /* การแสดงผลบนโทรศัพท์มือถือ (จอแคบกว่า 600px) */
         @media (max-width: 600px) {
             .tabs-bar {
                 flex-wrap: wrap !important;
@@ -318,7 +316,6 @@
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySImkthOaj1K3yK3QtFsc0qUNx7wFMF9gNaPjO_IL86H6JaywSU2ZnF4NPic_ypsW8ew/exec';
     const LIFF_ID = "2010303347-RJSlJ1lV"; 
 
-    // 🎯 ปรับจังหวะโหลด: ดึงโปรไฟล์ LINE และ fetch ยิงข้อมูลทันที (เพราะย้าย liff.init ไปไว้ตอนโหลดหน้าเว็บแล้ว)
     async function saveLineIdToSheet(username, password) {
       try {
         if (liff.isLoggedIn()) {
@@ -385,10 +382,8 @@
         const text = safeText(value).trim();
         if (!text || text === "-") return "";
 
-        // Already in HTML datetime-local format.
         if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(text)) return text;
 
-        // Parse dd/MM/yyyy HH:mm from Apps Script formatTimestamp.
         const m = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})/);
         if (!m) return "";
 
@@ -399,10 +394,9 @@
         const year = String(yearNum).padStart(4, '0');
         const hour = m[4].padStart(2, '0');
         const minute = m[5].padStart(2, '0');
-        return `${year}-${month}-${day}T${hour}:${minute}`;
+        return `${year}-${month}-${day}T${hour}-${minute}`;
     }
 
-    // 🎯 ปรับปรุงจุดนี้: ให้แอปขอสิทธิ์และล็อกอิน LINE ค้างไว้ทันทีตั้งแต่เปิดหน้าเว็บ เพื่อไม่ให้เด้งรีโหลดตอนกดปุ่มล็อกอิน
     window.onload = async () => {
         const daySelect = document.getElementById('patientBirthDay');
         for (let i = 1; i <= 31; i++) {
@@ -414,7 +408,6 @@
         try {
             await liff.init({ liffId: LIFF_ID });
             if (!liff.isLoggedIn()) {
-                // บังคับให้เด้งกลับมาที่หน้า admin.html ตัวเองแน่นอน 100% ไม่หลุดไปหน้าอื่น
                 liff.login({ redirectUri: window.location.href }); 
             }
         } catch (err) {
@@ -479,7 +472,6 @@
             .then(res => {
                 btn.innerText = "🔓 เข้าสู่ระบบแดชบอร์ด";
                 if (res.success) {
-                    // เรียกฟังก์ชันส่งคู่ Username และ Password ไปล็อกแถวบันทึกคอลัมน์ E ได้ทันที ไม่รีโหลดหน้าจอแล้ว
                     saveLineIdToSheet(u, p);
                     
                     currentAdminRole = normalizeAdminRole(res.role);
@@ -577,7 +569,6 @@
 
     function normalizeCaseStatus(status) {
         const s = safeText(status).trim();
-        // Map old status words into the new two-status workflow.
         if (s === "ไม่มีใครรับ" || s === "ยังไม่รับ") return "ยังไม่รับเคส";
         if (s === "กำลังรับเรื่อง" || s === "กำลังรับ" || s === "รับแล้ว" || s === "แก้ไขแล้ว") return "จองคิวแล้ว";
         return CASE_STATUSES.includes(s) ? s : "ยังไม่รับเคส";
@@ -598,29 +589,6 @@
     function getCurrentAdminNameForCase() {
         const name = document.getElementById('adminDisplayName')?.innerText || "";
         return name && name !== "-" ? name : "Admin";
-    }
-
-    function getPatientCaseSummary(records) {
-        const sorted = [...records].sort((a, b) => parseTimestamp(b.timestamp) - parseTimestamp(a.timestamp));
-        const latest = sorted[0] || {};
-        const counts = { "ยังไม่รับเคส": 0, "จองคิวแล้ว": 0 };
-
-        sorted.forEach(record => {
-            const status = normalizeCaseStatus(record.alertStatus);
-            counts[status] = (counts[status] || 0) + 1;
-        });
-
-        const bookedRecords = sorted.filter(record => normalizeCaseStatus(record.alertStatus) === "จองคิวแล้ว" && safeText(record.bookingDateTime) && safeText(record.bookingDateTime) !== "-");
-        const latestBooking = bookedRecords[0] || {};
-
-        return {
-            latestStatus: normalizeCaseStatus(latest.alertStatus),
-            latestTimestamp: safeText(latest.timestamp) || "-",
-            latestBookingDateTime: safeText(latestBooking.bookingDateTime) || "-",
-            latestBookingBy: safeText(latestBooking.bookingBy) || "-",
-            total: sorted.length,
-            counts
-        };
     }
 
     async function updatePatientAlertStatusFromWeb(rowId, newStatus, buttonEl, bookingDateTimeInput, bookingAction = "book") {
@@ -701,16 +669,11 @@
                 });
 
                 if (action === "cancel") {
-                    alert(`✅ ยกเลิกจองคิวเรียบร้อยแล้ว
-${result.bookingLineStatus || ""}`);
+                    alert(`✅ ยกเลิกจองคิวเรียบร้อยแล้ว\n${result.bookingLineStatus || ""}`);
                 } else if (action === "edit") {
-                    alert(`✅ แก้ไขเวลาจองคิวเรียบร้อยแล้ว
-🗓️ วันเวลานัดใหม่: ${displayBookingDateTime}
-${result.bookingLineStatus || ""}`);
+                    alert(`✅ แก้ไขเวลาจองคิวเรียบร้อยแล้ว\n🗓️ วันเวลานัดใหม่: ${displayBookingDateTime}\n${result.bookingLineStatus || ""}`);
                 } else {
-                    alert(`✅ รับจองคิวเรียบร้อยแล้ว
-🗓️ วันเวลานัด: ${displayBookingDateTime}
-${result.bookingLineStatus || ""}`);
+                    alert(`✅ รับจองคิวเรียบร้อยแล้ว\n🗓️ วันเวลานัด: ${displayBookingDateTime}\n${result.bookingLineStatus || ""}`);
                 }
 
                 renderPatientDetail();
@@ -726,6 +689,29 @@ ${result.bookingLineStatus || ""}`);
                 buttonEl.innerText = originalText;
             }
         }
+    }
+
+    function getPatientCaseSummary(records) {
+        const sorted = [...records].sort((a, b) => parseTimestamp(b.timestamp) - parseTimestamp(a.timestamp));
+        const latest = sorted[0] || {};
+        const counts = { "ยังไม่รับเคส": 0, "จองคิวแล้ว": 0 };
+
+        sorted.forEach(record => {
+            const status = normalizeCaseStatus(record.alertStatus);
+            counts[status] = (counts[status] || 0) + 1;
+        });
+
+        const bookedRecords = sorted.filter(record => normalizeCaseStatus(record.alertStatus) === "จองคิวแล้ว" && safeText(record.bookingDateTime) && safeText(record.bookingDateTime) !== "-");
+        const latestBooking = bookedRecords[0] || {};
+
+        return {
+            latestStatus: normalizeCaseStatus(latest.alertStatus),
+            latestTimestamp: safeText(latest.timestamp) || "-",
+            latestBookingDateTime: safeText(latestBooking.bookingDateTime) || "-",
+            latestBookingBy: safeText(latestBooking.bookingBy) || "-",
+            total: sorted.length,
+            counts
+        };
     }
 
     function processData() {
@@ -784,7 +770,6 @@ ${result.bookingLineStatus || ""}`);
             const group = groupMap.get(compoundKey);
             group.records.push(item);
 
-            // Keep the latest available birthdate from records.
             if (item.birthDay || item.birthMonth || item.birthYear) {
                 group.day = item.birthDay;
                 group.month = item.birthMonth;
@@ -1110,6 +1095,7 @@ ${result.bookingLineStatus || ""}`);
             .catch(err => { loading.style.display = 'none'; alert("❌ ดึงข้อมูล อสม. ไม่ได้: " + err.message); });
     }
 
+    /* ✨ เพิ่มความปลอดภัยส่งพารามิเตอร์ actorUsername ป้องกัน Admin ทั่วไปเพิ่ม/แก้ไข อสม. ที่คุมโดย Hospital */
     function saveVhmData() {
         const mode = document.getElementById('vhmFormMode').value;
         const u = document.getElementById('vhmUsernameInput').value.trim();
@@ -1118,7 +1104,7 @@ ${result.bookingLineStatus || ""}`);
         const k = document.getElementById('vhmSecretKeyInput').value.trim();
         if(!u || !p || !n || !k) { alert("⚠️ กรุณากรอกรายละเอียดของ อสม. ให้ครบทุกช่องครับ"); return; }
         const loading = document.getElementById('loadingText'); loading.style.display = 'block';
-        fetch(`${GOOGLE_SCRIPT_URL}?action=saveVhm&mode=${mode}&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}&name=${encodeURIComponent(n)}&secretKey=${encodeURIComponent(k)}`)
+        fetch(`${GOOGLE_SCRIPT_URL}?action=saveVhm&mode=${mode}&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}&name=${encodeURIComponent(n)}&secretKey=${encodeURIComponent(k)}&actorUsername=${encodeURIComponent(currentAdminUsername)}`)
             .then(res => res.json())
             .then(res => {
                 loading.style.display = 'none';
@@ -1127,10 +1113,11 @@ ${result.bookingLineStatus || ""}`);
             });
     }
 
+    /* ✨ เพิ่มความปลอดภัยส่งพารามิเตอร์ actorUsername ป้องกัน Admin ทั่วไปลบข้อมูล อสม. */
     function deleteVhmData(username) {
         if(!confirm(`🚨 คุณแน่ใจใช่ไหมว่าต้องการลบ Username: "${username}" ออกจากฐานข้อมูลระบบ?`)) return;
         const loading = document.getElementById('loadingText'); loading.style.display = 'block';
-        fetch(`${GOOGLE_SCRIPT_URL}?action=deleteVhm&username=${encodeURIComponent(username)}`)
+        fetch(`${GOOGLE_SCRIPT_URL}?action=deleteVhm&username=${encodeURIComponent(username)}&actorUsername=${encodeURIComponent(currentAdminUsername)}`)
             .then(res => res.json())
             .then(res => {
                 loading.style.display = 'none';
@@ -1206,6 +1193,7 @@ ${result.bookingLineStatus || ""}`);
             .catch(err => { loading.style.display = 'none'; alert("❌ ดึงข้อมูลผู้ดูแลระบบไม่ได้: " + err.message); });
     }
 
+    /* ✨ เพิ่มความปลอดภัยขั้นสูงสุด: ส่งพารามิเตอร์ actorUsername ไปให้หลังบ้านสแกนเพื่อบล็อก Admin ทั่วไปไม่ให้เพิ่มสิทธิ์ Hospital */
     function saveAdminData() {
         const mode = document.getElementById('adminFormMode').value;
         const u = document.getElementById('adminUsernameInput').value.trim();
@@ -1215,10 +1203,9 @@ ${result.bookingLineStatus || ""}`);
         const role = document.getElementById('adminRoleInput').value;
 
         if(!u || !p || !n || !k) { alert("⚠️ กรุณากรอกรายละเอียดของผู้ดูแลระบบให้ครบถ้วนทุกช่องครับ"); return; }
-
         const loading = document.getElementById('loadingText'); loading.style.display = 'block';
 
-        fetch(`${GOOGLE_SCRIPT_URL}?action=saveAdmin&mode=${mode}&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}&name=${encodeURIComponent(n)}&secretKey=${encodeURIComponent(k)}&role=${encodeURIComponent(role)}`)
+        fetch(`${GOOGLE_SCRIPT_URL}?action=saveAdmin&mode=${mode}&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}&name=${encodeURIComponent(n)}&secretKey=${encodeURIComponent(k)}&role=${encodeURIComponent(role)}&actorUsername=${encodeURIComponent(currentAdminUsername)}`)
             .then(res => res.json())
             .then(res => {
                 loading.style.display = 'none';
@@ -1232,11 +1219,12 @@ ${result.bookingLineStatus || ""}`);
             });
     }
 
+    /* ✨ เพิ่มความปลอดภัยขั้นสูงสุด: ส่งพารามิเตอร์ actorUsername บล็อก Admin ทั่วไปไม่ให้กดลบบัญชีของคนมียศ Hospital */
     function deleteAdminData(username) {
         if(!confirm(`🚨 แจ้งเตือนความปลอดภัยสูงสุด: คุณต้องการลบสิทธิ์เข้าถึงของสิทธิ์แอดมิน Username: "${username}" ใช่หรือไม่?`)) return;
         const loading = document.getElementById('loadingText'); loading.style.display = 'block';
 
-        fetch(`${GOOGLE_SCRIPT_URL}?action=deleteAdmin&username=${encodeURIComponent(username)}`)
+        fetch(`${GOOGLE_SCRIPT_URL}?action=deleteAdmin&username=${encodeURIComponent(username)}&actorUsername=${encodeURIComponent(currentAdminUsername)}`)
             .then(res => res.json())
             .then(res => {
                 loading.style.display = 'none';
