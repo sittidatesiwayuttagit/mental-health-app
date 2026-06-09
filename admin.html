@@ -27,12 +27,12 @@
         .inputs-row { display: flex; gap: 10px; margin-bottom: 12px; }
         .controls-row { display: flex; gap: 10px; align-items: center; }
         
-        input[type="text"], input[type="number"], input[type="password"], input[type="date"], select { 
+        input[type="text"], input[type="number"], input[type="password"], input[type="date"], input[type="datetime-local"], select { 
             width: 100%; padding: 12px; border: 2px solid #cbd5e1; border-radius: 10px; box-sizing: border-box; font-size: 16px; 
         }
         input[type="text"] { flex: 1; }
         input[type="number"] { width: 160px; }
-        input[type="date"] { flex: 1; }
+        input[type="date"], input[type="datetime-local"] { flex: 1; }
         select { flex: 1; background-color: white; cursor: pointer; }
         
         /* สไตล์ปุ่ม */
@@ -76,6 +76,14 @@
         .case-status-btn.progress { background: #f59e0b; }
         .case-status-btn.done { background: #10b981; }
         .case-status-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .role-pill { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: bold; margin-left: 6px; }
+        .role-pill.admin { background: #e0f2fe; color: #075985; }
+        .role-pill.hospital { background: #dcfce7; color: #166534; }
+        .booking-input-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+        .booking-input-row input[type="datetime-local"] { max-width: 260px; min-width: 220px; }
+        .booking-alert { padding: 10px 12px; border-radius: 10px; background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; font-size: 13px; margin-top: 8px; }
+        .booking-readonly { padding: 9px 12px; border-radius: 10px; background: #f1f5f9; color: #475569; font-size: 13px; font-weight: bold; }
         
         .admin-info-header { display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #475569; margin-bottom: 15px; font-weight: bold; background: #f8fafc; padding: 10px 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
         .btn-logout { padding: 6px 12px; background-color: #ef4444; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
@@ -173,7 +181,7 @@
     <div id="dashboardStep" class="step">
         
         <div class="admin-info-header">
-            <div>🖥️ ผู้ใช้งานปัจจุบัน: <span id="adminDisplayName" style="color: #3b82f6;">-</span></div>
+            <div>🖥️ ผู้ใช้งานปัจจุบัน: <span id="adminDisplayName" style="color: #3b82f6;">-</span> <span id="adminRoleDisplay" class="role-pill admin">Admin</span></div>
             <button class="btn-logout" onclick="logoutAdmin()">🔒 ออกจากระบบ</button>
         </div>
 
@@ -278,6 +286,12 @@
                     <input type="text" id="adminNameInput" placeholder="ชื่อ-นามสกุล/ตำแหน่ง ผู้ดูแล">
                     <input type="text" id="adminSecretKeyInput" placeholder="รหัสลับส่วนตัว (สำหรับใช้กู้คืนรหัสผ่าน)">
                 </div>
+                <div class="inputs-row">
+                    <select id="adminRoleInput">
+                        <option value="admin">Admin - ดูข้อมูลและจัดการระบบ แต่กดจองคิวไม่ได้</option>
+                        <option value="hospital">Hospital - ดูข้อมูลและกดรับจองคิวได้</option>
+                    </select>
+                </div>
                 <div style="text-align: right;">
                     <button id="btnCancelAdminEdit" class="btn-refresh" style="display:none; margin-right:5px;" onclick="cancelAdminEditMode()">ยกเลิก</button>
                     <button class="btn-search" style="background-color: #10b981;" onclick="saveAdminData()">💾 บันทึกข้อมูลผู้ดูแล</button>
@@ -300,7 +314,7 @@
 
 <script>
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySImkthOaj1K3yK3QtFsc0qUNx7wFMF9gNaPjO_IL86H6JaywSU2ZnF4NPic_ypsW8ew/exec';
-    const LIFF_ID = "2010303347-dja2J8TA"; 
+    const LIFF_ID = "2010303347-RJSlJ1lV"; 
 
     // 🎯 ปรับจังหวะโหลด: ดึงโปรไฟล์ LINE และ fetch ยิงข้อมูลทันที (เพราะย้าย liff.init ไปไว้ตอนโหลดหน้าเว็บแล้ว)
     async function saveLineIdToSheet(username, password) {
@@ -321,6 +335,8 @@
     let currentSelectedPatientName = ""; 
     let currentSelectedPatientGender = "";
     let currentSelectedPatientVillage = "";
+    let currentAdminRole = "admin";
+    let currentAdminUsername = "";
 
     function safeText(value) {
         return value === undefined || value === null ? "" : String(value);
@@ -333,6 +349,34 @@
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
+    }
+
+    function normalizeAdminRole(value) {
+        const role = safeText(value).trim().toLowerCase();
+        if (role === "hospital" || role === "โรงพยาบาล" || role === "รพ" || role === "รพ.") return "hospital";
+        return "admin";
+    }
+
+    function getRoleLabel(role) {
+        return normalizeAdminRole(role) === "hospital" ? "Hospital" : "Admin";
+    }
+
+    function updateRoleDisplay() {
+        const roleEl = document.getElementById('adminRoleDisplay');
+        if (!roleEl) return;
+        const role = normalizeAdminRole(currentAdminRole);
+        roleEl.textContent = role === "hospital" ? "Hospital" : "Admin";
+        roleEl.className = `role-pill ${role}`;
+    }
+
+    function formatThaiDateTimeInputValue(value) {
+        if (!value) return "-";
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return value;
+        return d.toLocaleString('th-TH', {
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit', hour12: false
+        });
     }
 
     // 🎯 ปรับปรุงจุดนี้: ให้แอปขอสิทธิ์และล็อกอิน LINE ค้างไว้ทันทีตั้งแต่เปิดหน้าเว็บ เพื่อไม่ให้เด้งรีโหลดตอนกดปุ่มล็อกอิน
@@ -415,7 +459,10 @@
                     // เรียกฟังก์ชันส่งคู่ Username และ Password ไปล็อกแถวบันทึกคอลัมน์ E ได้ทันที ไม่รีโหลดหน้าจอแล้ว
                     saveLineIdToSheet(u, p);
                     
+                    currentAdminRole = normalizeAdminRole(res.role);
+                    currentAdminUsername = u;
                     document.getElementById('adminDisplayName').innerText = res.name;
+                    updateRoleDisplay();
                     changeStep('dashboardStep'); 
                     fetchPatientData(); 
                 } else {
@@ -464,6 +511,9 @@
         document.getElementById('adminUsername').value = "";
         document.getElementById('adminPassword').value = "";
         document.getElementById('adminDisplayName').innerText = "-";
+        currentAdminRole = "admin";
+        currentAdminUsername = "";
+        updateRoleDisplay();
         
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -537,15 +587,20 @@
             counts[status] = (counts[status] || 0) + 1;
         });
 
+        const bookedRecords = sorted.filter(record => normalizeCaseStatus(record.alertStatus) === "จองคิวแล้ว" && safeText(record.bookingDateTime) && safeText(record.bookingDateTime) !== "-");
+        const latestBooking = bookedRecords[0] || {};
+
         return {
             latestStatus: normalizeCaseStatus(latest.alertStatus),
             latestTimestamp: safeText(latest.timestamp) || "-",
+            latestBookingDateTime: safeText(latestBooking.bookingDateTime) || "-",
+            latestBookingBy: safeText(latestBooking.bookingBy) || "-",
             total: sorted.length,
             counts
         };
     }
 
-    async function updatePatientAlertStatusFromWeb(rowId, newStatus, buttonEl) {
+    async function updatePatientAlertStatusFromWeb(rowId, newStatus, buttonEl, bookingDateTimeInput) {
         if (!rowId) {
             alert("❌ ไม่พบรหัสแถวของเคสนี้ กรุณารีเฟรชข้อมูลแล้วลองใหม่");
             return;
@@ -553,8 +608,25 @@
 
         const normalizedStatus = normalizeCaseStatus(newStatus);
         const adminName = getCurrentAdminNameForCase();
+        const actorRole = normalizeAdminRole(currentAdminRole);
+        const bookingDateTime = bookingDateTimeInput ? bookingDateTimeInput.value : "";
 
-        if (!confirm(`ต้องการเปลี่ยนสถานะเคสนี้เป็น "${normalizedStatus}" ใช่หรือไม่?`)) {
+        if (normalizedStatus === "จองคิวแล้ว" && actorRole !== "hospital") {
+            alert("⚠️ เฉพาะบัญชี Hospital เท่านั้นที่สามารถกดรับจองคิวได้");
+            return;
+        }
+
+        if (normalizedStatus === "จองคิวแล้ว" && !bookingDateTime) {
+            alert("⚠️ กรุณาเลือกวันที่และเวลานัดก่อนกดรับจองคิว");
+            if (bookingDateTimeInput) bookingDateTimeInput.focus();
+            return;
+        }
+
+        const confirmText = normalizedStatus === "จองคิวแล้ว"
+            ? `ต้องการรับจองคิวเคสนี้ในวันที่/เวลา ${formatThaiDateTimeInputValue(bookingDateTime)} ใช่หรือไม่?`
+            : `ต้องการเปลี่ยนสถานะเคสนี้เป็น "${normalizedStatus}" ใช่หรือไม่?`;
+
+        if (!confirm(confirmText)) {
             return;
         }
 
@@ -567,7 +639,9 @@
             const url = `${GOOGLE_SCRIPT_URL}?action=updatePatientAlertStatus` +
                 `&rowId=${encodeURIComponent(rowId)}` +
                 `&status=${encodeURIComponent(normalizedStatus)}` +
-                `&updatedBy=${encodeURIComponent(adminName)}`;
+                `&updatedBy=${encodeURIComponent(adminName)}` +
+                `&actorRole=${encodeURIComponent(actorRole)}` +
+                `&bookingDateTime=${encodeURIComponent(bookingDateTime)}`;
 
             const response = await fetch(url);
             if (!response.ok) throw new Error("HTTP Status " + response.status);
@@ -579,17 +653,27 @@
                     hour: '2-digit', minute: '2-digit', hour12: false
                 });
 
+                const displayBookingDateTime = result.bookingDateTime || formatThaiDateTimeInputValue(bookingDateTime);
+
                 allData = allData.map(record => {
                     if (String(record.rowId) === String(rowId)) {
                         return {
                             ...record,
                             alertStatus: normalizedStatus,
                             alertStatusUpdatedAt: nowText,
-                            alertStatusUpdatedBy: adminName
+                            alertStatusUpdatedBy: adminName,
+                            bookingDateTime: normalizedStatus === "จองคิวแล้ว" ? displayBookingDateTime : "-",
+                            bookingBy: normalizedStatus === "จองคิวแล้ว" ? adminName : ""
                         };
                     }
                     return record;
                 });
+
+                if (normalizedStatus === "จองคิวแล้ว") {
+                    alert(`✅ รับจองคิวเรียบร้อยแล้ว
+🗓️ วันเวลานัด: ${displayBookingDateTime}
+${result.bookingLineStatus || ""}`);
+                }
 
                 renderPatientDetail();
                 processData();
@@ -601,7 +685,7 @@
         } finally {
             if (buttonEl) {
                 buttonEl.disabled = false;
-                buttonEl.innerText = normalizedStatus;
+                buttonEl.innerText = normalizedStatus === "จองคิวแล้ว" ? "รับจองคิว" : normalizedStatus;
             }
         }
     }
@@ -681,6 +765,9 @@
             const ageText = calculateAge(p.day, p.month, p.year);
             const statusClass = getCaseStatusClass(summary.latestStatus);
             const countText = `รวม ${summary.total} เคส | ยังไม่รับเคส ${summary.counts['ยังไม่รับเคส'] || 0} | จองคิวแล้ว ${summary.counts['จองคิวแล้ว'] || 0}`;
+            const bookingSummaryText = summary.latestBookingDateTime && summary.latestBookingDateTime !== "-"
+                ? `🗓️ วันเวลาจองล่าสุด: ${summary.latestBookingDateTime} โดย ${summary.latestBookingBy || "-"}`
+                : "🗓️ ยังไม่มีวันเวลาจองคิว";
 
             const rowCard = document.createElement('div');
             rowCard.className = 'patient-row-card';
@@ -696,6 +783,7 @@
                         <span>📌 สถานะการรับเคสล่าสุด:</span>
                         <span class="case-status-pill ${statusClass}">${escapeHTML(summary.latestStatus)}</span>
                         <span class="case-status-muted">${escapeHTML(countText)}</span>
+                        <span class="case-status-muted">${escapeHTML(bookingSummaryText)}</span>
                     </div>
                 </div>
                 <div class="patient-row-right">
@@ -737,7 +825,10 @@
         const ageText = calculateAge(latestRecord.birthDay, latestRecord.birthMonth, latestRecord.birthYear);
         
         document.getElementById('detPatientName').innerText = `👤 ชื่อผู้ป่วย: คุณ ${latestRecord.patientName}`;
-        document.getElementById('detPatientMeta').innerText = `ข้อมูลพื้นฐาน: อายุคำนวณ ${ageText !== "-" ? ageText : "ไม่ระบุ"} | เพศ: ${latestRecord.patientGender} | พิกัดพื้นที่: ${latestRecord.villageNo} | สถานะเคสล่าสุด: ${latestSummary.latestStatus}`;
+        const latestBookingText = latestSummary.latestBookingDateTime && latestSummary.latestBookingDateTime !== "-"
+            ? ` | วันเวลาจองล่าสุด: ${latestSummary.latestBookingDateTime}`
+            : " | ยังไม่มีวันเวลาจองคิว";
+        document.getElementById('detPatientMeta').innerText = `ข้อมูลพื้นฐาน: อายุคำนวณ ${ageText !== "-" ? ageText : "ไม่ระบุ"} | เพศ: ${latestRecord.patientGender} | พิกัดพื้นที่: ${latestRecord.villageNo} | สถานะเคสล่าสุด: ${latestSummary.latestStatus}${latestBookingText}`;
 
         document.getElementById('patientBirthDay').value = latestRecord.birthDay || "";
         document.getElementById('patientBirthMonth').value = latestRecord.birthMonth || "";
@@ -766,6 +857,11 @@
             const updatedText = updatedAt && updatedAt !== "-"
                 ? `อัปเดตล่าสุด: ${updatedAt} โดย ${updatedBy || "-"}`
                 : "ยังไม่มีการอัปเดตสถานะ";
+            const bookingDateTime = safeText(item.bookingDateTime);
+            const bookingBy = safeText(item.bookingBy);
+            const bookingText = bookingDateTime && bookingDateTime !== "-"
+                ? `จองคิว: ${bookingDateTime} โดย ${bookingBy || "-"}`
+                : "ยังไม่มีวันเวลาจองคิว";
 
             card.innerHTML = `
                 <div class="history-header">
@@ -777,6 +873,7 @@
                         <div><b>📌 สถานะการรับเคสนี้:</b> <span class="case-status-pill ${statusClass}">${escapeHTML(caseStatus)}</span></div>
                         <div class="case-status-muted">${escapeHTML(updatedText)}</div>
                     </div>
+                    <div class="booking-alert">🗓️ ${escapeHTML(bookingText)}</div>
                     <div class="case-status-buttons"></div>
                 </div>
                 <div class="info-row"><span>ผู้คัดกรองลงพื้นที่ (อสม.):</span> <span><b>${escapeHTML(item.vhmName || '-')}</b></span></div>
@@ -787,14 +884,36 @@
             `;
 
             const buttons = card.querySelector('.case-status-buttons');
-            CASE_STATUSES.forEach(status => {
-                const btn = document.createElement('button');
-                btn.className = `case-status-btn ${getCaseButtonClass(status)}`;
-                btn.textContent = status === "จองคิวแล้ว" ? "รับจองคิว" : "ยังไม่รับเคส";
-                btn.disabled = caseStatus === status || !item.rowId;
-                btn.addEventListener('click', () => updatePatientAlertStatusFromWeb(item.rowId, status, btn));
-                buttons.appendChild(btn);
-            });
+            if (normalizeAdminRole(currentAdminRole) === "hospital") {
+                if (caseStatus !== "จองคิวแล้ว") {
+                    const bookingRow = document.createElement('div');
+                    bookingRow.className = 'booking-input-row';
+
+                    const bookingInput = document.createElement('input');
+                    bookingInput.type = 'datetime-local';
+                    bookingInput.title = 'เลือกวันที่และเวลานัดหมาย';
+
+                    const btn = document.createElement('button');
+                    btn.className = 'case-status-btn done';
+                    btn.textContent = 'รับจองคิว';
+                    btn.disabled = !item.rowId;
+                    btn.addEventListener('click', () => updatePatientAlertStatusFromWeb(item.rowId, "จองคิวแล้ว", btn, bookingInput));
+
+                    bookingRow.appendChild(bookingInput);
+                    bookingRow.appendChild(btn);
+                    buttons.appendChild(bookingRow);
+                } else {
+                    const booked = document.createElement('span');
+                    booked.className = 'booking-readonly';
+                    booked.textContent = '✅ เคสนี้จองคิวแล้ว';
+                    buttons.appendChild(booked);
+                }
+            } else {
+                const readonly = document.createElement('span');
+                readonly.className = 'booking-readonly';
+                readonly.textContent = '🔒 เฉพาะบัญชี Hospital เท่านั้นที่กดรับจองคิวได้';
+                buttons.appendChild(readonly);
+            }
 
             if (!item.rowId) {
                 const warning = document.createElement('span');
@@ -977,6 +1096,8 @@
                         const password = safeText(adm.password);
                         const name = safeText(adm.name);
                         const secretKey = safeText(adm.secretKey);
+                        const role = normalizeAdminRole(adm.role);
+                        const roleLabel = getRoleLabel(role);
 
                         let card = document.createElement('div');
                         card.className = 'vhm-table-row';
@@ -985,6 +1106,7 @@
                             <div class="vhm-row-header"><span style="color:#10b981;">ชื่อผู้ดูแล: <b>${escapeHTML(name)}</b></span><span>Username: ${escapeHTML(username)}</span></div>
                             <div class="info-row"><span>รหัสเข้าใช้งาน (Password):</span> <span>${escapeHTML(password)}</span></div>
                             <div class="info-row"><span>รหัสลับกู้บัญชีแอดมิน:</span> <span>${escapeHTML(secretKey)}</span></div>
+                            <div class="info-row"><span>สิทธิ์การใช้งาน:</span> <span class="role-pill ${role}">${escapeHTML(roleLabel)}</span></div>
                             <div class="row-actions" style="text-align: right; margin-top: 10px;"></div>
                         `;
 
@@ -993,7 +1115,7 @@
                         editBtn.className = 'btn-action edit';
                         editBtn.style.backgroundColor = '#10b981';
                         editBtn.textContent = '✏️ แก้ไข';
-                        editBtn.addEventListener('click', () => enableAdminEditMode(username, password, name, secretKey));
+                        editBtn.addEventListener('click', () => enableAdminEditMode(username, password, name, secretKey, role));
 
                         const deleteBtn = document.createElement('button');
                         deleteBtn.className = 'btn-action delete';
@@ -1015,12 +1137,13 @@
         const p = document.getElementById('adminPasswordInput').value.trim();
         const n = document.getElementById('adminNameInput').value.trim();
         const k = document.getElementById('adminSecretKeyInput').value.trim();
+        const role = document.getElementById('adminRoleInput').value;
 
         if(!u || !p || !n || !k) { alert("⚠️ กรุณากรอกรายละเอียดของผู้ดูแลระบบให้ครบถ้วนทุกช่องครับ"); return; }
 
         const loading = document.getElementById('loadingText'); loading.style.display = 'block';
 
-        fetch(`${GOOGLE_SCRIPT_URL}?action=saveAdmin&mode=${mode}&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}&name=${encodeURIComponent(n)}&secretKey=${encodeURIComponent(k)}`)
+        fetch(`${GOOGLE_SCRIPT_URL}?action=saveAdmin&mode=${mode}&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}&name=${encodeURIComponent(n)}&secretKey=${encodeURIComponent(k)}&role=${encodeURIComponent(role)}`)
             .then(res => res.json())
             .then(res => {
                 loading.style.display = 'none';
@@ -1051,11 +1174,12 @@
             });
     }
 
-    function enableAdminEditMode(username, password, name, secretKey) {
+    function enableAdminEditMode(username, password, name, secretKey, role) {
         document.getElementById('formAdminTitle').innerText = `✏️ กำลังแก้ไขข้อมูลของผู้ดูแลระบบ (${username})`;
         document.getElementById('adminFormMode').value = "edit";
         document.getElementById('adminUsernameInput').value = username; document.getElementById('adminUsernameInput').disabled = true; 
         document.getElementById('adminPasswordInput').value = password; document.getElementById('adminNameInput').value = name; document.getElementById('adminSecretKeyInput').value = secretKey;
+        document.getElementById('adminRoleInput').value = normalizeAdminRole(role);
         document.getElementById('btnCancelAdminEdit').style.display = 'inline-block'; window.scrollTo(0, 0);
     }
 
@@ -1064,6 +1188,7 @@
         document.getElementById('adminFormMode').value = "add";
         document.getElementById('adminUsernameInput').value = ""; document.getElementById('adminUsernameInput').disabled = false;
         document.getElementById('adminPasswordInput').value = ""; document.getElementById('adminNameInput').value = ""; document.getElementById('adminSecretKeyInput').value = "";
+        document.getElementById('adminRoleInput').value = "admin";
         document.getElementById('btnCancelAdminEdit').style.display = 'none';
     }
 
@@ -1125,4 +1250,3 @@
     }
 </script>
 </body>
-</html>
