@@ -75,6 +75,8 @@
         .case-status-btn.unaccepted { background: #ef4444; }
         .case-status-btn.progress { background: #f59e0b; }
         .case-status-btn.done { background: #10b981; }
+        .case-status-btn.edit { background: #3b82f6; }
+        .case-status-btn.cancel { background: #ef4444; }
         .case-status-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .role-pill { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: bold; margin-left: 6px; }
@@ -379,6 +381,27 @@
         });
     }
 
+    function bookingDisplayToInputValue(value) {
+        const text = safeText(value).trim();
+        if (!text || text === "-") return "";
+
+        // Already in HTML datetime-local format.
+        if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(text)) return text;
+
+        // Parse dd/MM/yyyy HH:mm from Apps Script formatTimestamp.
+        const m = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})/);
+        if (!m) return "";
+
+        let day = m[1].padStart(2, '0');
+        let month = m[2].padStart(2, '0');
+        let yearNum = parseInt(m[3], 10);
+        if (yearNum > 2400) yearNum -= 543;
+        const year = String(yearNum).padStart(4, '0');
+        const hour = m[4].padStart(2, '0');
+        const minute = m[5].padStart(2, '0');
+        return `${year}-${month}-${day}T${hour}:${minute}`;
+    }
+
     // 🎯 ปรับปรุงจุดนี้: ให้แอปขอสิทธิ์และล็อกอิน LINE ค้างไว้ทันทีตั้งแต่เปิดหน้าเว็บ เพื่อไม่ให้เด้งรีโหลดตอนกดปุ่มล็อกอิน
     window.onload = async () => {
         const daySelect = document.getElementById('patientBirthDay');
@@ -600,7 +623,7 @@
         };
     }
 
-    async function updatePatientAlertStatusFromWeb(rowId, newStatus, buttonEl, bookingDateTimeInput) {
+    async function updatePatientAlertStatusFromWeb(rowId, newStatus, buttonEl, bookingDateTimeInput, bookingAction = "book") {
         if (!rowId) {
             alert("❌ ไม่พบรหัสแถวของเคสนี้ กรุณารีเฟรชข้อมูลแล้วลองใหม่");
             return;
@@ -610,25 +633,31 @@
         const adminName = getCurrentAdminNameForCase();
         const actorRole = normalizeAdminRole(currentAdminRole);
         const bookingDateTime = bookingDateTimeInput ? bookingDateTimeInput.value : "";
+        const action = bookingAction || (normalizedStatus === "ยังไม่รับเคส" ? "cancel" : "book");
 
-        if (normalizedStatus === "จองคิวแล้ว" && actorRole !== "hospital") {
-            alert("⚠️ เฉพาะบัญชี Hospital เท่านั้นที่สามารถกดรับจองคิวได้");
+        if (actorRole !== "hospital") {
+            alert("⚠️ เฉพาะบัญชี Hospital เท่านั้นที่สามารถจอง แก้ไขเวลา หรือยกเลิกจองคิวได้");
             return;
         }
 
         if (normalizedStatus === "จองคิวแล้ว" && !bookingDateTime) {
-            alert("⚠️ กรุณาเลือกวันที่และเวลานัดก่อนกดรับจองคิว");
+            alert("⚠️ กรุณาเลือกวันที่และเวลานัดก่อนบันทึกการจองคิว");
             if (bookingDateTimeInput) bookingDateTimeInput.focus();
             return;
         }
 
-        const confirmText = normalizedStatus === "จองคิวแล้ว"
-            ? `ต้องการรับจองคิวเคสนี้ในวันที่/เวลา ${formatThaiDateTimeInputValue(bookingDateTime)} ใช่หรือไม่?`
-            : `ต้องการเปลี่ยนสถานะเคสนี้เป็น "${normalizedStatus}" ใช่หรือไม่?`;
-
-        if (!confirm(confirmText)) {
-            return;
+        let confirmText = `ต้องการบันทึกสถานะเคสนี้เป็น "${normalizedStatus}" ใช่หรือไม่?`;
+        if (action === "book") {
+            confirmText = `ต้องการรับจองคิวเคสนี้ในวันที่/เวลา ${formatThaiDateTimeInputValue(bookingDateTime)} ใช่หรือไม่?`;
+        } else if (action === "edit") {
+            confirmText = `ต้องการแก้ไขเวลาจองคิวเป็น ${formatThaiDateTimeInputValue(bookingDateTime)} ใช่หรือไม่?`;
+        } else if (action === "cancel") {
+            confirmText = "ต้องการยกเลิกจองคิวเคสนี้ใช่หรือไม่? สถานะจะกลับเป็น ยังไม่รับเคส";
         }
+
+        if (!confirm(confirmText)) return;
+
+        const originalText = buttonEl ? buttonEl.innerText : "";
 
         try {
             if (buttonEl) {
@@ -641,7 +670,8 @@
                 `&status=${encodeURIComponent(normalizedStatus)}` +
                 `&updatedBy=${encodeURIComponent(adminName)}` +
                 `&actorRole=${encodeURIComponent(actorRole)}` +
-                `&bookingDateTime=${encodeURIComponent(bookingDateTime)}`;
+                `&bookingDateTime=${encodeURIComponent(bookingDateTime)}` +
+                `&bookingAction=${encodeURIComponent(action)}`;
 
             const response = await fetch(url);
             if (!response.ok) throw new Error("HTTP Status " + response.status);
@@ -654,22 +684,30 @@
                 });
 
                 const displayBookingDateTime = result.bookingDateTime || formatThaiDateTimeInputValue(bookingDateTime);
+                const finalStatus = normalizeCaseStatus(result.status || normalizedStatus);
 
                 allData = allData.map(record => {
                     if (String(record.rowId) === String(rowId)) {
                         return {
                             ...record,
-                            alertStatus: normalizedStatus,
+                            alertStatus: finalStatus,
                             alertStatusUpdatedAt: nowText,
                             alertStatusUpdatedBy: adminName,
-                            bookingDateTime: normalizedStatus === "จองคิวแล้ว" ? displayBookingDateTime : "-",
-                            bookingBy: normalizedStatus === "จองคิวแล้ว" ? adminName : ""
+                            bookingDateTime: finalStatus === "จองคิวแล้ว" ? displayBookingDateTime : "-",
+                            bookingBy: finalStatus === "จองคิวแล้ว" ? adminName : ""
                         };
                     }
                     return record;
                 });
 
-                if (normalizedStatus === "จองคิวแล้ว") {
+                if (action === "cancel") {
+                    alert(`✅ ยกเลิกจองคิวเรียบร้อยแล้ว
+${result.bookingLineStatus || ""}`);
+                } else if (action === "edit") {
+                    alert(`✅ แก้ไขเวลาจองคิวเรียบร้อยแล้ว
+🗓️ วันเวลานัดใหม่: ${displayBookingDateTime}
+${result.bookingLineStatus || ""}`);
+                } else {
                     alert(`✅ รับจองคิวเรียบร้อยแล้ว
 🗓️ วันเวลานัด: ${displayBookingDateTime}
 ${result.bookingLineStatus || ""}`);
@@ -685,7 +723,7 @@ ${result.bookingLineStatus || ""}`);
         } finally {
             if (buttonEl) {
                 buttonEl.disabled = false;
-                buttonEl.innerText = normalizedStatus === "จองคิวแล้ว" ? "รับจองคิว" : normalizedStatus;
+                buttonEl.innerText = originalText;
             }
         }
     }
@@ -907,6 +945,43 @@ ${result.bookingLineStatus || ""}`);
                     booked.className = 'booking-readonly';
                     booked.textContent = '✅ เคสนี้จองคิวแล้ว';
                     buttons.appendChild(booked);
+
+                    const editRow = document.createElement('div');
+                    editRow.className = 'booking-input-row';
+
+                    const editInput = document.createElement('input');
+                    editInput.type = 'datetime-local';
+                    editInput.title = 'เลือกวันและเวลาใหม่';
+                    editInput.value = bookingDisplayToInputValue(item.bookingDateTime);
+
+                    const editBtn = document.createElement('button');
+                    editBtn.className = 'case-status-btn edit';
+                    editBtn.textContent = 'แก้เวลาจอง';
+                    editBtn.disabled = !item.rowId;
+                    editBtn.addEventListener('click', () => updatePatientAlertStatusFromWeb(
+                        item.rowId,
+                        "จองคิวแล้ว",
+                        editBtn,
+                        editInput,
+                        "edit"
+                    ));
+
+                    const cancelBtn = document.createElement('button');
+                    cancelBtn.className = 'case-status-btn cancel';
+                    cancelBtn.textContent = 'ยกเลิกจอง';
+                    cancelBtn.disabled = !item.rowId;
+                    cancelBtn.addEventListener('click', () => updatePatientAlertStatusFromWeb(
+                        item.rowId,
+                        "ยังไม่รับเคส",
+                        cancelBtn,
+                        null,
+                        "cancel"
+                    ));
+
+                    editRow.appendChild(editInput);
+                    editRow.appendChild(editBtn);
+                    editRow.appendChild(cancelBtn);
+                    buttons.appendChild(editRow);
                 }
             } else {
                 const readonly = document.createElement('span');
@@ -1250,3 +1325,4 @@ ${result.bookingLineStatus || ""}`);
     }
 </script>
 </body>
+</html>
