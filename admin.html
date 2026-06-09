@@ -60,6 +60,22 @@
         .patient-row-card:hover { background-color: #f0f7ff; border-color: #3b82f6; }
         .patient-row-name { font-size: 16px; font-weight: bold; color: #1e293b; }
         .patient-row-age { color: #64748b; font-size: 14px; margin-left: 10px; background: #f1f5f9; padding: 4px 10px; border-radius: 20px; }
+        .patient-row-main { flex: 1; min-width: 0; }
+        .patient-row-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; margin-left: 12px; text-align: right; }
+        .case-status-summary { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; font-size: 13px; color: #475569; }
+        .case-status-pill { display: inline-block; padding: 6px 12px; border-radius: 999px; font-weight: bold; font-size: 13px; white-space: nowrap; }
+        .case-status-unaccepted { background: #fee2e2; color: #991b1b; }
+        .case-status-progress { background: #fef3c7; color: #92400e; }
+        .case-status-done { background: #dcfce7; color: #166534; }
+        .case-status-muted { color: #64748b; font-size: 12px; }
+        .case-status-box { margin-top: 14px; padding: 12px; border-radius: 12px; background: #f8fafc; border: 1px solid #e2e8f0; }
+        .case-status-line { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; font-size: 14px; }
+        .case-status-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+        .case-status-btn { border: none; border-radius: 10px; padding: 9px 12px; font-weight: bold; cursor: pointer; font-size: 13px; color: white; }
+        .case-status-btn.unaccepted { background: #ef4444; }
+        .case-status-btn.progress { background: #f59e0b; }
+        .case-status-btn.done { background: #10b981; }
+        .case-status-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         
         .admin-info-header { display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #475569; margin-bottom: 15px; font-weight: bold; background: #f8fafc; padding: 10px 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
         .btn-logout { padding: 6px 12px; background-color: #ef4444; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
@@ -69,52 +85,6 @@
         .feedback-card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 15px; background-color: #ffffff; border-left: 5px solid #6366f1; box-shadow: 0 2px 8px rgba(0,0,0,0.02); text-align: left; }
         .feedback-header { display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 10px; font-weight: bold; color: #64748b; font-size: 13px; }
         .feedback-body { font-size: 15px; color: #1e293b; line-height: 1.6; white-space: pre-wrap; }
-
-        .feedback-status-box {
-            margin-top: 14px;
-            padding: 12px;
-            border-radius: 12px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-        }
-        .feedback-status-line {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-        .feedback-status-pill {
-            display: inline-block;
-            padding: 6px 12px;
-            border-radius: 999px;
-            font-weight: bold;
-            font-size: 13px;
-        }
-        .status-noone { background: #fee2e2; color: #991b1b; }
-        .status-progress { background: #fef3c7; color: #92400e; }
-        .status-done { background: #dcfce7; color: #166534; }
-        .feedback-status-buttons {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-        .feedback-status-btn {
-            border: none;
-            border-radius: 10px;
-            padding: 9px 12px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 13px;
-            color: white;
-        }
-        .feedback-status-btn.noone { background: #ef4444; }
-        .feedback-status-btn.progress { background: #f59e0b; }
-        .feedback-status-btn.done { background: #10b981; }
-        .feedback-status-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
 
         /* ===================================================
            🎯 โค้ดแก้บั๊กการแสดงผลบนโทรศัพท์มือถือ (จอแคบกว่า 600px)
@@ -138,6 +108,19 @@
             input[type="text"], input[type="number"], select, .btn-search, .btn-refresh {
                 width: 100% !important;
                 box-sizing: border-box !important;
+            }
+            .patient-row-card {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 12px !important;
+            }
+            .patient-row-right {
+                align-items: flex-start !important;
+                margin-left: 0 !important;
+                text-align: left !important;
+            }
+            .case-status-line {
+                align-items: flex-start !important;
             }
         }
     </style>
@@ -317,54 +300,21 @@
 
 <script>
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySImkthOaj1K3yK3QtFsc0qUNx7wFMF9gNaPjO_IL86H6JaywSU2ZnF4NPic_ypsW8ew/exec';
-    const LIFF_ID = "2010303347-RJSlJ1lV"; 
+    const LIFF_ID = "2010303347-dja2J8TA"; 
 
-    // LINE/Admin login flow: admin username/password first, then LINE login, then save LINE ID.
-    async function saveLoggedInAdminLineIdAndOpenDashboard() {
-        try {
-            const u = sessionStorage.getItem("pendingAdminUsername");
-            const p = sessionStorage.getItem("pendingAdminPassword");
-            const adminName = sessionStorage.getItem("pendingAdminName") || u || "Admin";
-
-            if (!u || !p) {
-                console.warn("No pending admin login found after LINE login.");
-                return;
-            }
-
-            if (!liff.isLoggedIn()) {
-                liff.login();
-                return;
-            }
-
-            const profile = await liff.getProfile();
-            const lineId = profile.userId;
-
-            const saveUrl = `${GOOGLE_SCRIPT_URL}?action=updateAdminLineId` +
-                `&username=${encodeURIComponent(u)}` +
-                `&password=${encodeURIComponent(p)}` +
-                `&lineId=${encodeURIComponent(lineId)}`;
-
-            const response = await fetch(saveUrl);
-            const result = await response.json();
-
-            console.log("Save Admin LINE ID result:", result);
-
-            if (!result.success) {
-                alert("⚠️ Login สำเร็จ แต่บันทึก LINE ID ไม่สำเร็จ: " + (result.message || "ไม่ทราบสาเหตุ"));
-            }
-
-            document.getElementById('adminDisplayName').innerText = adminName;
-            sessionStorage.removeItem("pendingAdminUsername");
-            sessionStorage.removeItem("pendingAdminPassword");
-            sessionStorage.removeItem("pendingAdminName");
-
-            changeStep('dashboardStep');
-            fetchPatientData();
-
-        } catch (err) {
-            console.error("LINE ID save error:", err);
-            alert("⚠️ Login สำเร็จ แต่ดึงหรือบันทึก LINE ID ไม่สำเร็จ: " + err.message);
+    // 🎯 ปรับจังหวะโหลด: ดึงโปรไฟล์ LINE และ fetch ยิงข้อมูลทันที (เพราะย้าย liff.init ไปไว้ตอนโหลดหน้าเว็บแล้ว)
+    async function saveLineIdToSheet(username, password) {
+      try {
+        if (liff.isLoggedIn()) {
+          const profile = await liff.getProfile();
+          fetch(`${GOOGLE_SCRIPT_URL}?action=updateAdminLineId&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&lineId=${encodeURIComponent(profile.userId)}`)
+            .then(res => res.json())
+            .then(res => console.log("บันทึกสิทธิ์ LINE ID ลง Google Sheet สำเร็จ:", res))
+            .catch(err => console.error("ระบบคลาวด์ขัดข้องในการเซฟ ID:", err));
         }
+      } catch (err) {
+        console.error("LIFF Error:", err);
+      }
     }
 
     let allData = []; 
@@ -385,25 +335,23 @@
             .replace(/'/g, "&#039;");
     }
 
-    // Initialize LIFF quietly. After LINE returns, resume saving LINE ID and opening dashboard.
+    // 🎯 ปรับปรุงจุดนี้: ให้แอปขอสิทธิ์และล็อกอิน LINE ค้างไว้ทันทีตั้งแต่เปิดหน้าเว็บ เพื่อไม่ให้เด้งรีโหลดตอนกดปุ่มล็อกอิน
     window.onload = async () => {
         const daySelect = document.getElementById('patientBirthDay');
         for (let i = 1; i <= 31; i++) {
             let opt = document.createElement('option');
-            opt.value = i;
-            opt.innerText = i;
+            opt.value = i; opt.innerText = i;
             daySelect.appendChild(opt);
         }
 
         try {
             await liff.init({ liffId: LIFF_ID });
-
-            if (liff.isLoggedIn() && sessionStorage.getItem("pendingAdminUsername")) {
-                await saveLoggedInAdminLineIdAndOpenDashboard();
+            if (!liff.isLoggedIn()) {
+                // บังคับให้เด้งกลับมาที่หน้า admin.html ตัวเองแน่นอน 100% ไม่หลุดไปหน้าอื่น
+                liff.login({ redirectUri: window.location.href }); 
             }
         } catch (err) {
-            console.error("LIFF init error:", err);
-            alert("❌ LIFF เริ่มต้นไม่สำเร็จ: " + err.message);
+            console.error("LIFF Onload Init Error:", err);
         }
     };
 
@@ -451,50 +399,33 @@
         }
     }
 
-    async function verifyAdminAuth() {
+    function verifyAdminAuth() {
         const u = document.getElementById('adminUsername').value.trim();
         const p = document.getElementById('adminPassword').value;
         const btn = document.getElementById('btnAdminLoginText');
 
-        if (!u || !p) {
-            alert("⚠️ กรุณากรอกข้อมูลให้ครบถ้วน");
-            return;
-        }
-
-        btn.disabled = true;
+        if (!u || !p) { alert("⚠️ กรุณากรอกข้อมูลให้ครบถ้วน"); return; }
         btn.innerText = "⏳ กำลังตรวจสอบสิทธิ์แอดมิน...";
 
-        try {
-            const response = await fetch(
-                `${GOOGLE_SCRIPT_URL}?action=checkAdminLogin&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}`
-            );
-
-            if (!response.ok) throw new Error("HTTP Status " + response.status);
-            const res = await response.json();
-
-            if (!res.success) {
-                alert("❌ " + (res.message || "Username หรือ Password ไม่ถูกต้อง"));
-                return;
-            }
-
-            sessionStorage.setItem("pendingAdminUsername", u);
-            sessionStorage.setItem("pendingAdminPassword", p);
-            sessionStorage.setItem("pendingAdminName", res.name || u);
-
-            if (!liff.isLoggedIn()) {
-                liff.login();
-                return;
-            }
-
-            await saveLoggedInAdminLineIdAndOpenDashboard();
-
-        } catch (err) {
-            alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูลแอดมินคลาวด์: " + err.message);
-            console.error(err);
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "🔓 เข้าสู่ระบบแดชบอร์ด";
-        }
+        fetch(`${GOOGLE_SCRIPT_URL}?action=checkAdminLogin&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}`)
+            .then(res => res.json())
+            .then(res => {
+                btn.innerText = "🔓 เข้าสู่ระบบแดชบอร์ด";
+                if (res.success) {
+                    // เรียกฟังก์ชันส่งคู่ Username และ Password ไปล็อกแถวบันทึกคอลัมน์ E ได้ทันที ไม่รีโหลดหน้าจอแล้ว
+                    saveLineIdToSheet(u, p);
+                    
+                    document.getElementById('adminDisplayName').innerText = res.name;
+                    changeStep('dashboardStep'); 
+                    fetchPatientData(); 
+                } else {
+                    alert("❌ " + res.message);
+                }
+            })
+            .catch(err => {
+                btn.innerText = "🔓 เข้าสู่ระบบแดชบอร์ด";
+                alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูลแอดมินคลาวด์");
+            });
     }
 
     function handleAdminResetPassword() {
@@ -569,6 +500,114 @@
             });
     }
 
+    const CASE_STATUSES = ["ยังไม่รับ", "กำลังรับ", "รับแล้ว"];
+
+    function normalizeCaseStatus(status) {
+        const s = safeText(status).trim();
+        if (s === "ไม่มีใครรับ") return "ยังไม่รับ";
+        if (s === "กำลังรับเรื่อง") return "กำลังรับ";
+        if (s === "แก้ไขแล้ว") return "รับแล้ว";
+        return CASE_STATUSES.includes(s) ? s : "ยังไม่รับ";
+    }
+
+    function getCaseStatusClass(status) {
+        const s = normalizeCaseStatus(status);
+        if (s === "กำลังรับ") return "case-status-progress";
+        if (s === "รับแล้ว") return "case-status-done";
+        return "case-status-unaccepted";
+    }
+
+    function getCaseButtonClass(status) {
+        const s = normalizeCaseStatus(status);
+        if (s === "กำลังรับ") return "progress";
+        if (s === "รับแล้ว") return "done";
+        return "unaccepted";
+    }
+
+    function getCurrentAdminNameForCase() {
+        const name = document.getElementById('adminDisplayName')?.innerText || "";
+        return name && name !== "-" ? name : "Admin";
+    }
+
+    function getPatientCaseSummary(records) {
+        const sorted = [...records].sort((a, b) => parseTimestamp(b.timestamp) - parseTimestamp(a.timestamp));
+        const latest = sorted[0] || {};
+        const counts = { "ยังไม่รับ": 0, "กำลังรับ": 0, "รับแล้ว": 0 };
+
+        sorted.forEach(record => {
+            const status = normalizeCaseStatus(record.alertStatus);
+            counts[status] = (counts[status] || 0) + 1;
+        });
+
+        return {
+            latestStatus: normalizeCaseStatus(latest.alertStatus),
+            latestTimestamp: safeText(latest.timestamp) || "-",
+            total: sorted.length,
+            counts
+        };
+    }
+
+    async function updatePatientAlertStatusFromWeb(rowId, newStatus, buttonEl) {
+        if (!rowId) {
+            alert("❌ ไม่พบรหัสแถวของเคสนี้ กรุณารีเฟรชข้อมูลแล้วลองใหม่");
+            return;
+        }
+
+        const normalizedStatus = normalizeCaseStatus(newStatus);
+        const adminName = getCurrentAdminNameForCase();
+
+        if (!confirm(`ต้องการเปลี่ยนสถานะเคสนี้เป็น "${normalizedStatus}" ใช่หรือไม่?`)) {
+            return;
+        }
+
+        try {
+            if (buttonEl) {
+                buttonEl.disabled = true;
+                buttonEl.innerText = "⏳ กำลังบันทึก...";
+            }
+
+            const url = `${GOOGLE_SCRIPT_URL}?action=updatePatientAlertStatus` +
+                `&rowId=${encodeURIComponent(rowId)}` +
+                `&status=${encodeURIComponent(normalizedStatus)}` +
+                `&updatedBy=${encodeURIComponent(adminName)}`;
+
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("HTTP Status " + response.status);
+            const result = await response.json();
+
+            if (result.success) {
+                const nowText = new Date().toLocaleString('th-TH', {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit', hour12: false
+                });
+
+                allData = allData.map(record => {
+                    if (String(record.rowId) === String(rowId)) {
+                        return {
+                            ...record,
+                            alertStatus: normalizedStatus,
+                            alertStatusUpdatedAt: nowText,
+                            alertStatusUpdatedBy: adminName
+                        };
+                    }
+                    return record;
+                });
+
+                renderPatientDetail();
+                processData();
+            } else {
+                alert("❌ อัปเดตสถานะไม่สำเร็จ: " + (result.message || "ไม่ทราบสาเหตุ"));
+            }
+        } catch (err) {
+            alert("❌ เกิดข้อผิดพลาดในการอัปเดตสถานะเคส: " + err.message);
+        } finally {
+            if (buttonEl) {
+                buttonEl.disabled = false;
+                buttonEl.innerText = normalizedStatus;
+            }
+        }
+    }
+
     function processData() {
         const listViewDiv = document.getElementById('patientListView');
         listViewDiv.innerHTML = '';
@@ -600,44 +639,71 @@
             return 0;
         });
 
-        let uniquePatients = [];
-        let seenKeys = new Set(); 
+        const groupMap = new Map();
+        const orderedKeys = [];
 
         filteredData.forEach(item => {
             const patientName = safeText(item.patientName).trim();
             const patientGender = safeText(item.patientGender).trim();
             const villageNo = safeText(item.villageNo).trim();
             const compoundKey = `${patientName}|${patientGender}|${villageNo}`;
-            if (!seenKeys.has(compoundKey)) {
-                seenKeys.add(compoundKey);
-                uniquePatients.push({ 
-                    name: patientName || '-', 
+
+            if (!groupMap.has(compoundKey)) {
+                orderedKeys.push(compoundKey);
+                groupMap.set(compoundKey, {
+                    name: patientName || '-',
                     gender: patientGender || '-',
                     village: villageNo || '-',
-                    day: item.birthDay, 
-                    month: item.birthMonth, 
-                    year: item.birthYear 
+                    day: item.birthDay,
+                    month: item.birthMonth,
+                    year: item.birthYear,
+                    records: []
                 });
+            }
+
+            const group = groupMap.get(compoundKey);
+            group.records.push(item);
+
+            // Keep the latest available birthdate from records.
+            if (item.birthDay || item.birthMonth || item.birthYear) {
+                group.day = item.birthDay;
+                group.month = item.birthMonth;
+                group.year = item.birthYear;
             }
         });
 
-        if (uniquePatients.length === 0) {
+        if (orderedKeys.length === 0) {
             listViewDiv.innerHTML = '<p style="text-align:center; color:#64748b; padding:20px;">❌ ไม่พบรายชื่อผู้ป่วยตามเงื่อนไขการค้นหา</p>';
             return;
         }
 
-        uniquePatients.forEach(p => {
-            let ageText = calculateAge(p.day, p.month, p.year);
-            let rowCard = document.createElement('div');
+        orderedKeys.forEach(key => {
+            const p = groupMap.get(key);
+            const summary = getPatientCaseSummary(p.records);
+            const ageText = calculateAge(p.day, p.month, p.year);
+            const statusClass = getCaseStatusClass(summary.latestStatus);
+            const countText = `รวม ${summary.total} เคส | ยังไม่รับ ${summary.counts['ยังไม่รับ'] || 0} | กำลังรับ ${summary.counts['กำลังรับ'] || 0} | รับแล้ว ${summary.counts['รับแล้ว'] || 0}`;
+
+            const rowCard = document.createElement('div');
             rowCard.className = 'patient-row-card';
             rowCard.addEventListener('click', () => showPatientDetail(p.name, p.gender, p.village));
             rowCard.innerHTML = `
-                <div>
-                    <span class="patient-row-name">👤 ${escapeHTML(p.name)}</span>
-                    <span class="patient-row-age" style="margin-left: 8px;">หมู่บ้าน: ${escapeHTML(p.village)} | เพศ: ${escapeHTML(p.gender)}</span>
-                    <span class="patient-row-age">อายุคำนวณ: ${ageText !== "-" ? escapeHTML(ageText) : "ยังไม่ระบุวันเกิด"}</span>
+                <div class="patient-row-main">
+                    <div>
+                        <span class="patient-row-name">👤 ${escapeHTML(p.name)}</span>
+                        <span class="patient-row-age" style="margin-left: 8px;">หมู่บ้าน: ${escapeHTML(p.village)} | เพศ: ${escapeHTML(p.gender)}</span>
+                        <span class="patient-row-age">อายุคำนวณ: ${ageText !== "-" ? escapeHTML(ageText) : "ยังไม่ระบุวันเกิด"}</span>
+                    </div>
+                    <div class="case-status-summary">
+                        <span>📌 สถานะเคสล่าสุด:</span>
+                        <span class="case-status-pill ${statusClass}">${escapeHTML(summary.latestStatus)}</span>
+                        <span class="case-status-muted">${escapeHTML(countText)}</span>
+                    </div>
                 </div>
-                <span style="color: #3b82f6; font-weight: bold; font-size: 14px;">คลิกดูข้อมูลเชิงลึก ➡️</span>
+                <div class="patient-row-right">
+                    <span style="color: #3b82f6; font-weight: bold; font-size: 14px;">คลิกดูข้อมูลเชิงลึก ➡️</span>
+                    <span class="case-status-muted">ล่าสุด: ${escapeHTML(summary.latestTimestamp)}</span>
+                </div>
             `;
             listViewDiv.appendChild(rowCard);
         });
@@ -649,122 +715,6 @@
         currentSelectedPatientVillage = village;
         document.getElementById('detailDateFilter').value = ""; 
         renderPatientDetail();
-    }
-
-    function getPatientAlertStatusClass(status) {
-        if (status === "กำลังรับเรื่อง") return "status-progress";
-        if (status === "แก้ไขแล้ว") return "status-done";
-        return "status-noone";
-    }
-
-    function getPatientAlertButtonClass(status) {
-        if (status === "กำลังรับเรื่อง") return "progress";
-        if (status === "แก้ไขแล้ว") return "done";
-        return "noone";
-    }
-
-    function getCurrentAdminNameForPatientAlert() {
-        const name = document.getElementById('adminDisplayName')?.innerText || "";
-        return name && name !== "-" ? name : "Admin";
-    }
-
-    async function updatePatientAlertStatusFromWeb(rowId, newStatus, buttonEl) {
-        if (!rowId) {
-            alert("❌ ไม่พบ rowId ของรายการผู้ป่วย");
-            return;
-        }
-
-        const adminName = getCurrentAdminNameForPatientAlert();
-
-        if (!confirm(`ต้องการเปลี่ยนสถานะแจ้งเตือนเป็น "${newStatus}" ใช่หรือไม่?`)) {
-            return;
-        }
-
-        const originalText = buttonEl ? buttonEl.innerText : newStatus;
-
-        try {
-            if (buttonEl) {
-                buttonEl.disabled = true;
-                buttonEl.innerText = "⏳ กำลังบันทึก...";
-            }
-
-            const url =
-                `${GOOGLE_SCRIPT_URL}?action=updatePatientAlertStatus` +
-                `&rowId=${encodeURIComponent(rowId)}` +
-                `&status=${encodeURIComponent(newStatus)}` +
-                `&updatedBy=${encodeURIComponent(adminName)}`;
-
-            const response = await fetch(url);
-            const result = await response.json();
-
-            if (result.success) {
-                alert("✅ อัปเดตสถานะแจ้งเตือนผู้ป่วยเรียบร้อยแล้ว");
-                await fetchPatientData();
-                showPatientDetail(currentSelectedPatientName, currentSelectedPatientGender, currentSelectedPatientVillage);
-            } else {
-                alert("❌ อัปเดตไม่สำเร็จ: " + (result.message || "ไม่ทราบสาเหตุ"));
-            }
-
-        } catch (err) {
-            alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อ: " + err.message);
-
-        } finally {
-            if (buttonEl) {
-                buttonEl.disabled = false;
-                buttonEl.innerText = originalText;
-            }
-        }
-    }
-
-    function createPatientAlertStatusBox(item) {
-        const status = safeText(item.alertStatus) || "ไม่มีใครรับ";
-
-        const statusBox = document.createElement('div');
-        statusBox.className = 'feedback-status-box';
-
-        const statusLine = document.createElement('div');
-        statusLine.className = 'feedback-status-line';
-
-        const statusLabel = document.createElement('div');
-        statusLabel.innerHTML = '<b>สถานะแจ้งเตือน / การรับเคส:</b> ';
-
-        const statusPill = document.createElement('span');
-        statusPill.className = `feedback-status-pill ${getPatientAlertStatusClass(status)}`;
-        statusPill.textContent = status;
-        statusLabel.appendChild(statusPill);
-
-        const updatedInfo = document.createElement('div');
-        updatedInfo.style.color = '#64748b';
-        updatedInfo.style.fontSize = '13px';
-
-        const updatedAt = safeText(item.alertStatusUpdatedAt);
-        const updatedBy = safeText(item.alertStatusUpdatedBy);
-
-        if (updatedAt && updatedAt !== "-") {
-            updatedInfo.textContent = `อัปเดตล่าสุด: ${updatedAt} โดย ${updatedBy || "-"}`;
-        } else {
-            updatedInfo.textContent = "ยังไม่มีการอัปเดตสถานะ";
-        }
-
-        statusLine.appendChild(statusLabel);
-        statusLine.appendChild(updatedInfo);
-
-        const buttons = document.createElement('div');
-        buttons.className = 'feedback-status-buttons';
-
-        ["ไม่มีใครรับ", "กำลังรับเรื่อง", "แก้ไขแล้ว"].forEach(st => {
-            const btn = document.createElement('button');
-            btn.className = `feedback-status-btn ${getPatientAlertButtonClass(st)}`;
-            btn.textContent = st;
-            btn.disabled = status === st;
-            btn.onclick = () => updatePatientAlertStatusFromWeb(item.rowId, st, btn);
-            buttons.appendChild(btn);
-        });
-
-        statusBox.appendChild(statusLine);
-        statusBox.appendChild(buttons);
-
-        return statusBox;
     }
 
     function renderPatientDetail() {
@@ -784,11 +734,12 @@
 
         if (patientRecords.length === 0) return;
 
-        let latestRecord = patientRecords[0];
-        let ageText = calculateAge(latestRecord.birthDay, latestRecord.birthMonth, latestRecord.birthYear);
+        const latestRecord = patientRecords[0];
+        const latestSummary = getPatientCaseSummary(patientRecords);
+        const ageText = calculateAge(latestRecord.birthDay, latestRecord.birthMonth, latestRecord.birthYear);
         
         document.getElementById('detPatientName').innerText = `👤 ชื่อผู้ป่วย: คุณ ${latestRecord.patientName}`;
-        document.getElementById('detPatientMeta').innerText = `ข้อมูลพื้นฐาน: อายุคำนวณ ${ageText !== "-" ? ageText : "ไม่ระบุ"} | เพศ: ${latestRecord.patientGender} | พิกัดพื้นที่: ${latestRecord.villageNo}`;
+        document.getElementById('detPatientMeta').innerText = `ข้อมูลพื้นฐาน: อายุคำนวณ ${ageText !== "-" ? ageText : "ไม่ระบุ"} | เพศ: ${latestRecord.patientGender} | พิกัดพื้นที่: ${latestRecord.villageNo} | สถานะเคสล่าสุด: ${latestSummary.latestStatus}`;
 
         document.getElementById('patientBirthDay').value = latestRecord.birthDay || "";
         document.getElementById('patientBirthMonth').value = latestRecord.birthMonth || "";
@@ -807,22 +758,53 @@
         }
 
         patientRecords.forEach(item => {
-            let card = document.createElement('div');
+            const card = document.createElement('div');
             card.className = 'history-card';
             const q2Result = safeText(item.q2Result);
+            const caseStatus = normalizeCaseStatus(item.alertStatus);
+            const statusClass = getCaseStatusClass(caseStatus);
+            const updatedAt = safeText(item.alertStatusUpdatedAt);
+            const updatedBy = safeText(item.alertStatusUpdatedBy);
+            const updatedText = updatedAt && updatedAt !== "-"
+                ? `อัปเดตล่าสุด: ${updatedAt} โดย ${updatedBy || "-"}`
+                : "ยังไม่มีการอัปเดตสถานะ";
+
             card.innerHTML = `
                 <div class="history-header">
                     <span>📅 วันที่-เวลาประเมิน: ${escapeHTML(item.timestamp || '-')}</span>
                     <span>เครื่องมือหลัก: ${escapeHTML(item.assessmentType || '-')}</span>
+                </div>
+                <div class="case-status-box">
+                    <div class="case-status-line">
+                        <div><b>📌 สถานะเคสนี้:</b> <span class="case-status-pill ${statusClass}">${escapeHTML(caseStatus)}</span></div>
+                        <div class="case-status-muted">${escapeHTML(updatedText)}</div>
+                    </div>
+                    <div class="case-status-buttons"></div>
                 </div>
                 <div class="info-row"><span>ผู้คัดกรองลงพื้นที่ (อสม.):</span> <span><b>${escapeHTML(item.vhmName || '-')}</b></span></div>
                 <div class="info-row"><span>ผลคัดกรองด่วน 2Q:</span> <span class="${q2Result.includes('เสี่ยง') ? 'danger' : ''}">${escapeHTML(q2Result || '-')}</span></div>
                 <div class="info-row"><span>คะแนนคอลัมน์ 9Q:</span> <span>${escapeHTML(item.q9Score || '-(ไม่ได้ประเมิน)-')}</span></div>
                 <div class="info-row"><span>ผลประเมินคอลัมน์ 8Q:</span> <span>${escapeHTML(item.q8Result || '-(ไม่ได้ประเมิน)-')}</span></div>
                 <div class="info-row"><span>หมายเหตุ อสม. เพิ่มเติม:</span> <span>${escapeHTML(item.comment || '-(ว่าง)-')}</span></div>
-                <div class="info-row"><span>สถานะการส่ง LINE:</span> <span>${escapeHTML(item.lineStatus || '-')}</span></div>
             `;
-            card.appendChild(createPatientAlertStatusBox(item));
+
+            const buttons = card.querySelector('.case-status-buttons');
+            CASE_STATUSES.forEach(status => {
+                const btn = document.createElement('button');
+                btn.className = `case-status-btn ${getCaseButtonClass(status)}`;
+                btn.textContent = status;
+                btn.disabled = caseStatus === status || !item.rowId;
+                btn.addEventListener('click', () => updatePatientAlertStatusFromWeb(item.rowId, status, btn));
+                buttons.appendChild(btn);
+            });
+
+            if (!item.rowId) {
+                const warning = document.createElement('span');
+                warning.className = 'case-status-muted';
+                warning.textContent = 'ไม่พบ rowId กรุณารีเฟรชข้อมูลจาก Google Sheet';
+                buttons.appendChild(warning);
+            }
+
             historyCardsDiv.appendChild(card);
         });
     }
@@ -1087,97 +1069,26 @@
         document.getElementById('btnCancelAdminEdit').style.display = 'none';
     }
 
-    function getFeedbackStatusClass(status) {
-        if (status === "กำลังรับเรื่อง") return "status-progress";
-        if (status === "แก้ไขแล้ว") return "status-done";
-        return "status-noone";
-    }
-
-    function getFeedbackButtonClass(status) {
-        if (status === "กำลังรับเรื่อง") return "progress";
-        if (status === "แก้ไขแล้ว") return "done";
-        return "noone";
-    }
-
-    function getCurrentAdminNameForFeedback() {
-        const name = document.getElementById('adminDisplayName')?.innerText || "";
-        return name && name !== "-" ? name : "Admin";
-    }
-
-    async function updateFeedbackStatusFromWeb(rowId, newStatus, buttonEl) {
-        if (!rowId) {
-            alert("❌ ไม่พบ rowId ของรายการ Feedback");
-            return;
-        }
-
-        const adminName = getCurrentAdminNameForFeedback();
-
-        if (!confirm(`ต้องการเปลี่ยนสถานะเป็น "${newStatus}" ใช่หรือไม่?`)) {
-            return;
-        }
-
-        try {
-            if (buttonEl) {
-                buttonEl.disabled = true;
-                buttonEl.innerText = "⏳ กำลังบันทึก...";
-            }
-
-            const url = `${GOOGLE_SCRIPT_URL}?action=updateFeedbackStatus` +
-                `&rowId=${encodeURIComponent(rowId)}` +
-                `&status=${encodeURIComponent(newStatus)}` +
-                `&updatedBy=${encodeURIComponent(adminName)}`;
-
-            const response = await fetch(url);
-            if (!response.ok) throw new Error("HTTP Status " + response.status);
-            const result = await response.json();
-
-            if (result.success) {
-                alert("✅ อัปเดตสถานะเรียบร้อยแล้ว");
-                fetchFeedbackData();
-            } else {
-                alert("❌ อัปเดตไม่สำเร็จ: " + (result.message || "ไม่ทราบสาเหตุ"));
-            }
-
-        } catch (err) {
-            alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อ: " + err.message);
-
-        } finally {
-            if (buttonEl) {
-                buttonEl.disabled = false;
-                buttonEl.innerText = newStatus;
-            }
-        }
-    }
-
     function fetchFeedbackData() {
         const loading = document.getElementById('loadingText');
         const container = document.getElementById('feedbackContainer');
-
-        loading.style.display = 'block';
+        loading.style.display = 'block'; 
         container.innerHTML = '';
 
         fetch(`${GOOGLE_SCRIPT_URL}?action=getFeedback`)
-            .then(res => {
-                if (!res.ok) throw new Error("HTTP Status " + res.status);
-                return res.text();
-            })
+            .then(res => { if (!res.ok) throw new Error("HTTP Status " + res.status); return res.text(); })
             .then(text => {
                 loading.style.display = 'none';
-
                 try {
                     const data = JSON.parse(text);
-
-                    if (!Array.isArray(data) || data.length === 0) {
+                    if(!Array.isArray(data) || data.length === 0) {
                         container.innerHTML = '<p style="text-align:center; color:#64748b; padding:40px 0;">📭 ยังไม่มีข้อเสนอแนะส่งเข้ามาในระบบขณะนี้ครับ</p>';
                         return;
                     }
-
+                    
                     container.innerHTML = "";
-
                     [...data].reverse().forEach(item => {
-                        const status = safeText(item.status) || "ไม่มีใครรับ";
-
-                        const card = document.createElement('div');
+                        let card = document.createElement('div');
                         card.className = 'feedback-card';
 
                         const header = document.createElement('div');
@@ -1189,83 +1100,28 @@
                         const timeSpan = document.createElement('span');
                         timeSpan.textContent = `⏰ เวลาบันทึก: ${safeText(item.timestamp) || '-'} น.`;
 
-                        header.appendChild(sourceSpan);
-                        header.appendChild(timeSpan);
-
                         const body = document.createElement('div');
                         body.className = 'feedback-body';
                         body.textContent = safeText(item.text) || '-';
 
-                        const statusBox = document.createElement('div');
-                        statusBox.className = 'feedback-status-box';
-
-                        const statusLine = document.createElement('div');
-                        statusLine.className = 'feedback-status-line';
-
-                        const statusLabel = document.createElement('div');
-                        const statusStrong = document.createElement('b');
-                        statusStrong.textContent = 'สถานะ: ';
-
-                        const statusPill = document.createElement('span');
-                        statusPill.className = `feedback-status-pill ${getFeedbackStatusClass(status)}`;
-                        statusPill.textContent = status;
-
-                        statusLabel.appendChild(statusStrong);
-                        statusLabel.appendChild(statusPill);
-
-                        const updatedInfo = document.createElement('div');
-                        updatedInfo.style.color = '#64748b';
-                        updatedInfo.style.fontSize = '13px';
-
-                        const updatedAt = safeText(item.updatedAt);
-                        const updatedBy = safeText(item.updatedBy);
-
-                        if (updatedAt && updatedAt !== "-") {
-                            updatedInfo.textContent = `อัปเดตล่าสุด: ${updatedAt} โดย ${updatedBy || "-"}`;
-                        } else {
-                            updatedInfo.textContent = "ยังไม่มีการอัปเดตสถานะ";
-                        }
-
-                        statusLine.appendChild(statusLabel);
-                        statusLine.appendChild(updatedInfo);
-
-                        const buttons = document.createElement('div');
-                        buttons.className = 'feedback-status-buttons';
-
-                        ["ไม่มีใครรับ", "กำลังรับเรื่อง", "แก้ไขแล้ว"].forEach(st => {
-                            const btn = document.createElement('button');
-                            btn.className = `feedback-status-btn ${getFeedbackButtonClass(st)}`;
-                            btn.textContent = st;
-                            btn.disabled = status === st;
-                            btn.onclick = () => updateFeedbackStatusFromWeb(item.rowId, st, btn);
-                            buttons.appendChild(btn);
-                        });
-
-                        statusBox.appendChild(statusLine);
-                        statusBox.appendChild(buttons);
-
+                        header.appendChild(sourceSpan);
+                        header.appendChild(timeSpan);
                         card.appendChild(header);
                         card.appendChild(body);
-                        card.appendChild(statusBox);
-
                         container.appendChild(card);
                     });
-
-                } catch (e) {
+                } catch(e) {
                     container.innerHTML = '<p style="text-align:center; color:#ef4444; padding:20px;">❌ คืนข้อมูลผิดพลาด โครงสร้างแท็บข้อความไม่สมบูรณ์</p>';
-                    console.error(e);
                 }
             })
             .catch(err => {
                 loading.style.display = 'none';
                 container.textContent = '';
-
                 const msg = document.createElement('p');
                 msg.style.textAlign = 'center';
                 msg.style.color = '#ef4444';
                 msg.style.padding = '20px';
                 msg.textContent = '❌ ข้อผิดพลาดระบบเครือข่าย: ' + err.message;
-
                 container.appendChild(msg);
             });
     }
