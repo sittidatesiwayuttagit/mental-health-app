@@ -232,12 +232,7 @@
         return value === undefined || value === null ? "" : String(value);
     }
 
-    function escapeHTML(value) {
-        return safeText(value)
-            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-    }
-
-    // เริ่มต้นระบบ LIFF SDK
+    // ระบบเริ่มต้น LIFF SDK และตรวจสอบสถานะจำไอดีค้างหน้าจอ
     liff.init({ liffId: LIFF_ID }).then(async () => { 
         console.log("LIFF Ready"); 
         if (!liff.isLoggedIn()) {
@@ -247,7 +242,6 @@
         }
     }).catch(err => console.error("LIFF Init Error:", err));
 
-    // 🎯 ระบบสแกนจำล็อกอินค้างจาก LINE ID บนตารางชีท (ถ้าไม่มีไอดีตรง จะบังคับค้างที่หน้าล็อกอิน Step 0)
     async function checkAutoLogin() {
         try {
             if (localStorage.getItem("vhm_logout_flag") === "true") {
@@ -259,6 +253,7 @@
                 const profile = await liff.getProfile();
                 const currentLineId = profile.userId;
                 
+                // สั่งเปิดเช็กสิทธิ์ไอดีไลน์ข้ามขั้นจากแผง Google Sheet โดยตรง
                 const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=checkLineAutoLogin&lineId=${encodeURIComponent(currentLineId)}`);
                 if (!response.ok) throw new Error("HTTP Status " + response.status);
                 
@@ -268,9 +263,9 @@
                     document.getElementById('vhmDisplayName').innerText = `${currentVhmName} (${res.roleTitle})`;
                     document.getElementById('vhmInfoHeader').style.display = "flex"; 
                     fetchPatientHistoryForAutocomplete();
-                    changeStep(1); // ข้ามไปเปิดหน้ากรอกข้อมูลผู้ป่วยทันที
+                    changeStep(1); // ส่งเข้าหน้ากรอกประวัติ (Step 1) ทันทีอย่างราบรื่น
                 } else {
-                    changeStep(0); 
+                    changeStep(0); // หากไม่มีไอดีตรงในชีท ให้ค้างไว้ที่หน้าล็อกอินปกติ
                 }
             } else {
                 changeStep(0);
@@ -360,7 +355,7 @@
         }
     });
 
-    // ระบบล็อกอินรอบแรกเพื่อส่งไอดีไลน์ไปเขียนจำค้างไว้บน Google Sheet
+    // ระบบส่งล็อกอินรอบแรกเพื่อเอา LINE User ID ไปสแตมป์ล็อกสิทธิ์ถาวรในคอลัมน์ E
     async function verifyAuth() {
         const u = document.getElementById('vhmUsername').value.trim();
         const p = document.getElementById('vhmPassword').value;
@@ -383,7 +378,7 @@
         try {
             const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=${actionType}&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}&role=${encodeURIComponent(role)}&lineId=${encodeURIComponent(currentLineId)}`);
             
-            // 🎯 [แก้ไขเสร็จสมบูรณ์ 100%] เปลี่ยนเป็น !response.ok ครบถ้วนตามมาตรฐาน ล้างบั๊ก JavaScript พังกลางทางเรียบร้อย!
+            // ✨ [แก้ไขเรียบร้อย 100%] เปลี่ยนเป็น !response.ok สมบูรณ์แบบ ล้างบั๊ก JavaScript พังกลางทางเรียบร้อย!
             if (!response.ok) throw new Error("HTTP Status " + response.status);
             
             const text = await response.text();
@@ -412,7 +407,7 @@
         
         currentVhmName = "";
         localScreeningHistory = []; 
-        localStorage.setItem("vhm_logout_flag", "true"); // ปักหมุดแบนระบบจำสิทธิ์ชั่วคราว
+        localStorage.setItem("vhm_logout_flag", "true"); 
         
         document.getElementById('vhmInfoHeader').style.display = "none";
         document.getElementById('patientName').value = ""; document.getElementById('patientGender').value = ""; document.getElementById('villageNo').value = ""; document.getElementById('comment').value = "";
@@ -538,6 +533,19 @@
         changeStep(3);
     }
 
+    function resetScreeningFormAfterSuccess() {
+        document.getElementById('patientName').value = ""; document.getElementById('patientGender').value = ""; document.getElementById('villageNo').value = ""; document.getElementById('comment').value = "";
+        document.getElementById('nameSuggestionsBox').style.display = 'none';
+        
+        document.querySelectorAll('input[name="q2q1"], input[name="q2q2"]').forEach(radio => radio.checked = false);
+        for (let i = 1; i <= 9; i++) { const el = document.getElementById('q9q' + i); if (el) el.value = ""; }
+        for (let i = 1; i <= 8; i++) { const el = document.getElementById('q8q' + i); if (el) el.value = ""; }
+
+        document.getElementById('assessmentTypeSelect').value = "2Q";
+        switchAssessment();
+        changeStep(1);
+    }
+
     async function submitData() {
         const type = document.getElementById('assessmentTypeSelect').value;
         const btn = document.getElementById('btnSubmitScreening');
@@ -559,7 +567,7 @@
             btn.disabled = true;
             btn.innerText = "⏳ กำลังบันทึกข้อมูล...";
 
-            // 🏥 ยิงข้อมูลแบบ URLSearchParams ดั้งเดิมที่รันผ่านฉลุย ปิดจ๊อบเออร์เรอร์ 400 แน่นอน
+            // ✨ บังคับใช้ระบบส่งฟอร์แมตข้อความดั้งเดิมคู่กับ URLSearchParams เคลียร์บั๊ก 400 ขาดรอยใน LINE WebView แน่นอน
             const response = await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
