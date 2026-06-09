@@ -32,13 +32,16 @@
         .btn-submit { background-color: #10b981; color: white; }
         .btn-back { background-color: #94a3b8; color: white; margin-top: 5px; }
         .summary-box { background: #f8fafc; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
-        .summary-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #e2e8f0; }
+        .summary-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #e2e8f0; gap: 10px; }
         .summary-item span:first-child { font-weight: bold; color: #64748b; }
+        .system-note { background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; padding: 12px; border-radius: 10px; font-size: 13px; margin-bottom: 15px; display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <div id="systemNote" class="system-note"></div>
+
     <div id="vhmInfoHeader" class="vhm-info-header">
         <div>ผู้ประเมิน: <span id="vhmDisplayName">-</span></div>
         <button class="btn-logout" onclick="logout()">🔒 ออกจากระบบ</button>
@@ -58,16 +61,16 @@
         </div>
         <div class="form-group">
             <label for="vhmUsername">ชื่อผู้ใช้งาน</label>
-            <input type="text" id="vhmUsername" placeholder="ระบุ Username ของคุณ">
+            <input type="text" id="vhmUsername" placeholder="ระบุ Username ของคุณ" autocomplete="username">
         </div>
         <div class="form-group">
             <label for="vhmPassword">รหัสผ่าน</label>
-            <input type="password" id="vhmPassword" placeholder="ระบุ Password ของคุณ">
+            <input type="password" id="vhmPassword" placeholder="ระบุ Password ของคุณ" autocomplete="current-password">
         </div>
         <button class="btn-nav btn-next" id="btnLoginText" onclick="verifyAuth()">🔓 เข้าสู่ระบบ</button>
         
         <p style="text-align:center; margin-top:15px; font-size:14px;">
-            <a href="#" onclick="changeStep('Reset')" style="color:#3b82f6; font-weight:bold; text-decoration:none;">🔑 ลืมรหัสผ่าน? ตั้งรหัสใหม่ที่นี่</a>
+            <a href="#" onclick="changeStep('Reset'); return false;" style="color:#3b82f6; font-weight:bold; text-decoration:none;">🔑 ลืมรหัสผ่าน? ตั้งรหัสใหม่ที่นี่</a>
         </p>
     </div>
 
@@ -85,15 +88,15 @@
         </div>
         <div class="form-group">
             <label for="resetUsername">ชื่อผู้ใช้ของคุณ *</label>
-            <input type="text" id="resetUsername" placeholder="กรอก Username เดิมของคุณ">
+            <input type="text" id="resetUsername" placeholder="กรอก Username เดิมของคุณ" autocomplete="username">
         </div>
         <div class="form-group">
             <label for="resetSecretKey">รหัสลับยืนยันตัวตน *</label>
-            <input type="password" id="resetSecretKey" placeholder="กรอกรหัสลับยีนยันสิทธิ์ที่ลงทะเบียนไว้">
+            <input type="password" id="resetSecretKey" placeholder="กรอกรหัสลับยืนยันสิทธิ์ที่ลงทะเบียนไว้">
         </div>
         <div class="form-group">
             <label for="resetNewPassword">ระบุรหัสผ่านใหม่ที่ต้องการ *</label>
-            <input type="password" id="resetNewPassword" placeholder="ตั้งรหัสผ่านใหม่">
+            <input type="password" id="resetNewPassword" placeholder="ตั้งรหัสผ่านใหม่" autocomplete="new-password">
         </div>
         <button class="btn-nav btn-submit" id="btnResetText" onclick="handleResetPassword()">💾 บันทึกและเปลี่ยนรหัสผ่าน</button>
         <button class="btn-nav btn-back" onclick="changeStep(0)">⬅️ ย้อนกลับหน้าล็อกอิน</button>
@@ -196,7 +199,8 @@
             <textarea id="comment" rows="2" placeholder="กรอกข้อมูลเพิ่มเติม..."></textarea>
         </div>
 
-        <button class="btn-nav btn-next" onclick="goToStep2()">ถัดไป ➡️</button>
+        <!-- แก้บัคสำคัญ: ปุ่มนี้ต้องเรียก goToStep3() ไม่ใช่ goToStep2() -->
+        <button class="btn-nav btn-next" onclick="goToStep3()">ถัดไป ➡️</button>
         <button class="btn-nav btn-back" onclick="changeStep(1)">⬅️ ย้อนกลับ</button>
     </div>
 
@@ -222,25 +226,55 @@
 </div>
 
 <script>
-    const LIFF_ID = '2010303347-dja2J8TA'; 
+    const LIFF_ID = '2010303347-dja2J8TA';
+    const APP_BASE_URL = 'https://mental-health-app-lovat.vercel.app';
+    const INDEX_PAGE_URL = `${APP_BASE_URL}/index.html`;
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySImkthOaj1K3yK3QtFsc0qUNx7wFMF9gNaPjO_IL86H6JaywSU2ZnF4NPic_ypsW8ew/exec';
 
     let currentVhmName = "";
-    let localScreeningHistory = []; 
+    let localScreeningHistory = [];
 
     function safeText(value) {
         return value === undefined || value === null ? "" : String(value);
     }
 
-    // ระบบเริ่มต้น LIFF SDK และตรวจสอบสถานะจำไอดีค้างหน้าจอ
-    liff.init({ liffId: LIFF_ID }).then(async () => { 
-        console.log("LIFF Ready"); 
-        if (!liff.isLoggedIn()) {
-            liff.login({ redirectUri: window.location.href });
-        } else {
-            await checkAutoLogin();
+    function showSystemNote(message) {
+        const el = document.getElementById('systemNote');
+        if (!el) return;
+        el.innerText = message;
+        el.style.display = message ? 'block' : 'none';
+    }
+
+    function getLoginRedirectUri() {
+        // ใช้ URL สะอาดแบบ canonical เพื่อลดปัญหา LINE Login 400 จาก redirect_uri ที่ไม่ตรงกับ Callback/Endpoint
+        // ถ้าใช้งานจริงบน Vercel ให้ redirect กลับ index.html ตายตัวเสมอ
+        if (window.location.hostname === 'mental-health-app-lovat.vercel.app') {
+            return INDEX_PAGE_URL;
         }
-    }).catch(err => console.error("LIFF Init Error:", err));
+        // สำหรับทดสอบ local/preview ให้ใช้ path ปัจจุบัน แต่ตัด query/hash ออก
+        return window.location.origin + window.location.pathname;
+    }
+
+    async function initLiffAndAuth() {
+        try {
+            showSystemNote('');
+            await liff.init({ liffId: LIFF_ID });
+            console.log('LIFF Ready', liff.getOS && liff.getOS());
+
+            if (!liff.isLoggedIn()) {
+                liff.login({ redirectUri: getLoginRedirectUri() });
+                return;
+            }
+
+            await checkAutoLogin();
+        } catch (err) {
+            console.error('LIFF Init Error:', err);
+            showSystemNote('⚠️ เปิดหน้าได้ แต่ระบบ LINE LIFF เริ่มต้นไม่สำเร็จ กรุณาตรวจว่า LIFF Endpoint URL และ Callback URL ใน LINE Developers ตรงกับ index.html แล้วลองใหม่');
+            changeStep(0);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', initLiffAndAuth);
 
     async function checkAutoLogin() {
         try {
@@ -252,20 +286,18 @@
             if (liff.isLoggedIn()) {
                 const profile = await liff.getProfile();
                 const currentLineId = profile.userId;
-                
-                // สั่งเปิดเช็กสิทธิ์ไอดีไลน์ข้ามขั้นจากแผง Google Sheet โดยตรง
                 const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=checkLineAutoLogin&lineId=${encodeURIComponent(currentLineId)}`);
                 if (!response.ok) throw new Error("HTTP Status " + response.status);
-                
+
                 const res = await response.json();
                 if (res.success) {
                     currentVhmName = res.name;
-                    document.getElementById('vhmDisplayName').innerText = `${currentVhmName} (${res.roleTitle})`;
-                    document.getElementById('vhmInfoHeader').style.display = "flex"; 
+                    document.getElementById('vhmDisplayName').innerText = `${currentVhmName} (${res.roleTitle || '-'})`;
+                    document.getElementById('vhmInfoHeader').style.display = "flex";
                     fetchPatientHistoryForAutocomplete();
-                    changeStep(1); // ส่งเข้าหน้ากรอกประวัติ (Step 1) ทันทีอย่างราบรื่น
+                    changeStep(1);
                 } else {
-                    changeStep(0); // หากไม่มีไอดีตรงในชีท ให้ค้างไว้ที่หน้าล็อกอินปกติ
+                    changeStep(0);
                 }
             } else {
                 changeStep(0);
@@ -278,7 +310,8 @@
 
     function changeStep(step) {
         document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
-        document.getElementById('step' + step).classList.add('active');
+        const target = document.getElementById('step' + step);
+        if (target) target.classList.add('active');
         window.scrollTo(0, 0);
     }
 
@@ -355,7 +388,6 @@
         }
     });
 
-    // ระบบส่งล็อกอินรอบแรกเพื่อเอา LINE User ID ไปสแตมป์ล็อกสิทธิ์ถาวรในคอลัมน์ E
     async function verifyAuth() {
         const u = document.getElementById('vhmUsername').value.trim();
         const p = document.getElementById('vhmPassword').value;
@@ -364,11 +396,12 @@
 
         if(!u || !p) { alert("⚠️ กรุณากรอกข้อมูลให้ครบถ้วน"); return; }
         btn.innerText = "⏳ กำลังเชื่อมต่อฐานข้อมูลคลาวด์...";
+        btn.disabled = true;
         
         let actionType = (role === 'admin') ? 'checkAdminLogin' : 'checkLogin';
         let currentLineId = "";
         
-        if (liff.isLoggedIn()) {
+        if (window.liff && liff.isLoggedIn()) {
             try {
                 const profile = await liff.getProfile();
                 currentLineId = profile.userId;
@@ -377,28 +410,24 @@
         
         try {
             const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=${actionType}&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}&role=${encodeURIComponent(role)}&lineId=${encodeURIComponent(currentLineId)}`);
-            
-            // ✨ [แก้ไขเรียบร้อย 100%] เปลี่ยนเป็น !response.ok สมบูรณ์แบบ ล้างบั๊ก JavaScript พังกลางทางเรียบร้อย!
             if (!response.ok) throw new Error("HTTP Status " + response.status);
-            
-            const text = await response.text();
-            const res = JSON.parse(text);
-            btn.innerText = "🔓 เข้าสู่ระบบ";
+            const res = await response.json();
             
             if(res.success) {
                 currentVhmName = res.name;
-                document.getElementById('vhmDisplayName').innerText = `${currentVhmName} (${res.roleTitle})`;
-                document.getElementById('vhmInfoHeader').style.display = "flex"; 
-                
-                localStorage.removeItem("vhm_logout_flag"); 
+                document.getElementById('vhmDisplayName').innerText = `${currentVhmName} (${res.roleTitle || '-'})`;
+                document.getElementById('vhmInfoHeader').style.display = "flex";
+                localStorage.removeItem("vhm_logout_flag");
                 fetchPatientHistoryForAutocomplete();
                 changeStep(1);
             } else {
-                alert("❌ " + res.message);
+                alert("❌ " + (res.message || 'เข้าสู่ระบบไม่สำเร็จ'));
             }
         } catch(err) {
-            btn.innerText = "🔓 เข้าสู่ระบบ";
             alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อ: " + err.message);
+        } finally {
+            btn.innerText = "🔓 เข้าสู่ระบบ";
+            btn.disabled = false;
         }
     }
 
@@ -406,8 +435,8 @@
         if (!confirm("🚨 แจ้งเตือนความปลอดภัย:\nคุณต้องการออกจากระบบใช่หรือไม่? ข้อมูลผู้ป่วยทั้งหมดที่กำลังพิมพ์ค้างอยู่ ณ ตอนนี้จะถูกล้างทิ้งครับ")) return;
         
         currentVhmName = "";
-        localScreeningHistory = []; 
-        localStorage.setItem("vhm_logout_flag", "true"); 
+        localScreeningHistory = [];
+        localStorage.setItem("vhm_logout_flag", "true");
         
         document.getElementById('vhmInfoHeader').style.display = "none";
         document.getElementById('patientName').value = ""; document.getElementById('patientGender').value = ""; document.getElementById('villageNo').value = ""; document.getElementById('comment').value = "";
@@ -434,22 +463,20 @@
         if(newP.length < 4) { alert("⚠️ รหัสผ่านใหม่ควรยาว 4 ตัวอักษรขึ้นไป"); return; }
 
         btn.innerText = "⏳ กำลังบันทึกรหัสผ่านใหม่...";
+        btn.disabled = true;
         let actionType = (role === 'admin') ? 'resetAdminPassword' : 'resetPassword';
 
         fetch(`${GOOGLE_SCRIPT_URL}?action=${actionType}&username=${encodeURIComponent(u)}&secretKey=${encodeURIComponent(key)}&newPassword=${encodeURIComponent(newP)}`)
-            .then(res => { if (!res.ok) throw new Error("HTTP Status " + res.status); return res.text(); })
-            .then(text => {
-                try {
-                    const res = JSON.parse(text);
-                    btn.innerText = "💾 บันทึกและเปลี่ยนรหัสผ่าน";
-                    if(res.success) {
-                        alert("🎉 อัปเดตรหัสผ่านใหม่ลงตารางคลาวด์เรียบร้อย! สามารถนำรหัสใหม่ไปใช้เข้าสู่ระบบได้ทันทีครับ");
-                        document.getElementById('vhmUsername').value = u; document.getElementById('vhmPassword').value = ""; document.getElementById('userRole').value = role; 
-                        changeStep(0);
-                    } else { alert("❌ " + res.message); }
-                } catch(e) { btn.innerText = "💾 บันทึกและเปลี่ยนรหัสผ่าน"; alert("❌ หลังบ้านปฏิเสธการบันทึกรหัสผ่านใหม่"); }
+            .then(res => { if (!res.ok) throw new Error("HTTP Status " + res.status); return res.json(); })
+            .then(res => {
+                if(res.success) {
+                    alert("🎉 อัปเดตรหัสผ่านใหม่ลงตารางคลาวด์เรียบร้อย! สามารถนำรหัสใหม่ไปใช้เข้าสู่ระบบได้ทันทีครับ");
+                    document.getElementById('vhmUsername').value = u; document.getElementById('vhmPassword').value = ""; document.getElementById('userRole').value = role;
+                    changeStep(0);
+                } else { alert("❌ " + (res.message || 'เปลี่ยนรหัสผ่านไม่สำเร็จ')); }
             })
-            .catch(err => { btn.innerText = "💾 บันทึกและเปลี่ยนรหัสผ่าน"; alert("❌ เกิดข้อผิดพลาดระบบเครือข่าย: " + err.message); });
+            .catch(err => { alert("❌ เกิดข้อผิดพลาดระบบเครือข่าย: " + err.message); })
+            .finally(() => { btn.innerText = "💾 บันทึกและเปลี่ยนรหัสผ่าน"; btn.disabled = false; });
     }
 
     function goToStep2() {
@@ -457,7 +484,7 @@
             alert("⚠️ กรุณากรอกข้อมูลทั่วไปให้ครบทุกข้อ"); return;
         }
         document.getElementById('nameSuggestionsBox').style.display = 'none';
-        switchAssessment(); 
+        switchAssessment();
         changeStep(2);
     }
 
@@ -486,7 +513,7 @@
 
         if (q2Res === "🚨 มีความเสี่ยง" && type === "2Q") {
             alert("🚨 ผู้ที่ได้รับการประเมินมีความเสี่ยงจากผล 2Q! ระบบบังคับให้ทำแบบประเมิน 9Q ต่อเพื่อตรวจสอบความรุนแรง กรุณากรอกแบบสอบถามหัวข้อ 9Q ด้านล่างครับ");
-            document.getElementById('assessmentTypeSelect').value = "9Q"; switchAssessment(); return; 
+            document.getElementById('assessmentTypeSelect').value = "9Q"; switchAssessment(); return;
         }
 
         let score9Q = 0; let q9Value = 0;
@@ -494,8 +521,8 @@
             for (let i = 1; i <= 9; i++) {
                 const val = document.getElementById(`q9q${i}`).value;
                 if (val === "") { alert(`⚠️ กรุณากรอกแบบประเมิน 9Q ข้อที่ ${i} ให้เรียบร้อยก่อนครับ`); return; }
-                score9Q += parseInt(val);
-                if (i === 9) q9Value = parseInt(val); 
+                score9Q += parseInt(val, 10);
+                if (i === 9) q9Value = parseInt(val, 10);
             }
         }
 
@@ -509,7 +536,7 @@
             for (let i = 1; i <= 8; i++) {
                 const val = document.getElementById(`q8q${i}`).value;
                 if (val === "") { alert(`⚠️ กรุณากรอกแบบประเมินสถิติความเสี่ยง 8Q ข้อที่ ${i} ให้ครบถ้วนครับ`); return; }
-                score8Q += parseInt(val);
+                score8Q += parseInt(val, 10);
             }
         }
 
@@ -551,11 +578,11 @@
         const btn = document.getElementById('btnSubmitScreening');
         const sendData = new URLSearchParams({
             action: 'submitScreening',
-            vhmName: currentVhmName, 
+            vhmName: currentVhmName,
             patientName: document.getElementById('patientName').value.trim(),
-            patientAge: '', 
+            patientAge: '',
             patientGender: document.getElementById('patientGender').value,
-            villageNo: document.getElementById('villageNo').value, 
+            villageNo: document.getElementById('villageNo').value,
             assessmentType: type,
             q2Result: document.getElementById('smQ2Result').innerText,
             q9Score: (type === '9Q' || type === '8Q') ? document.getElementById('smQ9Score').innerText : '',
@@ -567,7 +594,6 @@
             btn.disabled = true;
             btn.innerText = "⏳ กำลังบันทึกข้อมูล...";
 
-            // ✨ บังคับใช้ระบบส่งฟอร์แมตข้อความดั้งเดิมคู่กับ URLSearchParams เคลียร์บั๊ก 400 ขาดรอยใน LINE WebView แน่นอน
             const response = await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
@@ -584,9 +610,9 @@
             } else {
                 alert('❌ บันทึกไม่สำเร็จ: ' + (result.message || 'ไม่ทราบสาเหตุ'));
             }
-        } catch (error) { 
-            alert('❌ เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาตรวจสอบอินเทอร์เน็ตหรือ Apps Script'); 
-            console.error("Submit error:", error); 
+        } catch (error) {
+            alert('❌ เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาตรวจสอบอินเทอร์เน็ตหรือ Apps Script');
+            console.error("Submit error:", error);
         } finally {
             btn.disabled = false;
             btn.innerText = "📤 ส่งข้อมูลบันทึกคลาวด์";
