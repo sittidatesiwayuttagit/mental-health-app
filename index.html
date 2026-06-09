@@ -167,7 +167,7 @@
         <div id="panel9Q" class="sub-questions" style="display:none;">
             <h4>📋 ส่วนที่ 2: ข้อคำถามระดับความรุนแรง 9Q</h4>
             <p style="font-size:12px; color:#64748b; margin-bottom:12px;">(เกณฑ์: 0=ไม่มีเลย, 1=มีบางวัน 1-7 วัน, 2=มีบ่อย 7-14 วัน, 3=มีทุกวัน มากกว่า 14 วัน)</p>
-            <div class="form-group"><label>1. เบื่อ ไม่อยากทำอะไร หรือไม่เพลิดเพลินในการทำกิจกรรม</label><select id="q9q1"><option value="">-- เลือกคำตอบ --</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
+            <div class="form-group"><label>1. เบื่อ ไมยากทำอะไร หรือไม่เพลิดเพลินในการทำกิจกรรม</label><select id="q9q1"><option value="">-- เลือกคำตอบ --</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
             <div class="form-group"><label>2. ไม่สบายใจ ซึมเศร้า หรือท้อแท้สิ้นหวัง</label><select id="q9q2"><option value="">-- เลือกคำตอบ --</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
             <div class="form-group"><label>3. หลับยาก หรือหลับๆ ตื่นๆ หรือหลับมากเกินไป</label><select id="q9q3"><option value="">-- เลือกคำตอบ --</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
             <div class="form-group"><label>4. เหนื่อยง่าย หรือไม่ค่อยมีเรี่ยวแรง</label><select id="q9q4"><option value="">-- เลือกคำตอบ --</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
@@ -188,7 +188,7 @@
             <div class="form-group"><label>5. คิดฆ่าตัวตาย โดยมีการวางแผนไว้เรียบร้อยแล้ว</label><select id="q8q5"><option value="">-- เลือกคำตอบ --</option><option value="0">ไม่มี</option><option value="8">มี</option></select></div>
             <div class="form-group"><label>6. มีความตั้งใจจริงที่จะฆ่าตัวตาย</label><select id="q8q6"><option value="">-- เลือกคำตอบ --</option><option value="0">ไม่มี</option><option value="9">มี</option></select></div>
             <div class="form-group"><label>7. มีความมั่นใจว่าจะทำได้สำเร็จ</label><select id="q8q7"><option value="">-- เลือกคำตอบ --</option><option value="0">ไม่มี</option><option value="10">มี</option></select></div>
-            <div class="form-group"><label>8. มีใจต้องการควบคุมตนเองไม่ได้ จนคิดหรือพยายามฆ่าตัวตาย</label><select id="q8q8"><option value="">-- เลือกคำตอบ --</option><option value="0">ไม่มี</option><option value="12">มี</option></select></div>
+            <div class="form-group"><label>8. มีปัญหาเรื่องการควบคุมตนเองไม่ได้ จนคิดหรือพยายามฆ่าตัวตาย</label><select id="q8q8"><option value="">-- เลือกคำตอบ --</option><option value="0">ไม่มี</option><option value="12">มี</option></select></div>
         </div>
 
         <div class="form-group" style="margin-top:20px;">
@@ -241,7 +241,7 @@
             .replace(/'/g, "&#039;");
     }
 
-    // 🎯 เริ่มต้นระบบการทำงานของ LINE LIFF SDK
+    // ระบบเริ่มต้นและเช็กความจำล็อกอินอัตโนมัติจาก LINE
     liff.init({ liffId: LIFF_ID }).then(async () => { 
         console.log("LIFF Ready"); 
         if (!liff.isLoggedIn()) {
@@ -251,7 +251,6 @@
         }
     }).catch(err => console.error("LIFF Init Error:", err));
 
-    // 🎯 ระบบสแกนจำสิทธิ์ล็อกอินค้างอัตโนมัติ (ข้ามหน้าล็อกอินทันทีหากตรวจพบ LINE ID เดิม)
     async function checkAutoLogin() {
         try {
             if (liff.isLoggedIn()) {
@@ -284,7 +283,6 @@
     }
 
     function fetchPatientHistoryForAutocomplete() {
-        // 🎯 ดึงข้อมูลโครงสร้างหลักแบบดั้งเดิมตามคำสั่งแรกสุดเพื่อให้กูเกิลประมวลผลผ่านฉลุย
         fetch(GOOGLE_SCRIPT_URL)
             .then(res => res.json())
             .then(data => {
@@ -533,7 +531,7 @@
         const q2Res = (q2q1.value === "มี" || q2q2.value === "มี") ? "🚨 มีความเสี่ยง" : "🟢 ปกติ";
 
         if (q2Res === "🚨 มีความเสี่ยง" && type === "2Q") {
-            alert("🚨 ผู้ที่ได้รับการประเมินมีความเสี่ยงจากผล 2Q! ระบบบังคับให้ทำแบบประเมิน 9Q ต่อเพื่อตรวจสอบความรุนแรง กรุณากรอกแบบสอบถามหัวข้อ 9Q ที่เพิ่มขึ้นมาด้านล่างครับ");
+            alert("🚨 ผู้ที่ได้รับการประเมินมีความเสี่ยงจากผล 2Q! ระบบบังคับให้ทำแบบประเมิน 9Q ต่อเพื่อตรวจสอบความรุนแรง กรุณากรอกแบบสอบถามหัวข้อ 9Q ด้านล่างครับ");
             document.getElementById('assessmentTypeSelect').value = "9Q"; 
             switchAssessment(); 
             return; 
@@ -641,7 +639,7 @@
             btn.disabled = true;
             btn.innerText = "⏳ กำลังบันทึกข้อมูล...";
 
-            // 🎯 [จุดแก้ไขบั๊ก] ส่งก้อนออบเจกต์ตรงๆ และปล่อยให้เบราว์เซอร์ LINE จัดการ Header เองเพื่อเคลียร์บั๊ก 400 Bad Request
+            // 🎯 [แก้ไขบั๊ก 400 ขาดรอย] ถอด Header application/x-www-form-urlencoded ออก และส่ง sendData ตรงๆ ให้ LINE คอนโทรลฟอร์แมตมาตรฐาน
             const response = await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 body: sendData
