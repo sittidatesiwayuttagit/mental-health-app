@@ -67,8 +67,26 @@
         .feedback-card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 15px; background-color: #ffffff; border-left: 5px solid #6366f1; box-shadow: 0 2px 8px rgba(0,0,0,0.02); text-align: left; }
         .feedback-header { display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 10px; font-weight: bold; color: #64748b; font-size: 13px; gap: 12px; }
         .feedback-body { font-size: 15px; color: #1e293b; line-height: 1.6; white-space: pre-wrap; }
+
+        .summary-panel { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+        .summary-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .summary-card h4 { margin: 0 0 8px 0; color: #475569; font-size: 13px; }
+        .summary-card .big-number { font-size: 26px; font-weight: bold; color: #1e293b; }
+        .risk-pill { display: inline-block; padding: 5px 10px; border-radius: 999px; font-weight: bold; font-size: 12px; margin: 2px; }
+        .risk-green { background: #dcfce7; color: #166534; }
+        .risk-yellow { background: #fef3c7; color: #92400e; }
+        .risk-red { background: #fee2e2; color: #991b1b; }
+        .trajectory-pill { display: inline-block; padding: 6px 12px; border-radius: 999px; font-weight: bold; font-size: 13px; margin: 2px; }
+        .trajectory-worse { background: #fee2e2; color: #991b1b; }
+        .trajectory-better { background: #dcfce7; color: #166534; }
+        .trajectory-stable { background: #fef3c7; color: #92400e; }
+        .trajectory-none { background: #e2e8f0; color: #475569; }
+        .clinical-box { background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px; margin-top:12px; font-size:13px; color:#334155; }
+        .mini-section-title { font-weight:bold; color:#1e293b; border-left:4px solid #3b82f6; padding-left:8px; margin:14px 0 8px 0; }
+        textarea { width:100%; padding:12px; border:2px solid #cbd5e1; border-radius:10px; box-sizing:border-box; font-size:15px; }
         @media (max-width: 600px) {
             .admin-card { padding: 18px; }
+            .summary-panel { grid-template-columns: 1fr !important; }
             .tabs-bar { flex-wrap: wrap !important; gap: 8px !important; }
             .tab-btn { flex: 1 1 calc(50% - 10px) !important; padding: 10px !important; font-size: 14px !important; text-align: center !important; }
             .inputs-row, .controls-row { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; }
@@ -138,6 +156,23 @@
 
         <div id="patientsTab" class="tab-content active">
             <div id="patientListSection">
+            <div id="dashboardSummaryPanel" class="summary-panel">
+                <div class="summary-card"><h4>เคสทั้งหมด</h4><div class="big-number" id="sumTotalCases">0</div><div class="case-status-muted">จำนวนรายการคัดกรองทั้งหมด</div></div>
+                <div class="summary-card"><h4>🟢 เขียว</h4><div class="big-number" id="sumGreenCases">0</div><div class="case-status-muted">ยังไม่พบความเสี่ยงเด่น</div></div>
+                <div class="summary-card"><h4>🟡 เหลือง</h4><div class="big-number" id="sumYellowCases">0</div><div class="case-status-muted">ควรติดตาม/ซักเพิ่ม</div></div>
+                <div class="summary-card"><h4>🔴 แดง</h4><div class="big-number" id="sumRedCases">0</div><div class="case-status-muted">ควรจัดการเร่งด่วน</div></div>
+            </div>
+            <div id="villageRiskSummary" class="search-container" style="background:#ffffff;"></div>
+            <div class="search-container" style="background:#f8fafc; border:1px solid #cbd5e1;">
+                <h4 style="margin-top:0; color:#334155;">🧮 งานระบบ/สรุปข้อมูล</h4>
+                <div class="controls-row">
+                    <button class="btn-search" onclick="refreshMonthlyAggregationFromWeb()">📊 อัปเดต Monthly Summary / Heatmap</button>
+                    <button class="btn-refresh" onclick="runFollowupReminderNow()">🔔 ทดสอบแจ้งเตือน Follow-up วันนี้</button>
+                    <button class="btn-action delete" onclick="archiveClosedCasesFromWeb()">🗄️ ย้ายเคสปิดงานเกิน 1 ปีเข้าคลัง</button>
+                </div>
+                <div class="case-status-muted" style="margin-top:8px;">ปุ่มย้ายคลังใช้ได้เฉพาะบัญชี Hospital และจะย้ายเฉพาะเคสที่ Follow-up Status = ปิดเคสแล้ว และ Closed At เกิน 1 ปี</div>
+            </div>
+
                 <div class="search-container">
                     <div class="inputs-row">
                         <input type="text" id="searchInput" oninput="processData()" placeholder="🔍 พิมพ์ชื่อ-นามสกุลผู้ป่วยเพื่อค้นหา...">
@@ -165,6 +200,7 @@
                 <div id="patientDetailHeader" style="background: #eff6ff; padding: 20px; border-radius: 14px; margin-bottom: 15px; border: 1px solid #bfdbfe;">
                     <h3 id="detPatientName" style="margin: 0 0 8px 0; color: #1d4ed8;">👤 ชื่อผู้ป่วย: -</h3>
                     <p id="detPatientMeta" style="margin: 0; color: #4b5563; font-size: 15px;">ข้อมูลพื้นฐาน: อายุคำนวณ - | เพศ - | ที่อยู่: -</p>
+                    <div id="detClinicalContext" class="clinical-box">ข้อมูลปัจจัยร่วม: -</div>
                 </div>
                 <div class="search-container" style="background-color: #ffffff; border: 2px solid #3b82f6; margin-bottom: 15px;">
                     <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">📆 จัดการวันเดือนปีเกิดของผู้ป่วย (พ.ศ.)</h4>
@@ -268,6 +304,121 @@
 
     function escapeHTML(value) {
         return safeText(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+
+    function getRiskLevel(value) {
+        const text = safeText(value);
+        if (text.includes('แดง')) return '🔴 แดง';
+        if (text.includes('เหลือง')) return '🟡 เหลือง';
+        if (text.includes('เขียว')) return '🟢 เขียว';
+        return text || '🟢 เขียว';
+    }
+    function getRiskClass(value) {
+        const risk = getRiskLevel(value);
+        if (risk.includes('แดง')) return 'risk-red';
+        if (risk.includes('เหลือง')) return 'risk-yellow';
+        return 'risk-green';
+    }
+    function riskRank(value) {
+        const risk = getRiskLevel(value);
+        if (risk.includes('แดง')) return 3;
+        if (risk.includes('เหลือง')) return 2;
+        return 1;
+    }
+    function deriveRiskLevel(item) {
+        if (item.riskLevel) return getRiskLevel(item.riskLevel);
+        const q9 = parseInt((safeText(item.q9Score).match(/\d+/) || ['0'])[0], 10) || 0;
+        const q8 = parseInt((safeText(item.q8Result).match(/\d+/) || ['0'])[0], 10) || 0;
+        const sub = parseInt(safeText(item.substance10xScore) || '0', 10) || 0;
+        const q2Risk = safeText(item.q2Result).includes('เสี่ยง') && !safeText(item.q2Result).includes('ไม่เสี่ยง');
+        if (q8 >= 1 || q9 >= 19 || sub >= 3 || safeText(item.substance10xLevel).includes('แดง')) return '🔴 แดง';
+        if (q9 >= 7 || q2Risk || sub >= 1 || safeText(item.substance10xLevel).includes('เหลือง')) return '🟡 เหลือง';
+        return '🟢 เขียว';
+    }
+
+    function extract9QScore(item) {
+        const raw = safeText(item && item.q9Score);
+        const match = raw.match(/\d+/);
+        return match ? parseInt(match[0], 10) : null;
+    }
+
+    function hasMeasured9Q(item) {
+        const raw = safeText(item && item.q9Score);
+        const type = safeText(item && item.assessmentType);
+        return /\d+/.test(raw) && (raw.includes('คะแนน') || type === '9Q' || type === '8Q' || type.includes('9Q') || type.includes('8Q'));
+    }
+
+    function getTrajectoryInfo(records) {
+        const sorted = [...(records || [])]
+            .filter(item => hasMeasured9Q(item))
+            .sort((a, b) => parseTimestamp(b.timestamp) - parseTimestamp(a.timestamp));
+        if (sorted.length < 2) {
+            return {
+                icon: '➖',
+                text: 'ยังไม่มีข้อมูล 9Q ก่อนหน้า',
+                className: 'trajectory-none',
+                latestScore: sorted.length ? extract9QScore(sorted[0]) : null,
+                previousScore: null,
+                diff: null
+            };
+        }
+        const latestScore = extract9QScore(sorted[0]);
+        const previousScore = extract9QScore(sorted[1]);
+        const diff = latestScore - previousScore;
+        if (diff > 0) {
+            return { icon: '📈', text: `แย่ลง +${diff} คะแนน (${previousScore} → ${latestScore})`, className: 'trajectory-worse', latestScore, previousScore, diff };
+        }
+        if (diff < 0) {
+            return { icon: '📉', text: `ดีขึ้น ${diff} คะแนน (${previousScore} → ${latestScore})`, className: 'trajectory-better', latestScore, previousScore, diff };
+        }
+        return { icon: '➡️', text: `คงตัว (${previousScore} → ${latestScore})`, className: 'trajectory-stable', latestScore, previousScore, diff };
+    }
+
+    function renderTrajectoryPill(info, prefix = 'แนวโน้ม 9Q') {
+        const t = info || { icon: '➖', text: 'ยังไม่มีข้อมูล', className: 'trajectory-none' };
+        return `<span class="trajectory-pill ${t.className}">${t.icon} ${escapeHTML(prefix)}: ${escapeHTML(t.text)}</span>`;
+    }
+    function toInputDateValue(value) {
+        const text = safeText(value).trim();
+        if (!text || text === '-') return '';
+        if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+        const m = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+        if (!m) return '';
+        let y = parseInt(m[3], 10);
+        if (y > 2400) y -= 543;
+        return `${String(y).padStart(4,'0')}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+    }
+    function renderDashboardSummary(data) {
+        const records = Array.isArray(data) ? data : [];
+        let green = 0, yellow = 0, red = 0;
+        const villages = {};
+        records.forEach(item => {
+            const risk = deriveRiskLevel(item);
+            const village = safeText(item.villageNo) || '-';
+            if (!villages[village]) villages[village] = { green:0, yellow:0, red:0, total:0 };
+            villages[village].total++;
+            if (risk.includes('แดง')) { red++; villages[village].red++; }
+            else if (risk.includes('เหลือง')) { yellow++; villages[village].yellow++; }
+            else { green++; villages[village].green++; }
+        });
+        document.getElementById('sumTotalCases').innerText = records.length;
+        document.getElementById('sumGreenCases').innerText = green;
+        document.getElementById('sumYellowCases').innerText = yellow;
+        document.getElementById('sumRedCases').innerText = red;
+        const box = document.getElementById('villageRiskSummary');
+        if (!box) return;
+        const villageRows = Object.keys(villages).sort((a,b)=>a.localeCompare(b,'th')).map(v => {
+            const x = villages[v];
+            return `<div class="case-status-summary"><b>${escapeHTML(v)}</b> <span class="risk-pill risk-red">แดง ${x.red}</span><span class="risk-pill risk-yellow">เหลือง ${x.yellow}</span><span class="risk-pill risk-green">เขียว ${x.green}</span><span class="case-status-muted">รวม ${x.total}</span></div>`;
+        }).join('');
+        box.innerHTML = `<h4 style="margin-top:0; color:#334155;">🗺️ สรุปความเสี่ยงรายหมู่บ้าน</h4>${villageRows || '<p class="case-status-muted">ยังไม่มีข้อมูล</p>'}`;
+    }
+    function logAuditEvent(action, patientName = '', gender = '', village = '', rowId = '', detail = '') {
+        if (!currentAdminUsername) return;
+        const adminName = document.getElementById('adminDisplayName')?.innerText || '';
+        fetch(`${GOOGLE_SCRIPT_URL}?action=logAudit&actorUsername=${encodeURIComponent(currentAdminUsername)}&actorName=${encodeURIComponent(adminName)}&actorRole=${encodeURIComponent(currentAdminRole)}&auditAction=${encodeURIComponent(action)}&patientName=${encodeURIComponent(patientName)}&patientGender=${encodeURIComponent(gender)}&villageNo=${encodeURIComponent(village)}&rowId=${encodeURIComponent(rowId)}&detail=${encodeURIComponent(detail)}`)
+            .catch(err => console.warn('Audit log failed:', err));
     }
 
     function normalizeAdminRole(value) {
@@ -446,7 +597,7 @@
         fetch(GOOGLE_SCRIPT_URL)
             .then(res => { if (!res.ok) throw new Error("HTTP Status " + res.status); return res.text(); })
             .then(text => {
-                try { allData = JSON.parse(text); loading.style.display = 'none'; processData(); }
+                try { allData = JSON.parse(text); loading.style.display = 'none'; renderDashboardSummary(allData); processData(); logAuditEvent('READ_PATIENT_LIST', '', '', '', '', 'โหลดรายชื่อผู้ป่วยทั้งหมด'); }
                 catch(e) { loading.style.display = 'none'; alert("❌ สคริปต์คืนข้อมูลผิดพลาด: " + text.substring(0, 150)); }
             })
             .catch(err => { loading.style.display = 'none'; alert("❌ เกิดข้อผิดพลาดเครือข่าย/CORS: " + err.message); });
@@ -603,6 +754,9 @@
             const summary = getPatientCaseSummary(p.records);
             const ageText = calculateAge(p.day, p.month, p.year);
             const statusClass = getCaseStatusClass(summary.latestStatus);
+            const highestRisk = p.records.reduce((max, rec) => riskRank(deriveRiskLevel(rec)) > riskRank(max) ? deriveRiskLevel(rec) : max, '🟢 เขียว');
+            const highestRiskClass = getRiskClass(highestRisk);
+            const trajectoryInfo = getTrajectoryInfo(p.records);
             const countText = `รวม ${summary.total} เคส | ยังไม่รับเคส ${summary.counts['ยังไม่รับเคส'] || 0} | จองคิวแล้ว ${summary.counts['จองคิวแล้ว'] || 0}`;
             const bookingSummaryText = summary.latestBookingDateTime && summary.latestBookingDateTime !== "-" ? `🗓️ วันเวลาจองล่าสุด: ${summary.latestBookingDateTime} โดย ${summary.latestBookingBy || "-"}` : "🗓️ ยังไม่มีวันเวลาจองคิว";
             const rowCard = document.createElement('div');
@@ -620,6 +774,8 @@
                         <span class="case-status-pill ${statusClass}">${escapeHTML(summary.latestStatus)}</span>
                         <span class="case-status-muted">${escapeHTML(countText)}</span>
                         <span class="case-status-muted">${escapeHTML(bookingSummaryText)}</span>
+                        <span class="risk-pill ${highestRiskClass}">ความเสี่ยงสูงสุด: ${escapeHTML(highestRisk)}</span>
+                        ${renderTrajectoryPill(trajectoryInfo)}
                     </div>
                 </div>
                 <div class="patient-row-right">
@@ -635,6 +791,7 @@
         currentSelectedPatientGender = gender;
         currentSelectedPatientVillage = village;
         document.getElementById('detailDateFilter').value = "";
+        logAuditEvent('VIEW_PATIENT_DETAIL', patientName, gender, village, '', 'เปิดดูข้อมูลเชิงลึกผู้ป่วย');
         renderPatientDetail();
     }
 
@@ -648,10 +805,12 @@
         if (patientRecords.length === 0) return;
         const latestRecord = patientRecords[0];
         const latestSummary = getPatientCaseSummary(patientRecords);
+        const latestTrajectory = getTrajectoryInfo(patientRecords);
         const ageText = calculateAge(latestRecord.birthDay, latestRecord.birthMonth, latestRecord.birthYear);
         document.getElementById('detPatientName').innerText = `👤 ชื่อผู้ป่วย: คุณ ${latestRecord.patientName}`;
         const latestBookingText = latestSummary.latestBookingDateTime && latestSummary.latestBookingDateTime !== "-" ? ` | วันเวลาจองล่าสุด: ${latestSummary.latestBookingDateTime}` : " | ยังไม่มีวันเวลาจองคิว";
         document.getElementById('detPatientMeta').innerText = `ข้อมูลพื้นฐาน: อายุคำนวณ ${ageText !== "-" ? ageText : "ไม่ระบุ"} | เพศ: ${latestRecord.patientGender} | พิกัดพื้นที่: ${latestRecord.villageNo} | สถานะเคสล่าสุด: ${latestSummary.latestStatus}${latestBookingText}`;
+        document.getElementById('detClinicalContext').innerHTML = `<b>ระดับความเสี่ยงล่าสุด:</b> <span class="risk-pill ${getRiskClass(deriveRiskLevel(latestRecord))}">${escapeHTML(deriveRiskLevel(latestRecord))}</span> ${renderTrajectoryPill(latestTrajectory)}<br><b>Psych:</b> ${escapeHTML(latestRecord.psychComorbidities || '-')}<br><b>Medical:</b> ${escapeHTML(latestRecord.medicalComorbidities || '-')}<br><b>10X:</b> ${escapeHTML(latestRecord.substance10xScore || '0')} คะแนน (${escapeHTML(latestRecord.substance10xLevel || '-')})`;
         document.getElementById('patientBirthDay').value = latestRecord.birthDay || "";
         document.getElementById('patientBirthMonth').value = latestRecord.birthMonth || "";
         document.getElementById('patientBirthYear').value = latestRecord.birthYear || "";
@@ -696,7 +855,17 @@
                 <div class="info-row"><span>ผลคัดกรองด่วน 2Q:</span> <span class="${q2Result.includes('เสี่ยง') ? 'danger' : ''}">${escapeHTML(q2Result || '-')}</span></div>
                 <div class="info-row"><span>คะแนนคอลัมน์ 9Q:</span> <span>${escapeHTML(item.q9Score || '-(ไม่ได้ประเมิน)-')}</span></div>
                 <div class="info-row"><span>ผลประเมินคอลัมน์ 8Q:</span> <span>${escapeHTML(item.q8Result || '-(ไม่ได้ประเมิน)-')}</span></div>
-                <div class="info-row"><span>หมายเหตุ อสม. เพิ่มเติม:</span> <span>${escapeHTML(item.comment || '-(ว่าง)-')}</span></div>`;
+                <div class="info-row"><span>ระดับความเสี่ยงรวม:</span> <span class="risk-pill ${getRiskClass(deriveRiskLevel(item))}">${escapeHTML(deriveRiskLevel(item))}</span></div>
+                <div class="info-row"><span>Psychiatric co-morbidities:</span> <span>${escapeHTML(item.psychComorbidities || '-')}</span></div>
+                <div class="info-row"><span>โรคทางกาย/ปัจจัยร่วม:</span> <span>${escapeHTML(item.medicalComorbidities || '-')}</span></div>
+                <div class="info-row"><span>Alcohol/Substance 10X:</span> <span>${escapeHTML(item.substance10xScore || '0')} คะแนน (${escapeHTML(item.substance10xLevel || '-')}) | ${escapeHTML(item.substance10xDetails || '-')}</span></div>
+                <div class="info-row"><span>หมายเหตุ อสม. เพิ่มเติม:</span> <span>${escapeHTML(item.comment || '-(ว่าง)-')}</span></div>
+                <div class="mini-section-title">🏥 Referral & Outcome Tracking</div>
+                <div class="info-row"><span>สถานะส่งต่อ:</span> <span>${escapeHTML(item.referralStatus || 'ยังไม่ระบุ')}</span></div>
+                <div class="info-row"><span>สถานที่ส่งต่อ:</span> <span>${escapeHTML(item.referralPlace || '-')}</span></div>
+                <div class="info-row"><span>ผลการรักษา/ผลติดตาม:</span> <span>${escapeHTML(item.referralOutcome || '-')}</span></div>
+                <div class="info-row"><span>นัดติดตามครั้งถัดไป:</span> <span>${escapeHTML(item.nextFollowupDate || '-')} | ${escapeHTML(item.followupStatus || 'ยังไม่ระบุ')}</span></div>
+                <div class="referral-edit-box" style="margin-top:12px; padding:12px; border:1px solid #e2e8f0; border-radius:12px; background:#f8fafc;"></div>`;
             const buttons = card.querySelector('.case-status-buttons');
             if (normalizeAdminRole(currentAdminRole) === "hospital") {
                 if (caseStatus !== "จองคิวแล้ว") {
@@ -746,8 +915,119 @@
                 warning.textContent = 'ไม่พบ rowId กรุณารีเฟรชข้อมูลจาก Google Sheet';
                 buttons.appendChild(warning);
             }
+            renderReferralEditor(card.querySelector('.referral-edit-box'), item);
             historyCardsDiv.appendChild(card);
         });
+    }
+
+
+    function renderReferralEditor(container, item) {
+        if (!container) return;
+        const rowId = safeText(item.rowId);
+        const referralStatus = safeText(item.referralStatus || 'ยังไม่ระบุ');
+        const followupStatus = safeText(item.followupStatus || 'ยังไม่ระบุ');
+        container.innerHTML = `
+            <div class="inputs-row">
+                <select class="referral-status">
+                    ${['ยังไม่ระบุ','ยังไม่ส่งต่อ','ส่งต่อ รพ.ชุมชน','ส่งต่อ รพ.ศูนย์','พบแพทย์แล้ว','ติดตามโดย รพ.สต.','ไม่ประสงค์ส่งต่อ'].map(v => `<option value="${escapeHTML(v)}" ${referralStatus === v ? 'selected' : ''}>${escapeHTML(v)}</option>`).join('')}
+                </select>
+                <input type="text" class="referral-place" placeholder="สถานที่ส่งต่อ/หน่วยบริการ" value="${escapeHTML(item.referralPlace || '')}">
+            </div>
+            <textarea class="referral-outcome" rows="2" placeholder="ผลการรักษาเบื้องต้น/ผลการพิจารณา/คำแนะนำจากแพทย์">${escapeHTML(item.referralOutcome || '')}</textarea>
+            <div class="inputs-row" style="margin-top:10px;">
+                <input type="date" class="next-followup-date" value="${toInputDateValue(item.nextFollowupDate)}">
+                <select class="followup-status">
+                    ${['ยังไม่ระบุ','ต้องติดตามครั้งถัดไป','ติดตามแล้ว','หลุดติดตาม','ปิดเคสแล้ว','ไม่ต้องติดตาม'].map(v => `<option value="${escapeHTML(v)}" ${followupStatus === v ? 'selected' : ''}>${escapeHTML(v)}</option>`).join('')}
+                </select>
+            </div>
+            <textarea class="followup-note" rows="2" placeholder="หมายเหตุการติดตาม เช่น โทรไม่ติด/เยี่ยมบ้านแล้ว/อาการดีขึ้น" style="margin-top:10px;">${escapeHTML(item.followupNote || '')}</textarea>
+            <div style="text-align:right; margin-top:10px;"><button class="btn-search save-referral-btn">💾 บันทึก Referral / Follow-up</button></div>
+        `;
+        const btn = container.querySelector('.save-referral-btn');
+        btn.disabled = !rowId;
+        btn.addEventListener('click', () => saveReferralOutcome(rowId, container, btn, item));
+    }
+
+    async function saveReferralOutcome(rowId, container, buttonEl, item) {
+        if (!rowId) { alert('❌ ไม่พบ rowId กรุณารีเฟรชข้อมูล'); return; }
+        const adminName = getCurrentAdminNameForCase();
+        const params = new URLSearchParams({
+            action: 'updateReferralOutcome',
+            rowId,
+            actorUsername: currentAdminUsername,
+            updatedBy: adminName,
+            referralStatus: container.querySelector('.referral-status').value,
+            referralPlace: container.querySelector('.referral-place').value.trim(),
+            referralOutcome: container.querySelector('.referral-outcome').value.trim(),
+            nextFollowupDate: container.querySelector('.next-followup-date').value,
+            followupStatus: container.querySelector('.followup-status').value,
+            followupNote: container.querySelector('.followup-note').value.trim()
+        });
+        const original = buttonEl.innerText;
+        try {
+            buttonEl.disabled = true; buttonEl.innerText = '⏳ กำลังบันทึก...';
+            const response = await fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`);
+            if (!response.ok) throw new Error('HTTP Status ' + response.status);
+            const result = await response.json();
+            if (result.success) {
+                alert('✅ บันทึก Referral/Outcome/Follow-up สำเร็จ');
+                logAuditEvent('UPDATE_REFERRAL_OUTCOME_UI', item.patientName, item.patientGender, item.villageNo, rowId, 'บันทึกจากหน้า admin');
+                const updatedFields = {
+                    referralStatus: container.querySelector('.referral-status').value,
+                    referralPlace: container.querySelector('.referral-place').value.trim(),
+                    referralOutcome: container.querySelector('.referral-outcome').value.trim(),
+                    nextFollowupDate: container.querySelector('.next-followup-date').value,
+                    followupStatus: container.querySelector('.followup-status').value,
+                    followupNote: container.querySelector('.followup-note').value.trim()
+                };
+                allData = allData.map(rec => String(rec.rowId) === String(rowId) ? { ...rec, ...updatedFields } : rec);
+                renderDashboardSummary(allData);
+                renderPatientDetail();
+                processData();
+            } else alert('❌ บันทึกไม่สำเร็จ: ' + (result.message || 'ไม่ทราบสาเหตุ'));
+        } catch (err) { alert('❌ เกิดข้อผิดพลาด: ' + err.message); }
+        finally { buttonEl.disabled = false; buttonEl.innerText = original; }
+    }
+
+    async function refreshMonthlyAggregationFromWeb() {
+        const loading = document.getElementById('loadingText');
+        try {
+            loading.style.display = 'block';
+            const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=refreshMonthlyAggregation`);
+            if (!res.ok) throw new Error('HTTP Status ' + res.status);
+            const result = await res.json();
+            alert((result.success ? '✅ ' : '❌ ') + (result.message || 'ดำเนินการเสร็จ'));
+        } catch (err) { alert('❌ อัปเดตสรุปรายเดือนไม่สำเร็จ: ' + err.message); }
+        finally { loading.style.display = 'none'; }
+    }
+
+    async function runFollowupReminderNow() {
+        if (!confirm('ต้องการทดสอบส่ง LINE แจ้งเตือนเคสถึงกำหนดติดตามวันนี้ใช่หรือไม่?')) return;
+        const loading = document.getElementById('loadingText');
+        try {
+            loading.style.display = 'block';
+            const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=runFollowupReminderNow`);
+            if (!res.ok) throw new Error('HTTP Status ' + res.status);
+            const result = await res.json();
+            alert((result.success ? '✅ ' : '❌ ') + (result.message || '') + (result.count !== undefined ? `\nจำนวนเคส: ${result.count}` : ''));
+        } catch (err) { alert('❌ ส่งแจ้งเตือน Follow-up ไม่สำเร็จ: ' + err.message); }
+        finally { loading.style.display = 'none'; }
+    }
+
+    async function archiveClosedCasesFromWeb() {
+        if (normalizeAdminRole(currentAdminRole) !== 'hospital') { alert('⚠️ เฉพาะบัญชี Hospital เท่านั้นที่ย้ายเคสเข้าคลังเก่าได้'); return; }
+        if (!confirm('ยืนยันย้ายเคสที่ปิดงานแล้วเกิน 1 ปี ไปแท็บ Archive ใช่หรือไม่?')) return;
+        const adminName = getCurrentAdminNameForCase();
+        const loading = document.getElementById('loadingText');
+        try {
+            loading.style.display = 'block';
+            const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=archiveClosedCases&actorUsername=${encodeURIComponent(currentAdminUsername)}&updatedBy=${encodeURIComponent(adminName)}`);
+            if (!res.ok) throw new Error('HTTP Status ' + res.status);
+            const result = await res.json();
+            alert((result.success ? '✅ ' : '❌ ') + (result.message || '') + (result.archived !== undefined ? `\nย้ายทั้งหมด: ${result.archived} รายการ` : ''));
+            fetchPatientData();
+        } catch (err) { alert('❌ ย้ายคลังไม่สำเร็จ: ' + err.message); }
+        finally { loading.style.display = 'none'; }
     }
 
     function clearDetailDateFilter() { document.getElementById('detailDateFilter').value = ""; renderPatientDetail(); }
