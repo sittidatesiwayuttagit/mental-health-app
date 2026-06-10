@@ -46,6 +46,11 @@
         .btn-draft { padding: 10px 12px; border: none; border-radius: 10px; font-size: 13px; font-weight: bold; cursor: pointer; color: white; background: #0ea5e9; }
         .btn-draft.secondary { background: #64748b; }
         .btn-draft.danger { background: #ef4444; }
+
+        .optional-toggle { width: 100%; padding: 13px; border: 2px dashed #3b82f6; border-radius: 12px; background:#eff6ff; color:#1d4ed8; font-weight:bold; cursor:pointer; margin: 10px 0; font-size:15px; }
+        .optional-toggle.off { border-color:#cbd5e1; background:#ffffff; color:#475569; }
+        .optional-panel { display: none; margin-top: 12px; }
+        .optional-panel.active { display: block; }
     </style>
 </head>
 <body>
@@ -133,6 +138,7 @@
                 <input type="text" id="patientName" oninput="searchPatientNameAutocomplete()" autocomplete="off" placeholder="ตัวอย่าง : สุขภาพ จิตดี">
                 <div id="nameSuggestionsBox" style="position: absolute; left: 0; right: 0; z-index: 9999; background: white; border: 1px solid #cbd5e1; border-radius: 10px; max-height: 230px; overflow-y: auto; display: none; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); margin-top: 5px;"></div>
             </div>
+            <div id="patientNameWarning" class="name-warning"></div>
         </div>
         <div class="form-group">
             <label>เพศ *</label>
@@ -216,7 +222,14 @@
 
         <div id="panelClinicalContext" class="sub-questions">
             <h4>🩺 ส่วนที่ 4: ประวัติโรคประจำตัวเดิม / ปัจจัยร่วมทางคลินิก</h4>
+            <div class="context-guidance">
+                <b>ควรกรอกเมื่อใด?</b><br>
+                ควรถาม/ติ๊กเมื่อผู้รับการประเมินมีคะแนน 2Q/9Q/8Q เสี่ยง, มีประวัติเคยรักษาจิตเวช, ใช้ยาจิตเวชหรือขาดยา, มีโรคทางกายเรื้อรัง/ปวดเรื้อรัง/มะเร็ง/ไทรอยด์, มีอาการนอนไม่หลับเรื้อรัง หรือ อสม. สังเกตว่าปัจจัยเหล่านี้อาจเกี่ยวข้องกับอารมณ์ของผู้ป่วย<br>
+                <b>ถ้าไม่ได้ถามหรือไม่ทราบ:</b> เว้นว่างไว้ได้ ระบบจะแสดงและบันทึกเป็น “ไม่ได้ประเมิน” เพื่อไม่ให้เข้าใจผิดว่าไม่มีโรคจริง
+            </div>
             <p class="mini-note">ใช้เป็นข้อมูลประกอบให้ทีมโรงพยาบาลประเมินเคสได้แม่นยำขึ้น ไม่ใช่การวินิจฉัยแทนแพทย์</p>
+            <button type="button" id="btnToggleClinicalContext" class="optional-toggle off" onclick="toggleClinicalContextAssessment()">➕ ต้องการประเมิน/บันทึกปัจจัยร่วมทางคลินิก</button>
+            <div id="clinicalContextFields" class="optional-panel">
 
             <div class="form-group">
                 <label>Psychiatric Co-morbidities / ประวัติจิตเวชเดิมหรือปัจจัยเสี่ยงเดิม</label>
@@ -245,22 +258,31 @@
                 </div>
                 <input type="text" id="medicalComorbidityOther" placeholder="อื่น ๆ หรือรายละเอียดเพิ่มเติม" style="margin-top:10px;">
             </div>
+            </div>
         </div>
 
         <div id="panelSubstance10X" class="sub-questions">
             <h4>🍺 ส่วนที่ 5: Alcohol / Substance Screening - 10X</h4>
+            <div class="context-guidance" style="background:#fefce8; border-color:#fde68a; color:#854d0e;">
+                <b>ควรกรอกเมื่อใด?</b><br>
+                ควรถามเมื่อ 2Q/9Q/8Q มีความเสี่ยง, มีความคิดทำร้ายตนเอง, ญาติ/ชุมชนบอกว่าดื่มสุราหรือใช้สาร, มีประวัติอุบัติเหตุ/ทะเลาะ/ขาดงานจากการดื่มหรือสาร, หรือ อสม. สงสัยว่าสุรา/สารเสพติดอาจกระตุ้นอารมณ์ดิ่ง<br>
+                <b>ถ้าไม่ได้ถามหรือสถานการณ์ไม่เหมาะสม:</b> เว้นทุกข้อไว้ที่ “-- ยังไม่ได้ประเมิน --” ได้ ระบบจะแสดงและบันทึกเป็น “ไม่ได้ประเมิน”
+            </div>
             <p class="mini-note">แบบคัดกรองสั้นในระบบเพื่อชี้เป้าความเสี่ยงร่วม ไม่ใช่แบบทดแทน AUDIT/ASSIST ฉบับเต็ม หากพบความเสี่ยงควรประเมินต่อโดยบุคลากรสุขภาพ</p>
-            <div class="form-group"><label>1. ใน 3 เดือนที่ผ่านมา มีการดื่มสุราหรือเครื่องดื่มแอลกอฮอล์หรือไม่?</label><select id="sub10x1" onchange="updateSubstance10XPreview()"><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
-            <div class="form-group"><label>2. เคยดื่มจนเมา ดื่มหนัก หรือควบคุมปริมาณไม่ได้หรือไม่?</label><select id="sub10x2" onchange="updateSubstance10XPreview()"><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
-            <div class="form-group"><label>3. มีการใช้กัญชา ยาบ้า กระท่อม ยานอนหลับ/ยาแก้ปวดที่ไม่ได้ใช้ตามแพทย์สั่ง หรือสารเสพติดอื่นหรือไม่?</label><select id="sub10x3" onchange="updateSubstance10XPreview()"><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
-            <div class="form-group"><label>4. ใช้สุราหรือสารเพื่อช่วยนอน ลดเครียด ลดเศร้า หรือหนีปัญหาหรือไม่?</label><select id="sub10x4" onchange="updateSubstance10XPreview()"><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
-            <div class="form-group"><label>5. ครอบครัวหรือคนรอบตัวเคยเป็นห่วง เตือน หรือขอให้ลดการใช้หรือไม่?</label><select id="sub10x5" onchange="updateSubstance10XPreview()"><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
-            <div class="form-group"><label>6. การใช้สุราหรือสารทำให้เสียงาน เสียการเรียน เสียหน้าที่ หรือกระทบครอบครัวหรือไม่?</label><select id="sub10x6" onchange="updateSubstance10XPreview()"><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
-            <div class="form-group"><label>7. เคยมีอุบัติเหตุ ทะเลาะ หนี้สิน หรือปัญหากฎหมายจากการใช้สุราหรือสารหรือไม่?</label><select id="sub10x7" onchange="updateSubstance10XPreview()"><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
-            <div class="form-group"><label>8. เคยพยายามลดหรือหยุดแต่ทำไม่ได้หรือไม่?</label><select id="sub10x8" onchange="updateSubstance10XPreview()"><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
-            <div class="form-group"><label>9. มีอาการอยากมาก มือสั่น หงุดหงิด นอนไม่หลับ หรืออาการถอนเมื่อไม่ได้ใช้หรือไม่?</label><select id="sub10x9" onchange="updateSubstance10XPreview()"><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
-            <div class="form-group" style="border:2px solid #ef4444; padding:10px; border-radius:8px;"><label style="color:#b91c1c;">10. มีการใช้สุราหรือสารร่วมกับช่วงที่คิดทำร้ายตนเอง/อยากตาย/อารมณ์ดิ่งหรือไม่?</label><select id="sub10x10" onchange="updateSubstance10XPreview()"><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
-            <div id="substance10XPreview" class="sub-score">ผลคัดกรอง 10X: 0 คะแนน (🟢 เขียว/ยังไม่พบความเสี่ยงจากข้อมูลที่กรอก)</div>
+            <button type="button" id="btnToggleSubstance10X" class="optional-toggle off" onclick="toggleSubstance10XAssessment()">➕ ต้องการประเมิน Alcohol / Substance 10X</button>
+            <div id="substance10XFields" class="optional-panel">
+            <div class="form-group"><label>1. ใน 3 เดือนที่ผ่านมา มีการดื่มสุราหรือเครื่องดื่มแอลกอฮอล์หรือไม่?</label><select id="sub10x1" onchange="updateSubstance10XPreview()"><option value="">-- ยังไม่ได้ประเมิน --</option><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
+            <div class="form-group"><label>2. เคยดื่มจนเมา ดื่มหนัก หรือควบคุมปริมาณไม่ได้หรือไม่?</label><select id="sub10x2" onchange="updateSubstance10XPreview()"><option value="">-- ยังไม่ได้ประเมิน --</option><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
+            <div class="form-group"><label>3. มีการใช้กัญชา ยาบ้า กระท่อม ยานอนหลับ/ยาแก้ปวดที่ไม่ได้ใช้ตามแพทย์สั่ง หรือสารเสพติดอื่นหรือไม่?</label><select id="sub10x3" onchange="updateSubstance10XPreview()"><option value="">-- ยังไม่ได้ประเมิน --</option><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
+            <div class="form-group"><label>4. ใช้สุราหรือสารเพื่อช่วยนอน ลดเครียด ลดเศร้า หรือหนีปัญหาหรือไม่?</label><select id="sub10x4" onchange="updateSubstance10XPreview()"><option value="">-- ยังไม่ได้ประเมิน --</option><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
+            <div class="form-group"><label>5. ครอบครัวหรือคนรอบตัวเคยเป็นห่วง เตือน หรือขอให้ลดการใช้หรือไม่?</label><select id="sub10x5" onchange="updateSubstance10XPreview()"><option value="">-- ยังไม่ได้ประเมิน --</option><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
+            <div class="form-group"><label>6. การใช้สุราหรือสารทำให้เสียงาน เสียการเรียน เสียหน้าที่ หรือกระทบครอบครัวหรือไม่?</label><select id="sub10x6" onchange="updateSubstance10XPreview()"><option value="">-- ยังไม่ได้ประเมิน --</option><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
+            <div class="form-group"><label>7. เคยมีอุบัติเหตุ ทะเลาะ หนี้สิน หรือปัญหากฎหมายจากการใช้สุราหรือสารหรือไม่?</label><select id="sub10x7" onchange="updateSubstance10XPreview()"><option value="">-- ยังไม่ได้ประเมิน --</option><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
+            <div class="form-group"><label>8. เคยพยายามลดหรือหยุดแต่ทำไม่ได้หรือไม่?</label><select id="sub10x8" onchange="updateSubstance10XPreview()"><option value="">-- ยังไม่ได้ประเมิน --</option><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
+            <div class="form-group"><label>9. มีอาการอยากมาก มือสั่น หงุดหงิด นอนไม่หลับ หรืออาการถอนเมื่อไม่ได้ใช้หรือไม่?</label><select id="sub10x9" onchange="updateSubstance10XPreview()"><option value="">-- ยังไม่ได้ประเมิน --</option><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
+            <div class="form-group" style="border:2px solid #ef4444; padding:10px; border-radius:8px;"><label style="color:#b91c1c;">10. มีการใช้สุราหรือสารร่วมกับช่วงที่คิดทำร้ายตนเอง/อยากตาย/อารมณ์ดิ่งหรือไม่?</label><select id="sub10x10" onchange="updateSubstance10XPreview()"><option value="">-- ยังไม่ได้ประเมิน --</option><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
+            <div id="substance10XPreview" class="sub-score">ผลคัดกรอง 10X: ไม่ได้ประเมิน</div>
+            </div>
         </div>
 
         <div class="form-group" style="margin-top:20px;">
@@ -310,6 +332,7 @@
 
     let currentVhmName = "";
     let localScreeningHistory = [];
+    let selectedPatientKey = "";
 
     function safeText(value) {
         return value === undefined || value === null ? "" : String(value);
@@ -323,29 +346,73 @@
     }
 
 
+
+    function setOptionalPanelState(panelId, btnId, active, activeText, inactiveText) {
+        const panel = document.getElementById(panelId);
+        const btn = document.getElementById(btnId);
+        if (!panel || !btn) return;
+        panel.classList.toggle('active', !!active);
+        btn.classList.toggle('off', !active);
+        btn.innerText = active ? activeText : inactiveText;
+    }
+
+    function toggleClinicalContextAssessment() {
+        const panel = document.getElementById('clinicalContextFields');
+        const next = !(panel && panel.classList.contains('active'));
+        setOptionalPanelState(
+            'clinicalContextFields',
+            'btnToggleClinicalContext',
+            next,
+            '➖ ซ่อนแบบบันทึกปัจจัยร่วมทางคลินิก',
+            '➕ ต้องการประเมิน/บันทึกปัจจัยร่วมทางคลินิก'
+        );
+    }
+
+    function toggleSubstance10XAssessment() {
+        const panel = document.getElementById('substance10XFields');
+        const next = !(panel && panel.classList.contains('active'));
+        setOptionalPanelState(
+            'substance10XFields',
+            'btnToggleSubstance10X',
+            next,
+            '➖ ซ่อนแบบประเมิน Alcohol / Substance 10X',
+            '➕ ต้องการประเมิน Alcohol / Substance 10X'
+        );
+    }
+
     function getCheckedValues(name, otherInputId) {
         const values = Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(el => el.value);
         const other = document.getElementById(otherInputId)?.value.trim();
         if (other) values.push("อื่น ๆ: " + other);
-        return values.length ? values.join("; ") : "-";
+        return values.length ? values.join("; ") : "ไม่ได้ประเมิน";
     }
 
     function getSubstance10XData() {
         let score = 0;
         let positiveItems = [];
+        let answeredCount = 0;
         for (let i = 1; i <= 10; i++) {
             const el = document.getElementById('sub10x' + i);
-            const val = el ? parseInt(el.value || '0', 10) : 0;
+            const raw = el ? el.value : '';
+            if (raw !== '') answeredCount++;
+            const val = raw === '' ? 0 : parseInt(raw, 10);
             if (val > 0) {
                 score += val;
                 positiveItems.push('ข้อ ' + i);
             }
+        }
+        const assessed = answeredCount > 0;
+        const completed = answeredCount === 0 || answeredCount === 10;
+        if (!assessed) {
+            return { assessed: false, completed: true, score: '', level: 'ไม่ได้ประเมิน', details: 'ไม่ได้ประเมิน' };
         }
         const q10 = document.getElementById('sub10x10') ? document.getElementById('sub10x10').value === '1' : false;
         let level = '🟢 เขียว/ยังไม่พบความเสี่ยงจากข้อมูลที่กรอก';
         if (q10 || score >= 3) level = '🔴 แดง/ควรประเมินต่อเร่งด่วน';
         else if (score >= 1) level = '🟡 เหลือง/ควรซักประวัติเพิ่ม';
         return {
+            assessed: true,
+            completed,
             score,
             level,
             details: positiveItems.length ? positiveItems.join(', ') : 'ไม่พบข้อบวกจาก 10X'
@@ -355,7 +422,105 @@
     function updateSubstance10XPreview() {
         const data = getSubstance10XData();
         const el = document.getElementById('substance10XPreview');
-        if (el) el.innerText = `ผลคัดกรอง 10X: ${data.score} คะแนน (${data.level}) | ${data.details}`;
+        if (!el) return;
+        if (!data.assessed) {
+            el.innerText = 'ผลคัดกรอง 10X: ไม่ได้ประเมิน';
+        } else if (!data.completed) {
+            el.innerText = '⚠️ เริ่มกรอก 10X แล้ว กรุณาตอบให้ครบทั้ง 10 ข้อ หรือปล่อยว่างทุกข้อถ้าไม่ได้ประเมิน';
+        } else {
+            el.innerText = `ผลคัดกรอง 10X: ${data.score} คะแนน (${data.level}) | ${data.details}`;
+        }
+    }
+
+    function normalizePatientName(value) {
+        return safeText(value).replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
+    }
+
+    function normalizeNameForCompare(value) {
+        return normalizePatientName(value).toLowerCase().replace(/\s+/g, '');
+    }
+
+    function isInvalidPlaceholderName(name) {
+        const n = normalizePatientName(name);
+        return !n || n === '-' || n === 'ไม่ระบุชื่อ' || n === 'ไม่ทราบชื่อ' || n === 'ไม่มีชื่อ';
+    }
+
+    function validateFullPatientName(name) {
+        const normalized = normalizePatientName(name);
+        if (isInvalidPlaceholderName(normalized)) {
+            return { valid: false, normalized, message: 'กรุณากรอกชื่อ-นามสกุลจริงของผู้รับการประเมิน ห้ามใช้ “ไม่ระบุชื่อ” หรือ “-”' };
+        }
+        const parts = normalized.split(' ').filter(Boolean);
+        if (parts.length < 2) {
+            return { valid: false, normalized, message: 'กรุณากรอกทั้งชื่อและนามสกุล โดยเว้นวรรคระหว่างชื่อกับนามสกุล เช่น “สุขภาพ จิตดี”' };
+        }
+        if (parts.some(part => part.length < 2)) {
+            return { valid: false, normalized, message: 'ชื่อหรือนามสกุลสั้นผิดปกติ กรุณาตรวจสอบการพิมพ์อีกครั้ง' };
+        }
+        return { valid: true, normalized, message: '' };
+    }
+
+    function levenshteinDistance(a, b) {
+        a = normalizeNameForCompare(a); b = normalizeNameForCompare(b);
+        if (!a) return b.length;
+        if (!b) return a.length;
+        const dp = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
+        for (let i = 0; i <= a.length; i++) dp[i][0] = i;
+        for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+        for (let i = 1; i <= a.length; i++) {
+            for (let j = 1; j <= b.length; j++) {
+                const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+                dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+            }
+        }
+        return dp[a.length][b.length];
+    }
+
+    function similarityScore(a, b) {
+        const aa = normalizeNameForCompare(a), bb = normalizeNameForCompare(b);
+        const maxLen = Math.max(aa.length, bb.length);
+        if (!maxLen) return 1;
+        return 1 - (levenshteinDistance(aa, bb) / maxLen);
+    }
+
+    function getUniquePatientsFromHistory() {
+        const map = {};
+        localScreeningHistory.forEach(item => {
+            const name = normalizePatientName(item.patientName);
+            const gender = safeText(item.patientGender).trim();
+            const village = safeText(item.villageNo).trim();
+            if (!name || name === '-' || name === 'ไม่ระบุชื่อ') return;
+            const key = `${name}|${gender}|${village}`;
+            if (!map[key]) map[key] = { name, gender, village, key };
+        });
+        return Object.values(map);
+    }
+
+    function findSimilarPatients(name, limit = 5) {
+        const normalized = normalizePatientName(name);
+        const cmp = normalizeNameForCompare(normalized);
+        if (cmp.length < 3) return [];
+        return getUniquePatientsFromHistory()
+            .map(p => ({ ...p, score: similarityScore(normalized, p.name) }))
+            .filter(p => p.score >= 0.72 && normalizeNameForCompare(p.name) !== cmp)
+            .sort((a, b) => b.score - a.score)
+            .slice(0, limit);
+    }
+
+    function updatePatientNameWarning() {
+        const input = document.getElementById('patientName');
+        const warning = document.getElementById('patientNameWarning');
+        if (!input || !warning) return;
+        const name = normalizePatientName(input.value);
+        const validation = validateFullPatientName(name);
+        const similar = findSimilarPatients(name, 3);
+        let messages = [];
+        if (name && !validation.valid) messages.push('⚠️ ' + validation.message);
+        if (validation.valid && similar.length > 0) {
+            messages.push('🔎 พบชื่อเดิมที่สะกดใกล้เคียง: ' + similar.map(p => `${p.name} (${p.village || '-'}, ${p.gender || '-'})`).join(' / ') + '<br>ถ้าเป็นคนเดิม แนะนำให้กดเลือกจากรายการที่ระบบแนะนำ เพื่อลดการพิมพ์ชื่อผิด');
+        }
+        warning.innerHTML = messages.join('<br>');
+        warning.style.display = messages.length ? 'block' : 'none';
     }
 
     function getLoginRedirectUri() {
@@ -449,47 +614,59 @@
     }
 
     function searchPatientNameAutocomplete() {
-        const inputVal = document.getElementById('patientName').value.trim().toLowerCase();
+        const input = document.getElementById('patientName');
+        const inputVal = normalizePatientName(input.value);
+        input.value = input.value.replace(/ /g, ' ');
+        selectedPatientKey = '';
         const box = document.getElementById('nameSuggestionsBox');
         box.innerHTML = '';
+        updatePatientNameWarning();
 
         if (!inputVal) { box.style.display = 'none'; return; }
 
-        let matches = localScreeningHistory.filter(item => safeText(item.patientName).toLowerCase().includes(inputVal));
-        let uniquePatientsMap = {};
-        
-        matches.forEach(item => {
-            const pName = safeText(item.patientName).trim();
-            const gender = safeText(item.patientGender).trim();
-            const village = safeText(item.villageNo).trim();
-            const key = `${pName}|${gender}|${village}`;
-            if (!uniquePatientsMap[key]) uniquePatientsMap[key] = { name: pName, gender: gender, village: village };
+        const lower = inputVal.toLowerCase();
+        let uniqueList = getUniquePatientsFromHistory()
+            .filter(item => safeText(item.name).toLowerCase().includes(lower));
+
+        const existingKeys = new Set(uniqueList.map(p => p.key));
+        findSimilarPatients(inputVal, 5).forEach(p => {
+            if (!existingKeys.has(p.key)) {
+                p.isSimilar = true;
+                uniqueList.push(p);
+                existingKeys.add(p.key);
+            }
         });
-        
-        let uniqueList = Object.values(uniquePatientsMap);
-        uniqueList.sort((a, b) => safeText(a.name).localeCompare(safeText(b.name), 'th'));
 
-        let top5Matches = uniqueList.slice(0, 5);
-        if (top5Matches.length === 0) { box.style.display = 'none'; return; }
+        uniqueList.sort((a, b) => {
+            if (a.isSimilar && !b.isSimilar) return 1;
+            if (!a.isSimilar && b.isSimilar) return -1;
+            return safeText(a.name).localeCompare(safeText(b.name), 'th');
+        });
 
-        top5Matches.forEach(patient => {
+        let topMatches = uniqueList.slice(0, 7);
+        if (topMatches.length === 0) { box.style.display = 'none'; return; }
+
+        topMatches.forEach(patient => {
             let row = document.createElement('div');
             row.style.padding = '12px 15px'; row.style.cursor = 'pointer'; row.style.borderBottom = '1px solid #f1f5f9'; row.style.fontSize = '15px'; row.style.color = '#334155';
 
-            const icon = document.createTextNode('👤 ');
+            const icon = document.createTextNode(patient.isSimilar ? '🔎 ' : '👤 ');
             const nameEl = document.createElement('b'); nameEl.textContent = patient.name || '-';
+            const tagEl = document.createElement('span');
+            tagEl.style.fontSize = '11px'; tagEl.style.marginLeft = '6px'; tagEl.style.color = patient.isSimilar ? '#b45309' : '#64748b';
+            tagEl.textContent = patient.isSimilar ? '(ชื่อใกล้เคียง)' : '';
             const metaEl = document.createElement('span'); metaEl.style.fontSize = '12px'; metaEl.style.color = '#64748b'; metaEl.style.float = 'right';
             metaEl.textContent = `${patient.village || '-'} (${patient.gender || '-'})`;
 
-            row.appendChild(icon); row.appendChild(nameEl); row.appendChild(metaEl);
-            
+            row.appendChild(icon); row.appendChild(nameEl); row.appendChild(tagEl); row.appendChild(metaEl);
             row.onclick = () => {
                 document.getElementById('patientName').value = patient.name;
                 document.getElementById('patientGender').value = patient.gender;
                 document.getElementById('villageNo').value = patient.village;
+                selectedPatientKey = patient.key || `${patient.name}|${patient.gender}|${patient.village}`;
                 box.style.display = 'none';
+                updatePatientNameWarning();
             };
-            
             row.onmouseenter = () => row.style.backgroundColor = '#f0f7ff';
             row.onmouseleave = () => row.style.backgroundColor = 'transparent';
             box.appendChild(row);
@@ -497,10 +674,11 @@
 
         box.style.display = 'block';
 
-        const perfectMatch = uniqueList.find(p => safeText(p.name).toLowerCase() === inputVal);
+        const perfectMatch = getUniquePatientsFromHistory().find(p => normalizeNameForCompare(p.name) === normalizeNameForCompare(inputVal));
         if (perfectMatch) {
             document.getElementById('patientGender').value = perfectMatch.gender;
             document.getElementById('villageNo').value = perfectMatch.village;
+            selectedPatientKey = perfectMatch.key;
         }
     }
 
@@ -570,7 +748,7 @@
         for (let i = 1; i <= 8; i++) { const el = document.getElementById('q8q' + i); if (el) el.value = ""; }
         document.querySelectorAll('input[name="psychComorbidity"], input[name="medicalComorbidity"]').forEach(chk => chk.checked = false);
         ['psychComorbidityOther','medicalComorbidityOther'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-        for (let i = 1; i <= 10; i++) { const el = document.getElementById('sub10x' + i); if (el) el.value = '0'; }
+        for (let i = 1; i <= 10; i++) { const el = document.getElementById('sub10x' + i); if (el) el.value = ''; }
         updateSubstance10XPreview();
         
         document.getElementById('assessmentTypeSelect').value = "2Q";
@@ -607,10 +785,41 @@
     }
 
     function goToStep2() {
-        if(!document.getElementById('patientName').value.trim() || !document.getElementById('patientGender').value || !document.getElementById('villageNo').value) {
+        const nameEl = document.getElementById('patientName');
+        const validation = validateFullPatientName(nameEl.value);
+        nameEl.value = validation.normalized;
+        if (!validation.valid) {
+            updatePatientNameWarning();
+            alert('⚠️ ' + validation.message);
+            nameEl.focus();
+            return;
+        }
+        if(!document.getElementById('patientGender').value || !document.getElementById('villageNo').value) {
             alert("⚠️ กรุณากรอกข้อมูลทั่วไปให้ครบทุกข้อ"); return;
         }
+
+        const exactKey = `${validation.normalized}|${document.getElementById('patientGender').value}|${document.getElementById('villageNo').value}`;
+        const exactExists = getUniquePatientsFromHistory().some(p => p.key === exactKey);
+        const similar = findSimilarPatients(validation.normalized, 5)
+            .filter(p => p.gender === document.getElementById('patientGender').value || p.village === document.getElementById('villageNo').value);
+        if (!exactExists && similar.length > 0) {
+            const listText = similar.map(p => `- ${p.name} | ${p.village || '-'} | ${p.gender || '-'}`).join('\n');
+            const ok = confirm(`⚠️ พบชื่อเดิมที่สะกดใกล้เคียงกับชื่อที่พิมพ์
+
+${listText}
+
+ถ้าเป็นคนเดิม แนะนำให้กดย้อนกลับ/เลือกจากรายการแนะนำก่อน เพื่อป้องกันชื่อซ้ำจากการสะกดผิด
+
+ยืนยันว่าชื่อ “${validation.normalized}” สะกดถูกต้องและเป็นคนละรายการ/รายใหม่ ใช่หรือไม่?`);
+            if (!ok) {
+                document.getElementById('nameSuggestionsBox').style.display = 'block';
+                nameEl.focus();
+                return;
+            }
+        }
+
         document.getElementById('nameSuggestionsBox').style.display = 'none';
+        updatePatientNameWarning();
         switchAssessment();
         changeStep(2);
     }
@@ -667,7 +876,13 @@
             }
         }
 
-        document.getElementById('smName').innerText = document.getElementById('patientName').value;
+        const sub10xCheck = getSubstance10XData();
+        if (sub10xCheck.assessed && !sub10xCheck.completed) {
+            alert('⚠️ แบบคัดกรอง Alcohol/Substance 10X ยังตอบไม่ครบ ถ้าจะประเมินกรุณาตอบให้ครบทั้ง 10 ข้อ หรือถ้าไม่ได้ประเมินให้ปล่อยว่างทุกข้อครับ');
+            return;
+        }
+
+        document.getElementById('smName').innerText = normalizePatientName(document.getElementById('patientName').value);
         document.getElementById('smGender').innerText = document.getElementById('patientGender').value;
         document.getElementById('smVillage').innerText = document.getElementById('villageNo').value;
         document.getElementById('smType').innerText = "แบบประเมินผสมระดับ " + type;
@@ -687,7 +902,7 @@
         document.getElementById('smPsychComorbidity').innerText = getCheckedValues('psychComorbidity', 'psychComorbidityOther');
         document.getElementById('smMedicalComorbidity').innerText = getCheckedValues('medicalComorbidity', 'medicalComorbidityOther');
         const sub10x = getSubstance10XData();
-        document.getElementById('smSubstance10X').innerText = `${sub10x.score} คะแนน (${sub10x.level}) | ${sub10x.details}`;
+        document.getElementById('smSubstance10X').innerText = sub10x.assessed ? `${sub10x.score} คะแนน (${sub10x.level}) | ${sub10x.details}` : 'ไม่ได้ประเมิน';
         changeStep(3);
     }
 
@@ -700,7 +915,7 @@
         for (let i = 1; i <= 8; i++) { const el = document.getElementById('q8q' + i); if (el) el.value = ""; }
         document.querySelectorAll('input[name="psychComorbidity"], input[name="medicalComorbidity"]').forEach(chk => chk.checked = false);
         ['psychComorbidityOther','medicalComorbidityOther'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-        for (let i = 1; i <= 10; i++) { const el = document.getElementById('sub10x' + i); if (el) el.value = '0'; }
+        for (let i = 1; i <= 10; i++) { const el = document.getElementById('sub10x' + i); if (el) el.value = ''; }
         updateSubstance10XPreview();
 
         document.getElementById('assessmentTypeSelect').value = "2Q";
@@ -750,7 +965,7 @@
         return {
             action: 'submitScreening',
             vhmName: currentVhmName,
-            patientName: document.getElementById('patientName').value.trim(),
+            patientName: normalizePatientName(document.getElementById('patientName').value),
             patientAge: '',
             patientGender: document.getElementById('patientGender').value,
             villageNo: document.getElementById('villageNo').value,
@@ -761,9 +976,9 @@
             comment: document.getElementById('comment').value.trim(),
             psychComorbidities: getCheckedValues('psychComorbidity', 'psychComorbidityOther'),
             medicalComorbidities: getCheckedValues('medicalComorbidity', 'medicalComorbidityOther'),
-            substance10xScore: String(subData.score),
-            substance10xLevel: subData.level,
-            substance10xDetails: subData.details
+            substance10xScore: subData.assessed ? String(subData.score) : 'ไม่ได้ประเมิน',
+            substance10xLevel: subData.assessed ? subData.level : 'ไม่ได้ประเมิน',
+            substance10xDetails: subData.assessed ? subData.details : 'ไม่ได้ประเมิน'
         };
     }
 
@@ -781,13 +996,14 @@
     }
 
     function saveCurrentFormAsOfflineDraft(mode) {
-        const patientName = document.getElementById('patientName').value.trim();
+        const validation = validateFullPatientName(document.getElementById('patientName').value);
         const patientGender = document.getElementById('patientGender').value;
         const villageNo = document.getElementById('villageNo').value;
-        if (!patientName || !patientGender || !villageNo) {
-            alert('⚠️ ต้องมีชื่อ เพศ และหมู่บ้านก่อนบันทึกร่างครับ');
+        if (!validation.valid || !patientGender || !villageNo) {
+            alert('⚠️ ต้องมีชื่อ-นามสกุล เพศ และหมู่บ้านก่อนบันทึกร่างครับ');
             return;
         }
+        document.getElementById('patientName').value = validation.normalized;
         const payload = buildScreeningPayloadObject();
         const draft = saveOfflineDraft(payload, mode === 'manual' ? 'manual_save' : 'network_error');
         alert(`💾 บันทึกร่างไว้ในเครื่องนี้แล้ว\nชื่อ: ${payload.patientName}\nเวลาร่าง: ${new Date(draft.savedAt).toLocaleString('th-TH')}\n\nเมื่อมีสัญญาณ ให้กด “Sync ข้อมูลส่งย้อนหลัง”`);
@@ -861,6 +1077,19 @@
 
     async function submitData() {
         const btn = document.getElementById('btnSubmitScreening');
+        const validation = validateFullPatientName(document.getElementById('patientName').value);
+        if (!validation.valid) {
+            alert('⚠️ ' + validation.message);
+            changeStep(1);
+            return;
+        }
+        document.getElementById('patientName').value = validation.normalized;
+        const sub10xCheck = getSubstance10XData();
+        if (sub10xCheck.assessed && !sub10xCheck.completed) {
+            alert('⚠️ 10X ยังตอบไม่ครบ กรุณากลับไปตอบให้ครบทั้ง 10 ข้อ หรือปล่อยว่างทุกข้อถ้าไม่ได้ประเมิน');
+            changeStep(2);
+            return;
+        }
         const payload = buildScreeningPayloadObject();
         try {
             btn.disabled = true;
@@ -884,7 +1113,6 @@
             btn.innerText = "📤 ส่งข้อมูลบันทึกคลาวด์";
             updateOfflineDraftBadge();
         }
-    }
-</script>
+    }</script>
 </body>
 </html>
