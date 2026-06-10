@@ -35,12 +35,32 @@
         .summary-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #e2e8f0; gap: 10px; }
         .summary-item span:first-child { font-weight: bold; color: #64748b; }
         .system-note { background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; padding: 12px; border-radius: 10px; font-size: 13px; margin-bottom: 15px; display: none; }
+        .checkbox-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 8px; }
+        .checkbox-item { display: flex; gap: 8px; align-items: flex-start; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; font-size: 14px; }
+        .checkbox-item input { margin-top: 3px; }
+        .mini-note { font-size: 12px; color: #64748b; margin-top: 6px; line-height: 1.5; }
+        .sub-score { background: #ecfeff; border: 1px solid #a5f3fc; color: #155e75; border-radius: 10px; padding: 10px; font-size: 13px; margin-top: 10px; }
+        .draft-box { background: #f8fafc; border: 1px solid #cbd5e1; border-left: 5px solid #0ea5e9; border-radius: 12px; padding: 12px; margin-bottom: 16px; font-size: 13px; color: #334155; display: none; }
+        .draft-box strong { color: #0369a1; }
+        .draft-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+        .btn-draft { padding: 10px 12px; border: none; border-radius: 10px; font-size: 13px; font-weight: bold; cursor: pointer; color: white; background: #0ea5e9; }
+        .btn-draft.secondary { background: #64748b; }
+        .btn-draft.danger { background: #ef4444; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div id="systemNote" class="system-note"></div>
+    <div id="offlineDraftBox" class="draft-box">
+        <div><strong>📦 ร่างออฟไลน์ที่ยังไม่ส่ง:</strong> <span id="offlineDraftCount">0</span> รายการ</div>
+        <div class="mini-note">ถ้าเน็ตหลุดตอนส่ง ระบบจะเก็บข้อมูลไว้ในเครื่องนี้ก่อน แล้วกด Sync เมื่อกลับมามีสัญญาณ</div>
+        <div class="draft-actions">
+            <button type="button" class="btn-draft" onclick="syncOfflineDrafts()">🔄 Sync ข้อมูลส่งย้อนหลัง</button>
+            <button type="button" class="btn-draft secondary" onclick="showOfflineDraftSummary()">👁️ ดูรายการร่าง</button>
+            <button type="button" class="btn-draft danger" onclick="clearOfflineDrafts()">🗑️ ลบร่างทั้งหมด</button>
+        </div>
+    </div>
 
     <div id="vhmInfoHeader" class="vhm-info-header">
         <div>ผู้ประเมิน: <span id="vhmDisplayName">-</span></div>
@@ -194,6 +214,55 @@
             <div class="form-group"><label>8. มีปัญหาเรื่องการควบคุมตนเองไม่ได้ จนคิดหรือพยายามฆ่าตัวตาย</label><select id="q8q8"><option value="">-- เลือกคำตอบ --</option><option value="0">ไม่มี</option><option value="12">มี</option></select></div>
         </div>
 
+        <div id="panelClinicalContext" class="sub-questions">
+            <h4>🩺 ส่วนที่ 4: ประวัติโรคประจำตัวเดิม / ปัจจัยร่วมทางคลินิก</h4>
+            <p class="mini-note">ใช้เป็นข้อมูลประกอบให้ทีมโรงพยาบาลประเมินเคสได้แม่นยำขึ้น ไม่ใช่การวินิจฉัยแทนแพทย์</p>
+
+            <div class="form-group">
+                <label>Psychiatric Co-morbidities / ประวัติจิตเวชเดิมหรือปัจจัยเสี่ยงเดิม</label>
+                <div class="checkbox-grid">
+                    <label class="checkbox-item"><input type="checkbox" name="psychComorbidity" value="ไม่มีข้อมูล/ไม่พบประวัติจิตเวชเดิม"> ไม่มีข้อมูล/ไม่พบประวัติจิตเวชเดิม</label>
+                    <label class="checkbox-item"><input type="checkbox" name="psychComorbidity" value="โรคซึมเศร้าเดิม"> โรคซึมเศร้าเดิม</label>
+                    <label class="checkbox-item"><input type="checkbox" name="psychComorbidity" value="โรควิตกกังวล/แพนิค"> โรควิตกกังวล/แพนิค</label>
+                    <label class="checkbox-item"><input type="checkbox" name="psychComorbidity" value="ไบโพลาร์/อารมณ์สองขั้ว"> ไบโพลาร์/อารมณ์สองขั้ว</label>
+                    <label class="checkbox-item"><input type="checkbox" name="psychComorbidity" value="โรคจิต/หูแว่ว/หลงผิด"> โรคจิต/หูแว่ว/หลงผิด</label>
+                    <label class="checkbox-item"><input type="checkbox" name="psychComorbidity" value="เคยทำร้ายตัวเอง/เคยพยายามฆ่าตัวตาย"> เคยทำร้ายตัวเอง/เคยพยายามฆ่าตัวตาย</label>
+                    <label class="checkbox-item"><input type="checkbox" name="psychComorbidity" value="กำลังรักษาจิตเวช/รับยาจิตเวช"> กำลังรักษาจิตเวช/รับยาจิตเวช</label>
+                </div>
+                <input type="text" id="psychComorbidityOther" placeholder="อื่น ๆ หรือรายละเอียดเพิ่มเติม เช่น รับยาจาก รพ.ใด/ขาดยา/นัดล่าสุด" style="margin-top:10px;">
+            </div>
+
+            <div class="form-group">
+                <label>โรคทางกายหรือปัจจัยร่วมที่อาจสัมพันธ์กับอารมณ์</label>
+                <div class="checkbox-grid">
+                    <label class="checkbox-item"><input type="checkbox" name="medicalComorbidity" value="ไม่มีข้อมูล/ไม่พบโรคทางกายสำคัญ"> ไม่มีข้อมูล/ไม่พบโรคทางกายสำคัญ</label>
+                    <label class="checkbox-item"><input type="checkbox" name="medicalComorbidity" value="โรคไทรอยด์"> โรคไทรอยด์</label>
+                    <label class="checkbox-item"><input type="checkbox" name="medicalComorbidity" value="มะเร็ง/กำลังรักษามะเร็ง"> มะเร็ง/กำลังรักษามะเร็ง</label>
+                    <label class="checkbox-item"><input type="checkbox" name="medicalComorbidity" value="โรคปวดเรื้อรัง"> โรคปวดเรื้อรัง</label>
+                    <label class="checkbox-item"><input type="checkbox" name="medicalComorbidity" value="โรคเรื้อรังหลายโรค/ติดเตียง/พิการ"> โรคเรื้อรังหลายโรค/ติดเตียง/พิการ</label>
+                    <label class="checkbox-item"><input type="checkbox" name="medicalComorbidity" value="โรคทางระบบประสาท/Stroke/ชัก/สมองเสื่อม"> โรคทางระบบประสาท/Stroke/ชัก/สมองเสื่อม</label>
+                    <label class="checkbox-item"><input type="checkbox" name="medicalComorbidity" value="ยาหรือสารที่อาจกระทบอารมณ์/การนอน"> ยาหรือสารที่อาจกระทบอารมณ์/การนอน</label>
+                </div>
+                <input type="text" id="medicalComorbidityOther" placeholder="อื่น ๆ หรือรายละเอียดเพิ่มเติม" style="margin-top:10px;">
+            </div>
+        </div>
+
+        <div id="panelSubstance10X" class="sub-questions">
+            <h4>🍺 ส่วนที่ 5: Alcohol / Substance Screening - 10X</h4>
+            <p class="mini-note">แบบคัดกรองสั้นในระบบเพื่อชี้เป้าความเสี่ยงร่วม ไม่ใช่แบบทดแทน AUDIT/ASSIST ฉบับเต็ม หากพบความเสี่ยงควรประเมินต่อโดยบุคลากรสุขภาพ</p>
+            <div class="form-group"><label>1. ใน 3 เดือนที่ผ่านมา มีการดื่มสุราหรือเครื่องดื่มแอลกอฮอล์หรือไม่?</label><select id="sub10x1" onchange="updateSubstance10XPreview()"><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
+            <div class="form-group"><label>2. เคยดื่มจนเมา ดื่มหนัก หรือควบคุมปริมาณไม่ได้หรือไม่?</label><select id="sub10x2" onchange="updateSubstance10XPreview()"><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
+            <div class="form-group"><label>3. มีการใช้กัญชา ยาบ้า กระท่อม ยานอนหลับ/ยาแก้ปวดที่ไม่ได้ใช้ตามแพทย์สั่ง หรือสารเสพติดอื่นหรือไม่?</label><select id="sub10x3" onchange="updateSubstance10XPreview()"><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
+            <div class="form-group"><label>4. ใช้สุราหรือสารเพื่อช่วยนอน ลดเครียด ลดเศร้า หรือหนีปัญหาหรือไม่?</label><select id="sub10x4" onchange="updateSubstance10XPreview()"><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
+            <div class="form-group"><label>5. ครอบครัวหรือคนรอบตัวเคยเป็นห่วง เตือน หรือขอให้ลดการใช้หรือไม่?</label><select id="sub10x5" onchange="updateSubstance10XPreview()"><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
+            <div class="form-group"><label>6. การใช้สุราหรือสารทำให้เสียงาน เสียการเรียน เสียหน้าที่ หรือกระทบครอบครัวหรือไม่?</label><select id="sub10x6" onchange="updateSubstance10XPreview()"><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
+            <div class="form-group"><label>7. เคยมีอุบัติเหตุ ทะเลาะ หนี้สิน หรือปัญหากฎหมายจากการใช้สุราหรือสารหรือไม่?</label><select id="sub10x7" onchange="updateSubstance10XPreview()"><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
+            <div class="form-group"><label>8. เคยพยายามลดหรือหยุดแต่ทำไม่ได้หรือไม่?</label><select id="sub10x8" onchange="updateSubstance10XPreview()"><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
+            <div class="form-group"><label>9. มีอาการอยากมาก มือสั่น หงุดหงิด นอนไม่หลับ หรืออาการถอนเมื่อไม่ได้ใช้หรือไม่?</label><select id="sub10x9" onchange="updateSubstance10XPreview()"><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
+            <div class="form-group" style="border:2px solid #ef4444; padding:10px; border-radius:8px;"><label style="color:#b91c1c;">10. มีการใช้สุราหรือสารร่วมกับช่วงที่คิดทำร้ายตนเอง/อยากตาย/อารมณ์ดิ่งหรือไม่?</label><select id="sub10x10" onchange="updateSubstance10XPreview()"><option value="0">ไม่มี/ไม่ทราบ</option><option value="1">มี</option></select></div>
+            <div id="substance10XPreview" class="sub-score">ผลคัดกรอง 10X: 0 คะแนน (🟢 เขียว/ยังไม่พบความเสี่ยงจากข้อมูลที่กรอก)</div>
+        </div>
+
         <div class="form-group" style="margin-top:20px;">
             <label for="comment">หมายเหตุ (ถ้ามี)</label>
             <textarea id="comment" rows="2" placeholder="กรอกข้อมูลเพิ่มเติม..."></textarea>
@@ -220,7 +289,14 @@
             <div class="summary-item"><span>คะแนนสรุป 8Q:</span> <span id="smQ8Result">-(ไม่ได้ประเมิน)-</span></div>
             <div class="summary-item"><span>หมายเหตุผู้คัดกรอง:</span> <span id="smComment">-</span></div>
         </div>
+        <div class="summary-box">
+            <h4>🩺 ปัจจัยร่วม / สารเสพติด</h4>
+            <div class="summary-item"><span>Psychiatric co-morbidities:</span> <span id="smPsychComorbidity">-</span></div>
+            <div class="summary-item"><span>โรคทางกาย/ปัจจัยร่วม:</span> <span id="smMedicalComorbidity">-</span></div>
+            <div class="summary-item"><span>Alcohol/Substance 10X:</span> <span id="smSubstance10X">-</span></div>
+        </div>
         <button class="btn-nav btn-submit" id="btnSubmitScreening" onclick="submitData()">📤 ส่งข้อมูลบันทึกคลาวด์</button>
+        <button class="btn-nav btn-next" type="button" onclick="saveCurrentFormAsOfflineDraft('manual')">💾 บันทึกร่างไว้ในเครื่อง</button>
         <button class="btn-nav btn-back" onclick="changeStep(2)">⬅️ ย้อนกลับแก้ไข</button>
     </div>
 </div>
@@ -230,6 +306,7 @@
     const APP_BASE_URL = 'https://mental-health-app-lovat.vercel.app';
     const INDEX_PAGE_URL = `${APP_BASE_URL}/index.html`;
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySImkthOaj1K3yK3QtFsc0qUNx7wFMF9gNaPjO_IL86H6JaywSU2ZnF4NPic_ypsW8ew/exec';
+    const OFFLINE_DRAFT_STORAGE_KEY = 'banthonglang_mh_screening_offline_drafts_v2';
 
     let currentVhmName = "";
     let localScreeningHistory = [];
@@ -243,6 +320,42 @@
         if (!el) return;
         el.innerText = message;
         el.style.display = message ? 'block' : 'none';
+    }
+
+
+    function getCheckedValues(name, otherInputId) {
+        const values = Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(el => el.value);
+        const other = document.getElementById(otherInputId)?.value.trim();
+        if (other) values.push("อื่น ๆ: " + other);
+        return values.length ? values.join("; ") : "-";
+    }
+
+    function getSubstance10XData() {
+        let score = 0;
+        let positiveItems = [];
+        for (let i = 1; i <= 10; i++) {
+            const el = document.getElementById('sub10x' + i);
+            const val = el ? parseInt(el.value || '0', 10) : 0;
+            if (val > 0) {
+                score += val;
+                positiveItems.push('ข้อ ' + i);
+            }
+        }
+        const q10 = document.getElementById('sub10x10') ? document.getElementById('sub10x10').value === '1' : false;
+        let level = '🟢 เขียว/ยังไม่พบความเสี่ยงจากข้อมูลที่กรอก';
+        if (q10 || score >= 3) level = '🔴 แดง/ควรประเมินต่อเร่งด่วน';
+        else if (score >= 1) level = '🟡 เหลือง/ควรซักประวัติเพิ่ม';
+        return {
+            score,
+            level,
+            details: positiveItems.length ? positiveItems.join(', ') : 'ไม่พบข้อบวกจาก 10X'
+        };
+    }
+
+    function updateSubstance10XPreview() {
+        const data = getSubstance10XData();
+        const el = document.getElementById('substance10XPreview');
+        if (el) el.innerText = `ผลคัดกรอง 10X: ${data.score} คะแนน (${data.level}) | ${data.details}`;
     }
 
     function getLoginRedirectUri() {
@@ -274,7 +387,17 @@
         }
     }
 
-    document.addEventListener('DOMContentLoaded', initLiffAndAuth);
+    document.addEventListener('DOMContentLoaded', () => {
+        updateOfflineDraftBadge();
+        initLiffAndAuth();
+    });
+    window.addEventListener('online', () => {
+        updateOfflineDraftBadge();
+        showSystemNote('✅ กลับมาออนไลน์แล้ว หากมีร่างค้างอยู่สามารถกด Sync ข้อมูลส่งย้อนหลังได้');
+    });
+    window.addEventListener('offline', () => {
+        showSystemNote('⚠️ ขณะนี้อุปกรณ์อาจออฟไลน์ ถ้าส่งไม่สำเร็จระบบจะเก็บเป็นร่างไว้ในเครื่อง');
+    });
 
     async function checkAutoLogin() {
         try {
@@ -445,6 +568,10 @@
         document.querySelectorAll('input[name="q2q1"], input[name="q2q2"]').forEach(radio => radio.checked = false);
         for (let i = 1; i <= 9; i++) { const el = document.getElementById('q9q' + i); if (el) el.value = ""; }
         for (let i = 1; i <= 8; i++) { const el = document.getElementById('q8q' + i); if (el) el.value = ""; }
+        document.querySelectorAll('input[name="psychComorbidity"], input[name="medicalComorbidity"]').forEach(chk => chk.checked = false);
+        ['psychComorbidityOther','medicalComorbidityOther'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+        for (let i = 1; i <= 10; i++) { const el = document.getElementById('sub10x' + i); if (el) el.value = '0'; }
+        updateSubstance10XPreview();
         
         document.getElementById('assessmentTypeSelect').value = "2Q";
         switchAssessment();
@@ -557,6 +684,10 @@
         } else { document.getElementById('smQ8Result').innerText = "-(ไม่ได้ประเมิน)-"; }
 
         document.getElementById('smComment').innerText = document.getElementById('comment').value.trim() || "-(ว่าง)-";
+        document.getElementById('smPsychComorbidity').innerText = getCheckedValues('psychComorbidity', 'psychComorbidityOther');
+        document.getElementById('smMedicalComorbidity').innerText = getCheckedValues('medicalComorbidity', 'medicalComorbidityOther');
+        const sub10x = getSubstance10XData();
+        document.getElementById('smSubstance10X').innerText = `${sub10x.score} คะแนน (${sub10x.level}) | ${sub10x.details}`;
         changeStep(3);
     }
 
@@ -567,16 +698,56 @@
         document.querySelectorAll('input[name="q2q1"], input[name="q2q2"]').forEach(radio => radio.checked = false);
         for (let i = 1; i <= 9; i++) { const el = document.getElementById('q9q' + i); if (el) el.value = ""; }
         for (let i = 1; i <= 8; i++) { const el = document.getElementById('q8q' + i); if (el) el.value = ""; }
+        document.querySelectorAll('input[name="psychComorbidity"], input[name="medicalComorbidity"]').forEach(chk => chk.checked = false);
+        ['psychComorbidityOther','medicalComorbidityOther'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+        for (let i = 1; i <= 10; i++) { const el = document.getElementById('sub10x' + i); if (el) el.value = '0'; }
+        updateSubstance10XPreview();
 
         document.getElementById('assessmentTypeSelect').value = "2Q";
         switchAssessment();
         changeStep(1);
     }
 
-    async function submitData() {
+    function urlSearchParamsToObject(params) {
+        const obj = {};
+        for (const [key, value] of params.entries()) obj[key] = value;
+        return obj;
+    }
+
+    function objectToUrlSearchParams(obj) {
+        const params = new URLSearchParams();
+        Object.keys(obj || {}).forEach(key => params.append(key, obj[key] === undefined || obj[key] === null ? '' : String(obj[key])));
+        return params;
+    }
+
+    function getOfflineDrafts() {
+        try {
+            const raw = localStorage.getItem(OFFLINE_DRAFT_STORAGE_KEY);
+            const parsed = raw ? JSON.parse(raw) : [];
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (err) {
+            console.error('Read offline drafts failed:', err);
+            return [];
+        }
+    }
+
+    function setOfflineDrafts(drafts) {
+        localStorage.setItem(OFFLINE_DRAFT_STORAGE_KEY, JSON.stringify(Array.isArray(drafts) ? drafts : []));
+        updateOfflineDraftBadge();
+    }
+
+    function updateOfflineDraftBadge() {
+        const drafts = getOfflineDrafts();
+        const box = document.getElementById('offlineDraftBox');
+        const count = document.getElementById('offlineDraftCount');
+        if (count) count.innerText = drafts.length;
+        if (box) box.style.display = drafts.length > 0 ? 'block' : 'none';
+    }
+
+    function buildScreeningPayloadObject() {
         const type = document.getElementById('assessmentTypeSelect').value;
-        const btn = document.getElementById('btnSubmitScreening');
-        const sendData = new URLSearchParams({
+        const subData = getSubstance10XData();
+        return {
             action: 'submitScreening',
             vhmName: currentVhmName,
             patientName: document.getElementById('patientName').value.trim(),
@@ -587,21 +758,115 @@
             q2Result: document.getElementById('smQ2Result').innerText,
             q9Score: (type === '9Q' || type === '8Q') ? document.getElementById('smQ9Score').innerText : '',
             q8Result: (type === '8Q') ? document.getElementById('smQ8Result').innerText : '',
-            comment: document.getElementById('comment').value.trim()
-        });
+            comment: document.getElementById('comment').value.trim(),
+            psychComorbidities: getCheckedValues('psychComorbidity', 'psychComorbidityOther'),
+            medicalComorbidities: getCheckedValues('medicalComorbidity', 'medicalComorbidityOther'),
+            substance10xScore: String(subData.score),
+            substance10xLevel: subData.level,
+            substance10xDetails: subData.details
+        };
+    }
 
+    function saveOfflineDraft(payload, reason) {
+        const drafts = getOfflineDrafts();
+        const draft = {
+            id: 'draft_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+            savedAt: new Date().toISOString(),
+            reason: safeText(reason) || 'network_error',
+            payload: payload
+        };
+        drafts.push(draft);
+        setOfflineDrafts(drafts);
+        return draft;
+    }
+
+    function saveCurrentFormAsOfflineDraft(mode) {
+        const patientName = document.getElementById('patientName').value.trim();
+        const patientGender = document.getElementById('patientGender').value;
+        const villageNo = document.getElementById('villageNo').value;
+        if (!patientName || !patientGender || !villageNo) {
+            alert('⚠️ ต้องมีชื่อ เพศ และหมู่บ้านก่อนบันทึกร่างครับ');
+            return;
+        }
+        const payload = buildScreeningPayloadObject();
+        const draft = saveOfflineDraft(payload, mode === 'manual' ? 'manual_save' : 'network_error');
+        alert(`💾 บันทึกร่างไว้ในเครื่องนี้แล้ว\nชื่อ: ${payload.patientName}\nเวลาร่าง: ${new Date(draft.savedAt).toLocaleString('th-TH')}\n\nเมื่อมีสัญญาณ ให้กด “Sync ข้อมูลส่งย้อนหลัง”`);
+    }
+
+    function showOfflineDraftSummary() {
+        const drafts = getOfflineDrafts();
+        if (drafts.length === 0) {
+            alert('ไม่มีร่างออฟไลน์ค้างอยู่ครับ');
+            return;
+        }
+        const lines = drafts.map((d, idx) => {
+            const p = d.payload || {};
+            const dateText = d.savedAt ? new Date(d.savedAt).toLocaleString('th-TH') : '-';
+            return `${idx + 1}. ${p.patientName || '-'} | ${p.patientGender || '-'} | ${p.villageNo || '-'} | ${dateText}`;
+        });
+        alert('📦 รายการร่างออฟไลน์ที่ยังไม่ส่ง\n\n' + lines.join('\n'));
+    }
+
+    function clearOfflineDrafts() {
+        const drafts = getOfflineDrafts();
+        if (drafts.length === 0) {
+            alert('ไม่มีร่างให้ลบครับ');
+            return;
+        }
+        if (!confirm(`ต้องการลบร่างออฟไลน์ทั้งหมด ${drafts.length} รายการจากเครื่องนี้ใช่หรือไม่?`)) return;
+        setOfflineDrafts([]);
+        alert('ลบร่างออฟไลน์ทั้งหมดแล้วครับ');
+    }
+
+    async function postScreeningPayload(payload) {
+        const response = await fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+            body: objectToUrlSearchParams(payload)
+        });
+        if (!response.ok) throw new Error('HTTP Status ' + response.status);
+        return await response.json();
+    }
+
+    async function syncOfflineDrafts() {
+        let drafts = getOfflineDrafts();
+        if (drafts.length === 0) {
+            alert('ไม่มีร่างออฟไลน์ค้างอยู่ครับ');
+            return;
+        }
+        if (!navigator.onLine && !confirm('อุปกรณ์ยังดูเหมือนออฟไลน์อยู่ ต้องการลอง Sync ต่อหรือไม่?')) return;
+        const total = drafts.length;
+        let successCount = 0;
+        const failed = [];
+        showSystemNote(`⏳ กำลัง Sync ร่างออฟไลน์ ${total} รายการ...`);
+        for (const draft of drafts) {
+            try {
+                const result = await postScreeningPayload(draft.payload || {});
+                if (result.success) successCount++;
+                else failed.push({ ...draft, lastError: result.message || 'backend_rejected' });
+            } catch (err) {
+                failed.push({ ...draft, lastError: err.message });
+            }
+        }
+        setOfflineDrafts(failed);
+        fetchPatientHistoryForAutocomplete();
+        if (failed.length === 0) {
+            showSystemNote('');
+            alert(`🎉 Sync สำเร็จครบ ${successCount}/${total} รายการ และลบร่างออกจากเครื่องแล้วครับ`);
+        } else {
+            showSystemNote(`⚠️ Sync สำเร็จ ${successCount}/${total} รายการ เหลือร่างค้าง ${failed.length} รายการ`);
+            alert(`⚠️ Sync สำเร็จ ${successCount}/${total} รายการ\nยังเหลือร่างที่ส่งไม่สำเร็จ ${failed.length} รายการ กรุณาลองใหม่เมื่อสัญญาณดีขึ้น`);
+        }
+    }
+
+    async function submitData() {
+        const btn = document.getElementById('btnSubmitScreening');
+        const payload = buildScreeningPayloadObject();
         try {
             btn.disabled = true;
             btn.innerText = "⏳ กำลังบันทึกข้อมูล...";
 
-            const response = await fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-                body: sendData
-            });
-
-            if (!response.ok) throw new Error("HTTP Status " + response.status);
-            const result = await response.json();
+            const result = await postScreeningPayload(payload);
 
             if (result.success) {
                 alert('🎉 ส่งรายงานการคัดกรองขึ้นระบบคลาวด์ รพ.สต. สำเร็จเรียบร้อยครับ!');
@@ -611,11 +876,13 @@
                 alert('❌ บันทึกไม่สำเร็จ: ' + (result.message || 'ไม่ทราบสาเหตุ'));
             }
         } catch (error) {
-            alert('❌ เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาตรวจสอบอินเทอร์เน็ตหรือ Apps Script');
             console.error("Submit error:", error);
+            const draft = saveOfflineDraft(payload, error.message || 'network_error');
+            alert(`⚠️ ส่งข้อมูลไม่สำเร็จ อาจเกิดจากเน็ตหลุดหรือ Apps Script ติดต่อไม่ได้\n\nระบบบันทึกเป็น “ร่างออฟไลน์” ไว้ในเครื่องนี้แล้ว\nชื่อ: ${payload.patientName || '-'}\nเวลาร่าง: ${new Date(draft.savedAt).toLocaleString('th-TH')}\n\nเมื่อกลับมามีสัญญาณ ให้กด “Sync ข้อมูลส่งย้อนหลัง” ด้านบนครับ`);
         } finally {
             btn.disabled = false;
             btn.innerText = "📤 ส่งข้อมูลบันทึกคลาวด์";
+            updateOfflineDraftBadge();
         }
     }
 </script>
