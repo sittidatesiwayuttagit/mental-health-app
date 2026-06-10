@@ -106,9 +106,26 @@
         .compare-table { width:100%; border-collapse:collapse; font-size:13px; margin-top:10px; }
         .compare-table th, .compare-table td { border:1px solid #e2e8f0; padding:8px; text-align:left; vertical-align:top; }
         .compare-table th { background:#f8fafc; color:#475569; }
+
+        .booking-status-pill { display:inline-block; padding:6px 12px; border-radius:999px; font-weight:bold; font-size:13px; white-space:nowrap; }
+        .booking-booked { background:#dcfce7; color:#166534; border:1px solid #86efac; }
+        .booking-unbooked { background:#fef3c7; color:#92400e; border:1px solid #fde68a; }
+        .patient-detail-mini { background:#eff6ff; border:1px solid #bfdbfe; border-radius:14px; padding:14px; margin-bottom:14px; }
+        .patient-detail-mini h3 { margin:0 0 8px 0; color:#1d4ed8; }
+        .mini-profile-row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; font-size:14px; color:#334155; }
+        .mini-profile-pill { display:inline-block; background:#ffffff; border:1px solid #dbeafe; border-radius:999px; padding:6px 12px; font-weight:bold; }
+        .detail-subtabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; border-bottom:2px solid #e2e8f0; padding-bottom:10px; }
+        .detail-subtab-btn { border:none; border-radius:10px; padding:11px 14px; background:#e2e8f0; color:#475569; font-weight:bold; cursor:pointer; }
+        .detail-subtab-btn.active { background:#3b82f6; color:#ffffff; }
+        .detail-subsection { display:none; }
+        .detail-subsection.active { display:block; }
+        .explain-box { background:#f0f9ff; border:1px solid #bae6fd; color:#0f172a; border-radius:12px; padding:12px; margin-bottom:12px; font-size:13px; line-height:1.55; }
+        .overview-note { color:#64748b; font-size:13px; line-height:1.55; margin-top:8px; }
+
         @media (max-width: 600px) { .profile-info-grid { grid-template-columns:1fr !important; } .patient-photo-box { width:96px; height:96px; min-width:96px; } }
         .mini-section-title { font-weight:bold; color:#1e293b; border-left:4px solid #3b82f6; padding-left:8px; margin:14px 0 8px 0; }
         textarea { width:100%; padding:12px; border:2px solid #cbd5e1; border-radius:10px; box-sizing:border-box; font-size:15px; }
+
         @media (max-width: 600px) {
             .admin-card { padding: 18px; }
             .summary-panel { grid-template-columns: 1fr !important; }
@@ -172,32 +189,17 @@
 
         <div class="tabs-bar">
             <button id="tabPatientsBtn" class="tab-btn active" onclick="switchTab('patientsTab')">📋 ข้อมูลผู้ป่วย</button>
+            <button id="tabOverviewBtn" class="tab-btn" onclick="switchTab('overviewTab')">📊 ข้อมูลภาพรวมเคส</button>
             <button id="tabVhmBtn" class="tab-btn" onclick="switchTab('vhmTab')">👥 ข้อมูล อสม.</button>
             <button id="tabAdminsBtn" class="tab-btn" onclick="switchTab('adminsTab')">👥 ข้อมูลผู้ดูแล</button>
             <button id="tabFeedbackBtn" class="tab-btn" onclick="switchTab('feedbackTab')">💬 Feedback ข้อเสนอแนะ</button>
+            <button id="tabSystemBtn" class="tab-btn" onclick="switchTab('systemTab')">🧮 งานระบบ</button>
         </div>
 
         <div id="loadingText" class="loading" style="display:none;">กำลังดึงข้อมูลล่าสุดจาก Google Sheet...</div>
 
         <div id="patientsTab" class="tab-content active">
             <div id="patientListSection">
-            <div id="dashboardSummaryPanel" class="summary-panel">
-                <div class="summary-card"><h4>เคสทั้งหมด</h4><div class="big-number" id="sumTotalCases">0</div><div class="case-status-muted">จำนวนรายการคัดกรองทั้งหมด</div></div>
-                <div class="summary-card"><h4>🟢 เขียว</h4><div class="big-number" id="sumGreenCases">0</div><div class="case-status-muted">ยังไม่พบความเสี่ยงเด่น</div></div>
-                <div class="summary-card"><h4>🟡 เหลือง</h4><div class="big-number" id="sumYellowCases">0</div><div class="case-status-muted">ควรติดตาม/ซักเพิ่ม</div></div>
-                <div class="summary-card"><h4>🔴 แดง</h4><div class="big-number" id="sumRedCases">0</div><div class="case-status-muted">ควรจัดการเร่งด่วน</div></div>
-            </div>
-            <div id="villageRiskSummary" class="search-container" style="background:#ffffff;"></div>
-            <div class="search-container" style="background:#f8fafc; border:1px solid #cbd5e1;">
-                <h4 style="margin-top:0; color:#334155;">🧮 งานระบบ/สรุปข้อมูล</h4>
-                <div class="controls-row">
-                    <button class="btn-search" onclick="refreshMonthlyAggregationFromWeb()">📊 อัปเดต Monthly Summary / Heatmap</button>
-                    <button class="btn-refresh" onclick="runFollowupReminderNow()">🔔 ทดสอบแจ้งเตือน Follow-up วันนี้</button>
-                    <button class="btn-action delete" onclick="archiveClosedCasesFromWeb()">🗄️ ย้ายเคสปิดงานเกิน 1 ปีเข้าคลัง</button>
-                </div>
-                <div class="case-status-muted" style="margin-top:8px;">ปุ่มย้ายคลังใช้ได้เฉพาะบัญชี Hospital และจะย้ายเฉพาะเคสที่ Follow-up Status = ปิดเคสแล้ว และ Closed At เกิน 1 ปี</div>
-            </div>
-
                 <div class="search-container">
                     <div class="inputs-row">
                         <input type="text" id="searchInput" oninput="processData()" placeholder="🔍 พิมพ์ชื่อ-นามสกุลผู้ป่วยเพื่อค้นหา...">
@@ -222,66 +224,98 @@
 
             <div id="patientDetailSection" style="display: none;">
                 <button class="btn-refresh" onclick="backToPatientList()" style="margin-bottom: 20px; background-color: #475569; display: inline-flex; align-items: center; gap: 5px;">⬅️ กลับไปหน้าประวัติรายชื่อ</button>
-                <div id="patientProfileCard" class="patient-profile-card">
-                    <div class="history-summary-line" style="margin-bottom:12px;">
-                        <h3 style="margin:0; color:#1d4ed8;">👤 ข้อมูลทั่วไปผู้ป่วย</h3>
-                        <button type="button" class="small-btn" onclick="enablePatientProfileEdit()">✏️ แก้ไขข้อมูลทั่วไป</button>
+                <div id="patientDetailMiniHeader" class="patient-detail-mini"></div>
+                <div class="detail-subtabs">
+                    <button id="detailSubAssessmentBtn" class="detail-subtab-btn active" onclick="switchPatientDetailSubTab('assessment')">📋 ข้อมูลการประเมิน</button>
+                    <button id="detailSubProfileBtn" class="detail-subtab-btn" onclick="switchPatientDetailSubTab('profile')">👤 ข้อมูลทั่วไป</button>
+                    <button id="detailSubCompareBtn" class="detail-subtab-btn" onclick="switchPatientDetailSubTab('compare')">📊 ข้อมูลเปรียบเทียบ</button>
+                </div>
+
+                <div id="detailAssessmentSubSection" class="detail-subsection active">
+                    <div class="search-container" style="background-color: #ffffff; border: 1px solid #cbd5e1; margin-bottom: 25px;">
+                        <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">🔍 ตัวกรอง: เลือกดูประวัติตามวันที่ตรวจ</h4>
+                        <p class="case-status-muted" style="margin-top:0;">หน้านี้แสดงรายการประเมินแบบย่อก่อน เพื่อให้เห็นว่าวัน/เวลานั้นทำแบบประเมินอะไรบ้าง กด “ดูรายละเอียดผลประเมิน” เพื่อเปิดคะแนน สถานะจองคิว และ Referral/Follow-up</p>
+                        <div class="inputs-row" style="margin-top: 10px;">
+                            <input type="date" id="detailDateFilter">
+                            <button class="btn-search" onclick="renderPatientDetail()">🔍 ค้นหาตามวันที่</button>
+                            <button class="btn-refresh" onclick="clearDetailDateFilter()" style="background-color: #64748b;">🔄 แสดงทั้งหมด</button>
+                        </div>
                     </div>
-                    <div id="patientProfileDisplay"></div>
-                    <div id="patientProfileEditForm" class="profile-edit-form">
-                        <h4 style="margin-top:0; color:#1e293b;">✏️ แก้ไขข้อมูลทั่วไปผู้ป่วย</h4>
-                        <div class="inputs-row">
-                            <input type="text" id="profPatientName" placeholder="ชื่อ-นามสกุล">
-                            <select id="profPatientGender"><option value="">-- เพศ --</option><option value="ชาย">ชาย</option><option value="หญิง">หญิง</option><option value="อื่นๆ">อื่นๆ</option></select>
-                            <select id="profVillageNo"><option value="">-- หมู่บ้าน --</option><option value="หมู่ 1">หมู่ 1</option><option value="หมู่ 2">หมู่ 2</option><option value="หมู่ 5">หมู่ 5</option><option value="หมู่ 8">หมู่ 8</option></select>
+                    <h3 style="color: #334155; border-left: 4px solid #3b82f6; padding-left: 10px; margin-bottom: 15px;">📋 ประวัติการบันทึกประเมินสุขภาพจิตทั้งหมด</h3>
+                    <div id="patientHistoryCards"></div>
+                </div>
+
+                <div id="detailProfileSubSection" class="detail-subsection">
+                    <div id="patientProfileCard" class="patient-profile-card">
+                        <div class="history-summary-line" style="margin-bottom:12px;">
+                            <h3 style="margin:0; color:#1d4ed8;">👤 ข้อมูลทั่วไปผู้ป่วย</h3>
+                            <button type="button" class="small-btn" onclick="enablePatientProfileEdit()">✏️ แก้ไขข้อมูลทั่วไป</button>
                         </div>
-                        <div class="inputs-row">
-                            <select id="profBirthDay"><option value="">-- วันที่เกิด --</option></select>
-                            <select id="profBirthMonth"><option value="">-- เดือนเกิด --</option><option value="1">มกราคม (1)</option><option value="2">กุมภาพันธ์ (2)</option><option value="3">มีนาคม (3)</option><option value="4">เมษายน (4)</option><option value="5">พฤษภาคม (5)</option><option value="6">มิถุนายน (6)</option><option value="7">กรกฎาคม (7)</option><option value="8">สิงหาคม (8)</option><option value="9">กันยายน (9)</option><option value="10">ตุลาคม (10)</option><option value="11">พฤศจิกายน (11)</option><option value="12">ธันวาคม (12)</option></select>
-                            <input type="number" id="profBirthYear" placeholder="ปี พ.ศ. เกิด เช่น 2515" min="2400" max="2600">
-                        </div>
-                        <div class="inputs-row">
-                            <input type="text" id="profRegisteredAddress" placeholder="ที่อยู่ตามทะเบียนบ้าน">
-                            <input type="text" id="profCurrentAddress" placeholder="ที่อยู่ปัจจุบัน">
-                        </div>
-                        <div class="inputs-row">
-                            <input type="text" id="profAllergies" placeholder="ประวัติแพ้ยา/แพ้อาหาร">
-                            <input type="text" id="profChronicDiseases" placeholder="โรคประจำตัว">
-                        </div>
-                        <div class="form-group">
-                            <label>รูปถ่ายผู้ป่วย (ถ้ามี)</label>
-                            <input type="file" id="profPhotoInput" accept="image/*" onchange="handlePatientPhotoSelected(event)">
-                            <div class="mini-note">ระบบจะย่อรูปก่อนบันทึกลง Google Sheet เพื่อไม่ให้ไฟล์ใหญ่เกินไป</div>
-                        </div>
-                        <div class="profile-actions">
-                            <button type="button" class="small-btn gray" onclick="cancelPatientProfileEdit()">ยกเลิก</button>
-                            <button type="button" class="small-btn green" onclick="savePatientProfile()">💾 ยืนยันบันทึกข้อมูลทั่วไป</button>
+                        <div id="patientProfileDisplay"></div>
+                        <div id="patientProfileEditForm" class="profile-edit-form">
+                            <h4 style="margin-top:0; color:#1e293b;">✏️ แก้ไขข้อมูลทั่วไปผู้ป่วย</h4>
+                            <div class="inputs-row">
+                                <input type="text" id="profPatientName" placeholder="ชื่อ-นามสกุล">
+                                <select id="profPatientGender"><option value="">-- เพศ --</option><option value="ชาย">ชาย</option><option value="หญิง">หญิง</option><option value="อื่นๆ">อื่นๆ</option></select>
+                                <select id="profVillageNo"><option value="">-- หมู่บ้าน --</option><option value="หมู่ 1">หมู่ 1</option><option value="หมู่ 2">หมู่ 2</option><option value="หมู่ 5">หมู่ 5</option><option value="หมู่ 8">หมู่ 8</option></select>
+                            </div>
+                            <div class="inputs-row">
+                                <select id="profBirthDay"><option value="">-- วันที่เกิด --</option></select>
+                                <select id="profBirthMonth"><option value="">-- เดือนเกิด --</option><option value="1">มกราคม (1)</option><option value="2">กุมภาพันธ์ (2)</option><option value="3">มีนาคม (3)</option><option value="4">เมษายน (4)</option><option value="5">พฤษภาคม (5)</option><option value="6">มิถุนายน (6)</option><option value="7">กรกฎาคม (7)</option><option value="8">สิงหาคม (8)</option><option value="9">กันยายน (9)</option><option value="10">ตุลาคม (10)</option><option value="11">พฤศจิกายน (11)</option><option value="12">ธันวาคม (12)</option></select>
+                                <input type="number" id="profBirthYear" placeholder="ปี พ.ศ. เกิด เช่น 2515" min="2400" max="2600">
+                            </div>
+                            <div class="inputs-row">
+                                <input type="text" id="profRegisteredAddress" placeholder="ที่อยู่ตามทะเบียนบ้าน">
+                                <input type="text" id="profCurrentAddress" placeholder="ที่อยู่ปัจจุบัน">
+                            </div>
+                            <div class="inputs-row">
+                                <input type="text" id="profAllergies" placeholder="ประวัติแพ้ยา/แพ้อาหาร">
+                                <input type="text" id="profChronicDiseases" placeholder="โรคประจำตัว">
+                            </div>
+                            <div class="form-group">
+                                <label>รูปถ่ายผู้ป่วย (ถ้ามี)</label>
+                                <input type="file" id="profPhotoInput" accept="image/*" onchange="handlePatientPhotoSelected(event)">
+                                <div class="mini-note">ระบบจะย่อรูปก่อนบันทึกลง Google Sheet เพื่อไม่ให้ไฟล์ใหญ่เกินไป</div>
+                            </div>
+                            <div class="profile-actions">
+                                <button type="button" class="small-btn gray" onclick="cancelPatientProfileEdit()">ยกเลิก</button>
+                                <button type="button" class="small-btn green" onclick="savePatientProfile()">💾 ยืนยันบันทึกข้อมูลทั่วไป</button>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div id="patientComparePanel" class="compare-panel">
-                    <h4 style="margin-top:0; color:#334155;">📊 เปรียบเทียบผลประเมินย้อนหลัง</h4>
-                    <div class="controls-row">
-                        <select id="compareTopic" onchange="comparisonPageOffset=0; renderAssessmentComparison();">
-                            <option value="2Q">เปรียบเทียบ 2Q</option>
-                            <option value="9Q">เปรียบเทียบ 9Q</option>
-                            <option value="8Q">เปรียบเทียบ 8Q</option>
-                        </select>
-                        <button type="button" class="btn-refresh" onclick="moveComparisonPage(5)">⬅️ 5 รายการก่อนหน้า</button>
-                        <button type="button" class="btn-refresh" onclick="moveComparisonPage(-5)">➡️ 5 รายการล่าสุด</button>
-                    </div>
-                    <div id="comparisonTableBox"></div>
-                </div>
-                <div class="search-container" style="background-color: #ffffff; border: 1px solid #cbd5e1; margin-bottom: 25px;">
-                    <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">🔍 ตัวกรอง: เลือกดูประวัติตามวันที่ตรวจ</h4>
-                    <div class="inputs-row" style="margin-top: 10px;">
-                        <input type="date" id="detailDateFilter">
-                        <button class="btn-search" onclick="renderPatientDetail()">🔍 ค้นหาตามวันที่</button>
-                        <button class="btn-refresh" onclick="clearDetailDateFilter()" style="background-color: #64748b;">🔄 แสดงทั้งหมด</button>
+
+                <div id="detailCompareSubSection" class="detail-subsection">
+                    <div id="patientComparePanel" class="compare-panel">
+                        <h4 style="margin-top:0; color:#334155;">📊 เปรียบเทียบผลประเมินย้อนหลัง</h4>
+                        <p class="case-status-muted" style="margin-top:0;">เลือกหัวข้อที่ต้องการเทียบ ระบบจะแสดงครั้งละ 5 รายการ เรียงจากล่าสุดไปเก่าสุด</p>
+                        <div class="controls-row">
+                            <select id="compareTopic" onchange="comparisonPageOffset=0; renderAssessmentComparison();">
+                                <option value="2Q">เปรียบเทียบ 2Q</option>
+                                <option value="9Q">เปรียบเทียบ 9Q</option>
+                                <option value="8Q">เปรียบเทียบ 8Q</option>
+                            </select>
+                            <button type="button" class="btn-refresh" onclick="moveComparisonPage(5)">⬅️ 5 รายการก่อนหน้า</button>
+                            <button type="button" class="btn-refresh" onclick="moveComparisonPage(-5)">➡️ 5 รายการล่าสุด</button>
+                        </div>
+                        <div id="comparisonTableBox"></div>
                     </div>
                 </div>
-                <h3 style="color: #334155; border-left: 4px solid #3b82f6; padding-left: 10px; margin-bottom: 15px;">📋 ประวัติการบันทึกประเมินสุขภาพจิตทั้งหมด</h3>
-                <div id="patientHistoryCards"></div>
+            </div>
+        </div>
+
+        <div id="overviewTab" class="tab-content">
+            <div id="dashboardSummaryPanel" class="summary-panel">
+                <div class="summary-card"><h4>เคสทั้งหมด</h4><div class="big-number" id="sumTotalCases">0</div><div class="case-status-muted">จำนวนรายการคัดกรองทั้งหมด</div></div>
+                <div class="summary-card"><h4>🟢 เขียว</h4><div class="big-number" id="sumGreenCases">0</div><div class="case-status-muted">ยังไม่พบความเสี่ยงเด่น</div></div>
+                <div class="summary-card"><h4>🟡 เหลือง</h4><div class="big-number" id="sumYellowCases">0</div><div class="case-status-muted">ควรติดตาม/ซักเพิ่ม</div></div>
+                <div class="summary-card"><h4>🔴 แดง</h4><div class="big-number" id="sumRedCases">0</div><div class="case-status-muted">ควรจัดการเร่งด่วน</div></div>
+            </div>
+            <div id="villageRiskSummary" class="search-container" style="background:#ffffff;"></div>
+            <div class="search-container" style="background:#ffffff; border:1px solid #cbd5e1;">
+                <h4 style="margin-top:0; color:#334155;">📊 อัปเดตข้อมูลสรุปรายเดือน / Heatmap</h4>
+                <p class="overview-note">ใช้ปุ่มนี้เมื่อต้องการให้ระบบคำนวณแท็บ <b>Monthly Summary</b> และ <b>Heatmap Data</b> ใหม่ทันที สำหรับนำไปใช้ประชุมทีมสุขภาพหรือต่อกับ Looker Studio</p>
+                <button class="btn-search" onclick="refreshMonthlyAggregationFromWeb()">📊 อัปเดต Monthly Summary / Heatmap</button>
             </div>
         </div>
 
@@ -332,11 +366,23 @@
         </div>
 
         <div id="feedbackTab" class="tab-content">
-            <div style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 20px; border-radius: 12px; margin-bottom: 25px;">
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; margin-bottom: 25px;">
                 <h3 style="margin-top:0; color:#6366f1;">💬 กล่องข้อเสนอแนะจากผู้ใช้งานระบบ (Anonymous)</h3>
                 <p style="margin:0; color:#64748b; font-size:14px;">รวมเสียงสะท้อนเพื่อนำไปปรับปรุงและซ่อมแซมระบบล็อกคัดกรอง ข้อมูลส่งมาแบบนิรนามและไม่มีการบันทึกชื่อตัวตน</p>
             </div>
             <div id="feedbackContainer"></div>
+        </div>
+
+        <div id="systemTab" class="tab-content">
+            <div class="search-container" style="background:#f8fafc; border:1px solid #cbd5e1;">
+                <h3 style="margin-top:0; color:#334155;">🧮 งานระบบ</h3>
+                <p class="overview-note">หน้านี้รวมปุ่มสำหรับดูแลระบบหลังบ้านและงานติดตาม ไม่ใช่หน้าข้อมูลผู้ป่วยรายบุคคล</p>
+                <div class="controls-row">
+                    <button class="btn-refresh" onclick="runFollowupReminderNow()">🔔 ทดสอบแจ้งเตือน Follow-up วันนี้</button>
+                    <button class="btn-action delete" onclick="archiveClosedCasesFromWeb()">🗄️ ย้ายเคสปิดงานเกิน 1 ปีเข้าคลัง</button>
+                </div>
+                <div class="case-status-muted" style="margin-top:8px;">ปุ่มย้ายคลังใช้ได้เฉพาะบัญชี Hospital และจะย้ายเฉพาะเคสที่ Follow-up Status = ปิดเคสแล้ว และ Closed At เกิน 1 ปี</div>
+            </div>
         </div>
     </div>
 </div>
@@ -355,6 +401,7 @@
     let currentAdminAuthToken = "";
     let currentPatientPhotoDataUrl = "";
     let comparisonPageOffset = 0;
+    let currentPatientDetailSubTab = "assessment";
 
     function safeText(value) { return value === undefined || value === null ? "" : String(value); }
 
@@ -576,11 +623,14 @@
     function switchTab(tabId) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-        document.getElementById(tabId).classList.add('active');
+        const target = document.getElementById(tabId);
+        if (target) target.classList.add('active');
         if (tabId === 'patientsTab') { document.getElementById('tabPatientsBtn').classList.add('active'); fetchPatientData(); }
+        else if (tabId === 'overviewTab') { document.getElementById('tabOverviewBtn').classList.add('active'); if (!Array.isArray(allData) || allData.length === 0) fetchPatientData(); else renderDashboardSummary(allData); }
         else if (tabId === 'vhmTab') { document.getElementById('tabVhmBtn').classList.add('active'); fetchVhmData(); }
         else if (tabId === 'adminsTab') { document.getElementById('tabAdminsBtn').classList.add('active'); fetchAdminData(); }
         else if (tabId === 'feedbackTab') { document.getElementById('tabFeedbackBtn').classList.add('active'); fetchFeedbackData(); }
+        else if (tabId === 'systemTab') { document.getElementById('tabSystemBtn').classList.add('active'); }
     }
 
     async function getCurrentLineId() {
@@ -695,6 +745,14 @@
         return CASE_STATUSES.includes(s) ? s : "ยังไม่รับเคส";
     }
     function getCaseStatusClass(status) { return normalizeCaseStatus(status) === "จองคิวแล้ว" ? "case-status-done" : "case-status-unaccepted"; }
+    function renderBookingStatusPill(source) {
+        const status = normalizeCaseStatus(source && (source.alertStatus || source.latestStatus));
+        const booked = status === 'จองคิวแล้ว';
+        const dt = safeText(source && (source.bookingDateTime || source.latestBookingDateTime));
+        const by = safeText(source && (source.bookingBy || source.latestBookingBy));
+        const detail = booked && dt && dt !== '-' ? ` · ${dt}${by && by !== '-' ? ' โดย ' + by : ''}` : '';
+        return `<span class="booking-status-pill ${booked ? 'booking-booked' : 'booking-unbooked'}">${booked ? '✅ จองคิวแล้ว' : '⏳ ยังไม่จองคิว'}${escapeHTML(detail)}</span>`;
+    }
     function getCurrentAdminNameForCase() {
         const name = document.getElementById('adminDisplayName')?.innerText || "";
         return name && name !== "-" ? name : "Admin";
@@ -858,6 +916,7 @@
                         <span>📌 สถานะการรับเคสล่าสุด:</span>
                         <span class="case-status-pill ${statusClass}">${escapeHTML(summary.latestStatus)}</span>
                         <span class="case-status-muted">${escapeHTML(countText)}</span>
+                        ${renderBookingStatusPill(summary)}
                         <span class="case-status-muted">${escapeHTML(bookingSummaryText)}</span>
                         <span class="risk-pill ${highestRiskClass}">ความเสี่ยงสูงสุด: ${escapeHTML(highestRisk)}</span>
                         ${renderTrajectoryPill(trajectoryInfo)}
@@ -875,136 +934,36 @@
         currentSelectedPatientName = patientName;
         currentSelectedPatientGender = gender;
         currentSelectedPatientVillage = village;
-        document.getElementById('detailDateFilter').value = "";
+        const detailFilter = document.getElementById('detailDateFilter');
+        if (detailFilter) detailFilter.value = "";
+        currentPatientDetailSubTab = 'assessment';
         logAuditEvent('VIEW_PATIENT_DETAIL', patientName, gender, village, '', 'เปิดดูข้อมูลเชิงลึกผู้ป่วย');
         renderPatientDetail();
     }
 
-    function renderPatientDetail() {
-        document.getElementById('patientListSection').style.display = 'none';
-        document.getElementById('patientDetailSection').style.display = 'block';
-        const historyCardsDiv = document.getElementById('patientHistoryCards');
-        historyCardsDiv.innerHTML = '';
-        let patientRecords = allData.filter(item => item.patientName === currentSelectedPatientName && item.patientGender === currentSelectedPatientGender && item.villageNo === currentSelectedPatientVillage);
-        patientRecords.sort((a, b) => parseTimestamp(b.timestamp) - parseTimestamp(a.timestamp));
-        if (patientRecords.length === 0) return;
-        const latestRecord = patientRecords[0];
-        const latestSummary = getPatientCaseSummary(patientRecords);
-        const latestTrajectory = getTrajectoryInfo(patientRecords);
-        const ageText = calculateAge(latestRecord.birthDay, latestRecord.birthMonth, latestRecord.birthYear);
-        document.getElementById('detPatientName').innerText = `👤 ชื่อผู้ป่วย: คุณ ${latestRecord.patientName}`;
-        const latestBookingText = latestSummary.latestBookingDateTime && latestSummary.latestBookingDateTime !== "-" ? ` | วันเวลาจองล่าสุด: ${latestSummary.latestBookingDateTime}` : " | ยังไม่มีวันเวลาจองคิว";
-        document.getElementById('detPatientMeta').innerText = `ข้อมูลพื้นฐาน: อายุคำนวณ ${ageText !== "-" ? ageText : "ไม่ระบุ"} | เพศ: ${latestRecord.patientGender} | พิกัดพื้นที่: ${latestRecord.villageNo} | สถานะเคสล่าสุด: ${latestSummary.latestStatus}${latestBookingText}`;
-        document.getElementById('detClinicalContext').innerHTML = `<b>ระดับความเสี่ยงล่าสุด:</b> <span class="risk-pill ${getRiskClass(deriveRiskLevel(latestRecord))}">${escapeHTML(deriveRiskLevel(latestRecord))}</span> ${renderTrajectoryPill(latestTrajectory)}<br><b>Psych:</b> ${escapeHTML(formatOptionalClinicalText(latestRecord.psychComorbidities))}<br><b>Medical:</b> ${escapeHTML(formatOptionalClinicalText(latestRecord.medicalComorbidities))}<br><b>10X:</b> ${formatSubstance10XDisplay(latestRecord)}`;
-        document.getElementById('patientBirthDay').value = latestRecord.birthDay || "";
-        document.getElementById('patientBirthMonth').value = latestRecord.birthMonth || "";
-        document.getElementById('patientBirthYear').value = latestRecord.birthYear || "";
-
-        const dateFilterVal = document.getElementById('detailDateFilter').value;
-        if (dateFilterVal) {
-            const parts = dateFilterVal.split('-');
-            const formattedFilterDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
-            patientRecords = patientRecords.filter(item => safeText(item.timestamp).split(' ')[0] === formattedFilterDate);
-        }
-        if (patientRecords.length === 0) {
-            historyCardsDiv.innerHTML = '<p style="text-align:center; color:#64748b; padding:20px;">❌ ไม่พบประวัติการตรวจสุขภาพจิตในวันที่เลือกครับ</p>';
-            return;
-        }
-
-        patientRecords.forEach(item => {
-            const card = document.createElement('div');
-            card.className = 'history-card';
-            const q2Result = safeText(item.q2Result);
-            const caseStatus = normalizeCaseStatus(item.alertStatus);
-            const statusClass = getCaseStatusClass(caseStatus);
-            const updatedAt = safeText(item.alertStatusUpdatedAt);
-            const updatedBy = safeText(item.alertStatusUpdatedBy);
-            const updatedText = updatedAt && updatedAt !== "-" ? `อัปเดตล่าสุด: ${updatedAt} โดย ${updatedBy || "-"}` : "ยังไม่มีการอัปเดตสถานะ";
-            const bookingDateTime = safeText(item.bookingDateTime);
-            const bookingBy = safeText(item.bookingBy);
-            const bookingText = bookingDateTime && bookingDateTime !== "-" ? `จองคิว: ${bookingDateTime} โดย ${bookingBy || "-"}` : "ยังไม่มีวันเวลาจองคิว";
-            card.innerHTML = `
-                <div class="history-header">
-                    <span>📅 วันที่-เวลาประเมิน: ${escapeHTML(item.timestamp || '-')}</span>
-                    <span>เครื่องมือหลัก: ${escapeHTML(item.assessmentType || '-')}</span>
-                </div>
-                <div class="case-status-box">
-                    <div class="case-status-line">
-                        <div><b>📌 สถานะการรับเคสนี้:</b> <span class="case-status-pill ${statusClass}">${escapeHTML(caseStatus)}</span></div>
-                        <div class="case-status-muted">${escapeHTML(updatedText)}</div>
-                    </div>
-                    <div class="booking-alert">🗓️ ${escapeHTML(bookingText)}</div>
-                    <div class="case-status-buttons"></div>
-                </div>
-                <div class="info-row"><span>ผู้คัดกรองลงพื้นที่ (อสม.):</span> <span><b>${escapeHTML(item.vhmName || '-')}</b></span></div>
-                <div class="info-row"><span>ผลคัดกรองด่วน 2Q:</span> <span class="${q2Result.includes('เสี่ยง') ? 'danger' : ''}">${escapeHTML(q2Result || '-')}</span></div>
-                <div class="info-row"><span>คะแนนคอลัมน์ 9Q:</span> <span>${escapeHTML(item.q9Score || '-(ไม่ได้ประเมิน)-')}</span></div>
-                <div class="info-row"><span>ผลประเมินคอลัมน์ 8Q:</span> <span>${escapeHTML(item.q8Result || '-(ไม่ได้ประเมิน)-')}</span></div>
-                <div class="info-row"><span>ระดับความเสี่ยงรวม:</span> <span class="risk-pill ${getRiskClass(deriveRiskLevel(item))}">${escapeHTML(deriveRiskLevel(item))}</span></div>
-                <div class="info-row"><span>Psychiatric co-morbidities:</span> <span>${escapeHTML(formatOptionalClinicalText(item.psychComorbidities))}</span></div>
-                <div class="info-row"><span>โรคทางกาย/ปัจจัยร่วม:</span> <span>${escapeHTML(formatOptionalClinicalText(item.medicalComorbidities))}</span></div>
-                <div class="info-row"><span>Alcohol/Substance 10X:</span> <span>${formatSubstance10XDisplay(item)}</span></div>
-                <div class="info-row"><span>หมายเหตุ อสม. เพิ่มเติม:</span> <span>${escapeHTML(item.comment || '-(ว่าง)-')}</span></div>
-                <div class="mini-section-title">🏥 Referral & Outcome Tracking</div>
-                <div class="info-row"><span>สถานะส่งต่อ:</span> <span>${escapeHTML(item.referralStatus || 'ยังไม่ระบุ')}</span></div>
-                <div class="info-row"><span>สถานที่ส่งต่อ:</span> <span>${escapeHTML(item.referralPlace || '-')}</span></div>
-                <div class="info-row"><span>ผลการรักษา/ผลติดตาม:</span> <span>${escapeHTML(item.referralOutcome || '-')}</span></div>
-                <div class="info-row"><span>นัดติดตามครั้งถัดไป:</span> <span>${escapeHTML(item.nextFollowupDate || '-')} | ${escapeHTML(item.followupStatus || 'ยังไม่ระบุ')}</span></div>
-                <div class="referral-edit-box" style="margin-top:12px; padding:12px; border:1px solid #e2e8f0; border-radius:12px; background:#f8fafc;"></div>`;
-            const buttons = card.querySelector('.case-status-buttons');
-            if (normalizeAdminRole(currentAdminRole) === "hospital") {
-                if (caseStatus !== "จองคิวแล้ว") {
-                    const bookingRow = document.createElement('div');
-                    bookingRow.className = 'booking-input-row';
-                    const bookingInput = document.createElement('input');
-                    bookingInput.type = 'datetime-local';
-                    bookingInput.title = 'เลือกวันที่และเวลานัดหมาย';
-                    const btn = document.createElement('button');
-                    btn.className = 'case-status-btn done';
-                    btn.textContent = 'รับจองคิว';
-                    btn.disabled = !item.rowId;
-                    btn.addEventListener('click', () => updatePatientAlertStatusFromWeb(item.rowId, "จองคิวแล้ว", btn, bookingInput));
-                    bookingRow.appendChild(bookingInput); bookingRow.appendChild(btn); buttons.appendChild(bookingRow);
-                } else {
-                    const booked = document.createElement('span');
-                    booked.className = 'booking-readonly';
-                    booked.textContent = '✅ เคสนี้จองคิวแล้ว';
-                    buttons.appendChild(booked);
-                    const editRow = document.createElement('div');
-                    editRow.className = 'booking-input-row';
-                    const editInput = document.createElement('input');
-                    editInput.type = 'datetime-local';
-                    editInput.title = 'เลือกวันและเวลาใหม่';
-                    editInput.value = bookingDisplayToInputValue(item.bookingDateTime);
-                    const editBtn = document.createElement('button');
-                    editBtn.className = 'case-status-btn edit';
-                    editBtn.textContent = 'แก้เวลาจอง';
-                    editBtn.disabled = !item.rowId;
-                    editBtn.addEventListener('click', () => updatePatientAlertStatusFromWeb(item.rowId, "จองคิวแล้ว", editBtn, editInput, "edit"));
-                    const cancelBtn = document.createElement('button');
-                    cancelBtn.className = 'case-status-btn cancel';
-                    cancelBtn.textContent = 'ยกเลิกจอง';
-                    cancelBtn.disabled = !item.rowId;
-                    cancelBtn.addEventListener('click', () => updatePatientAlertStatusFromWeb(item.rowId, "ยังไม่รับเคส", cancelBtn, null, "cancel"));
-                    editRow.appendChild(editInput); editRow.appendChild(editBtn); editRow.appendChild(cancelBtn); buttons.appendChild(editRow);
-                }
-            } else {
-                const readonly = document.createElement('span');
-                readonly.className = 'booking-readonly';
-                readonly.textContent = '🔒 เฉพาะบัญชี Hospital เท่านั้นที่กดรับจองคิวได้';
-                buttons.appendChild(readonly);
-            }
-            if (!item.rowId) {
-                const warning = document.createElement('span');
-                warning.className = 'case-status-muted';
-                warning.textContent = 'ไม่พบ rowId กรุณารีเฟรชข้อมูลจาก Google Sheet';
-                buttons.appendChild(warning);
-            }
-            renderReferralEditor(card.querySelector('.referral-edit-box'), item);
-            historyCardsDiv.appendChild(card);
-        });
+    function renderPatientDetailMiniHeader(records) {
+        const p = getLatestProfileRecord(records || []);
+        const ageText = calculateAgeDetailed(p.birthDay, p.birthMonth, p.birthYear);
+        const latest = (records && records.length) ? records[0] : {};
+        const booking = renderBookingStatusPill(latest);
+        const risk = latest && latest.patientName ? `<span class="risk-pill ${getRiskClass(deriveRiskLevel(latest))}">Risk ล่าสุด: ${escapeHTML(deriveRiskLevel(latest))}</span>` : '';
+        const trajectory = renderTrajectoryPill(getTrajectoryInfo(records || []));
+        const el = document.getElementById('patientDetailMiniHeader');
+        if (!el) return;
+        el.innerHTML = `<h3>👤 ${escapeHTML(p.patientName || currentSelectedPatientName || '-')}</h3><div class="mini-profile-row"><span class="mini-profile-pill">เพศ: ${escapeHTML(p.patientGender || '-')}</span><span class="mini-profile-pill">อายุ: ${escapeHTML(ageText)}</span><span class="mini-profile-pill">หมู่ที่: ${escapeHTML(p.villageNo || '-')}</span>${booking}${risk}${trajectory}</div>`;
     }
 
+    function switchPatientDetailSubTab(tabName) {
+        currentPatientDetailSubTab = tabName || 'assessment';
+        const map = { assessment: ['detailSubAssessmentBtn', 'detailAssessmentSubSection'], profile: ['detailSubProfileBtn', 'detailProfileSubSection'], compare: ['detailSubCompareBtn', 'detailCompareSubSection'] };
+        Object.keys(map).forEach(key => {
+            const btn = document.getElementById(map[key][0]);
+            const section = document.getElementById(map[key][1]);
+            if (btn) btn.classList.toggle('active', key === currentPatientDetailSubTab);
+            if (section) section.classList.toggle('active', key === currentPatientDetailSubTab);
+        });
+        if (currentPatientDetailSubTab === 'compare') renderAssessmentComparison();
+    }
 
     function getPatientGroupRecords() {
         return allData
@@ -1282,7 +1241,9 @@
         let patientRecords = getPatientGroupRecords();
         if (patientRecords.length === 0) return;
         renderPatientProfileDisplay(patientRecords);
+        renderPatientDetailMiniHeader(patientRecords);
         renderAssessmentComparison();
+        switchPatientDetailSubTab(currentPatientDetailSubTab || 'assessment');
 
         const dateFilterVal = document.getElementById('detailDateFilter').value;
         if (dateFilterVal) {
@@ -1298,7 +1259,8 @@
             const card = document.createElement('div');
             card.className = 'history-summary-card';
             const tools = getAssessmentTools(item).map(t => `<span class="tool-pill">${escapeHTML(t)}</span>`).join('');
-            card.innerHTML = `<div class="history-summary-line"><div><b>📅 ${escapeHTML(item.timestamp || '-')}</b><div style="margin-top:6px;">${tools}</div></div><button type="button" class="small-btn" onclick="toggleAssessmentDetail('${escapeHTML(item.rowId)}')">🔎 ดูรายละเอียดผลประเมิน</button></div><div id="assessmentDetail_${escapeHTML(item.rowId)}" class="assessment-detail-panel">${renderFullAssessmentDetail(item)}</div>`;
+            const bookingPill = renderBookingStatusPill(item);
+            card.innerHTML = `<div class="history-summary-line"><div><b>📅 ${escapeHTML(item.timestamp || '-')}</b><div style="margin-top:6px;">${tools}</div><div style="margin-top:8px;">${bookingPill}</div></div><button type="button" class="small-btn" onclick="toggleAssessmentDetail('${escapeHTML(item.rowId)}')">🔎 ดูรายละเอียดผลประเมิน</button></div><div id="assessmentDetail_${escapeHTML(item.rowId)}" class="assessment-detail-panel">${renderFullAssessmentDetail(item)}</div>`;
             const panel = card.querySelector('.assessment-detail-panel');
             const buttons = card.querySelector('.case-status-buttons');
             if (normalizeAdminRole(currentAdminRole) === 'hospital') {
@@ -1335,6 +1297,7 @@
         const referralStatus = safeText(item.referralStatus || 'ยังไม่ระบุ');
         const followupStatus = safeText(item.followupStatus || 'ยังไม่ระบุ');
         container.innerHTML = `
+            <div class="explain-box"><b>ส่วนนี้ใช้ทำอะไร?</b><br>ใช้บันทึกการส่งต่อและการติดตามหลังพบเคสเสี่ยงหรือหลังจองคิว เช่น ส่งต่อ รพ.ชุมชน/รพ.ศูนย์ หรือให้ รพ.สต. ติดตามเอง ระบุผลการรักษาเบื้องต้น วันนัดติดตามครั้งถัดไป และสถานะว่าติดตามแล้ว/หลุดติดตาม/ปิดเคสแล้ว เพื่อไม่ให้เคสหลุดจากระบบ</div>
             <div class="inputs-row">
                 <select class="referral-status">
                     ${['ยังไม่ระบุ','ยังไม่ส่งต่อ','ส่งต่อ รพ.ชุมชน','ส่งต่อ รพ.ศูนย์','พบแพทย์แล้ว','ติดตามโดย รพ.สต.','ไม่ประสงค์ส่งต่อ'].map(v => `<option value="${escapeHTML(v)}" ${referralStatus === v ? 'selected' : ''}>${escapeHTML(v)}</option>`).join('')}
