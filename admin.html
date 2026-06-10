@@ -57,6 +57,7 @@
         .role-pill { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: bold; margin-left: 6px; }
         .role-pill.admin { background: #e0f2fe; color: #075985; }
         .role-pill.hospital { background: #dcfce7; color: #166534; }
+        .role-pill.vhv { background: #fef3c7; color: #92400e; }
         .booking-input-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
         .booking-input-row input[type="datetime-local"] { max-width: 260px; min-width: 220px; }
         .booking-alert { padding: 10px 12px; border-radius: 10px; background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; font-size: 13px; margin-top: 8px; }
@@ -190,8 +191,7 @@
         <div class="tabs-bar">
             <button id="tabPatientsBtn" class="tab-btn active" onclick="switchTab('patientsTab')">📋 ข้อมูลผู้ป่วย</button>
             <button id="tabOverviewBtn" class="tab-btn" onclick="switchTab('overviewTab')">📊 ข้อมูลภาพรวมเคส</button>
-            <button id="tabVhmBtn" class="tab-btn" onclick="switchTab('vhmTab')">👥 ข้อมูล อสม.</button>
-            <button id="tabAdminsBtn" class="tab-btn" onclick="switchTab('adminsTab')">👥 ข้อมูลผู้ดูแล</button>
+            <button id="tabStaffBtn" class="tab-btn" onclick="switchTab('staffTab')">👥 ข้อมูลเจ้าหน้าที่</button>
             <button id="tabFeedbackBtn" class="tab-btn" onclick="switchTab('feedbackTab')">💬 Feedback ข้อเสนอแนะ</button>
             <button id="tabSystemBtn" class="tab-btn" onclick="switchTab('systemTab')">🧮 งานระบบ</button>
         </div>
@@ -319,50 +319,51 @@
             </div>
         </div>
 
-        <div id="vhmTab" class="tab-content">
-            <div class="vhm-form-box">
-                <h4 id="formVhmTitle" style="margin-top: 0; color: #3b82f6;">➕ เพิ่ม อสม. รายใหม่เข้าระบบคลาวด์</h4>
-                <input type="hidden" id="vhmFormMode" value="add">
+        <div id="staffTab" class="tab-content">
+            <div class="vhm-form-box" style="border: 2px solid #3b82f6;">
+                <h4 id="formStaffTitle" style="margin-top: 0; color: #3b82f6;">➕ เพิ่มเจ้าหน้าที่เข้าระบบ</h4>
+                <input type="hidden" id="staffFormMode" value="add">
+                <input type="hidden" id="staffOriginalUsername" value="">
+                <input type="hidden" id="staffOriginalRole" value="">
+                <p class="case-status-muted" style="margin-top:0; line-height:1.6;">
+                    ระบบรวมบัญชีเจ้าหน้าที่ทุกระดับไว้ในแท็บเดียว: <b>Hospital</b> จัดการได้ทุกยศ, <b>Admin</b> จัดการได้เฉพาะ Admin และ VHV, ส่วน <b>VHV</b> คือบัญชี อสม. สำหรับใช้หน้าคัดกรอง
+                </p>
                 <div class="inputs-row">
-                    <input type="text" id="vhmUsernameInput" placeholder="Username (ภาษาอังกฤษ)">
-                    <input type="text" id="vhmPasswordInput" placeholder="Password เข้าใช้งาน">
+                    <input type="text" id="staffUsernameInput" placeholder="Username (ภาษาอังกฤษ)">
+                    <input type="text" id="staffPasswordInput" placeholder="Password เข้าใช้งาน">
                 </div>
                 <div class="inputs-row">
-                    <input type="text" id="vhmNameInput" placeholder="ชื่อ-นามสกุล อสม.">
-                    <input type="text" id="vhmSecretKeyInput" placeholder="รหัสลับส่วนตัว (เช่นเลขท้ายบัตร)">
-                </div>
-                <div style="text-align: right;">
-                    <button id="btnCancelVhmEdit" class="btn-refresh" style="display:none; margin-right:5px;" onclick="cancelVhmEditMode()">ยกเลิก</button>
-                    <button class="btn-search" onclick="saveVhmData()">💾 บันทึกข้อมูล อสม.</button>
-                </div>
-            </div>
-            <div id="vhmList"></div>
-        </div>
-
-        <div id="adminsTab" class="tab-content">
-            <div class="vhm-form-box" style="border: 2px solid #10b981;">
-                <h4 id="formAdminTitle" style="margin-top: 0; color: #10b981;">➕ เพิ่ม ผู้ดูแลระบบ (Admin) รายใหม่เข้าระบบคลาวด์</h4>
-                <input type="hidden" id="adminFormMode" value="add">
-                <div class="inputs-row">
-                    <input type="text" id="adminUsernameInput" placeholder="Username แอดมินใหม่">
-                    <input type="text" id="adminPasswordInput" placeholder="Password เข้าใช้งาน">
+                    <input type="text" id="staffNameInput" placeholder="ชื่อ-นามสกุล/ตำแหน่ง เจ้าหน้าที่">
+                    <input type="text" id="staffSecretKeyInput" placeholder="รหัสลับส่วนตัว (สำหรับกู้คืนรหัสผ่าน)">
                 </div>
                 <div class="inputs-row">
-                    <input type="text" id="adminNameInput" placeholder="ชื่อ-นามสกุล/ตำแหน่ง ผู้ดูแล">
-                    <input type="text" id="adminSecretKeyInput" placeholder="รหัสลับส่วนตัว (สำหรับใช้กู้คืนรหัสผ่าน)">
-                </div>
-                <div class="inputs-row">
-                    <select id="adminRoleInput">
-                        <option value="admin">Admin - ดูข้อมูลและจัดการระบบ แต่กดจองคิวไม่ได้</option>
-                        <option value="hospital">Hospital - ดูข้อมูลและกดรับจองคิวได้</option>
+                    <select id="staffRoleInput">
+                        <option value="vhv">VHV - อสม. ใช้หน้าคัดกรอง</option>
+                        <option value="admin">Admin - ดูข้อมูลและจัดการระบบ แต่จองคิวไม่ได้</option>
+                        <option value="hospital">Hospital - ดูข้อมูล จัดการระบบ และรับจองคิวได้</option>
                     </select>
                 </div>
                 <div style="text-align: right;">
-                    <button id="btnCancelAdminEdit" class="btn-refresh" style="display:none; margin-right:5px;" onclick="cancelAdminEditMode()">ยกเลิก</button>
-                    <button class="btn-search" style="background-color: #10b981;" onclick="saveAdminData()">💾 บันทึกข้อมูลผู้ดูแล</button>
+                    <button id="btnCancelStaffEdit" class="btn-refresh" style="display:none; margin-right:5px;" onclick="cancelStaffEditMode()">ยกเลิก</button>
+                    <button class="btn-search" onclick="saveStaffData()">💾 บันทึกข้อมูลเจ้าหน้าที่</button>
                 </div>
             </div>
-            <div id="adminList"></div>
+
+            <div class="search-container">
+                <h4 style="margin-top:0; color:#334155;">🔍 ค้นหา/กรองเจ้าหน้าที่</h4>
+                <div class="inputs-row">
+                    <input type="text" id="staffSearchInput" oninput="renderStaffList()" placeholder="พิมพ์ค้นหาชื่อหรือ Username...">
+                    <select id="staffRoleFilter" onchange="renderStaffList()">
+                        <option value="all">ทุกยศ</option>
+                        <option value="hospital">เฉพาะ Hospital</option>
+                        <option value="admin">เฉพาะ Admin</option>
+                        <option value="vhv">เฉพาะ VHV / อสม.</option>
+                    </select>
+                    <button class="btn-refresh" onclick="fetchStaffData()">🔄 รีเฟรช</button>
+                </div>
+                <p class="case-status-muted" style="margin-bottom:0;">เรียงอัตโนมัติจาก Hospital → Admin → VHV และสามารถกรองตามยศหรือค้นหาชื่อได้</p>
+            </div>
+            <div id="staffList"></div>
         </div>
 
         <div id="feedbackTab" class="tab-content">
@@ -393,6 +394,7 @@
     const ADMIN_LOGIN_REDIRECT_URI = "https://mental-health-app-lovat.vercel.app/admin.html";
 
     let allData = [];
+    let allStaffData = [];
     let currentSelectedPatientName = "";
     let currentSelectedPatientGender = "";
     let currentSelectedPatientVillage = "";
@@ -541,16 +543,29 @@
     function normalizeAdminRole(value) {
         const role = safeText(value).trim().toLowerCase();
         if (role === "hospital" || role === "โรงพยาบาล" || role === "รพ" || role === "รพ.") return "hospital";
+        if (role === "vhv" || role === "vhm" || role === "อสม" || role === "อสม.") return "vhv";
         return "admin";
     }
 
-    function getRoleLabel(role) { return normalizeAdminRole(role) === "hospital" ? "Hospital" : "Admin"; }
+    function getRoleLabel(role) {
+        const r = normalizeAdminRole(role);
+        if (r === "hospital") return "Hospital";
+        if (r === "vhv") return "VHV / อสม.";
+        return "Admin";
+    }
+
+    function getRoleRank(role) {
+        const r = normalizeAdminRole(role);
+        if (r === "hospital") return 1;
+        if (r === "admin") return 2;
+        return 3;
+    }
 
     function updateRoleDisplay() {
         const roleEl = document.getElementById('adminRoleDisplay');
         if (!roleEl) return;
         const role = normalizeAdminRole(currentAdminRole);
-        roleEl.textContent = role === "hospital" ? "Hospital" : "Admin";
+        roleEl.textContent = getRoleLabel(role);
         roleEl.className = `role-pill ${role}`;
     }
 
@@ -627,8 +642,7 @@
         if (target) target.classList.add('active');
         if (tabId === 'patientsTab') { document.getElementById('tabPatientsBtn').classList.add('active'); fetchPatientData(); }
         else if (tabId === 'overviewTab') { document.getElementById('tabOverviewBtn').classList.add('active'); if (!Array.isArray(allData) || allData.length === 0) fetchPatientData(); else renderDashboardSummary(allData); }
-        else if (tabId === 'vhmTab') { document.getElementById('tabVhmBtn').classList.add('active'); fetchVhmData(); }
-        else if (tabId === 'adminsTab') { document.getElementById('tabAdminsBtn').classList.add('active'); fetchAdminData(); }
+        else if (tabId === 'staffTab') { document.getElementById('tabStaffBtn').classList.add('active'); fetchStaffData(); }
         else if (tabId === 'feedbackTab') { document.getElementById('tabFeedbackBtn').classList.add('active'); fetchFeedbackData(); }
         else if (tabId === 'systemTab') { document.getElementById('tabSystemBtn').classList.add('active'); }
     }
@@ -1425,6 +1439,170 @@
     }
 
     function backToPatientList() { document.getElementById('patientListSection').style.display = 'block'; document.getElementById('patientDetailSection').style.display = 'none'; processData(); }
+
+
+    function canCurrentUserManageRole(targetRole) {
+        const actor = normalizeAdminRole(currentAdminRole);
+        const target = normalizeAdminRole(targetRole);
+        if (actor === "hospital") return true;
+        if (actor === "admin") return target === "admin" || target === "vhv";
+        return false;
+    }
+
+    function fetchStaffData() {
+        const loading = document.getElementById('loadingText');
+        const listDiv = document.getElementById('staffList');
+        loading.style.display = 'block';
+        if (listDiv) listDiv.innerHTML = '';
+        fetch(`${GOOGLE_SCRIPT_URL}?action=getStaffList&actorUsername=${encodeURIComponent(currentAdminUsername)}`)
+            .then(res => { if (!res.ok) throw new Error("HTTP Status " + res.status); return res.json(); })
+            .then(data => {
+                loading.style.display = 'none';
+                allStaffData = Array.isArray(data) ? data : [];
+                renderStaffList();
+            })
+            .catch(err => {
+                loading.style.display = 'none';
+                if (listDiv) listDiv.innerHTML = `<p style="text-align:center; color:#ef4444;">❌ ดึงข้อมูลเจ้าหน้าที่ไม่ได้: ${escapeHTML(err.message)}</p>`;
+            });
+    }
+
+    function renderStaffList() {
+        const listDiv = document.getElementById('staffList');
+        if (!listDiv) return;
+        const search = safeText(document.getElementById('staffSearchInput')?.value).trim().toLowerCase();
+        const filterRole = document.getElementById('staffRoleFilter')?.value || 'all';
+        let rows = Array.isArray(allStaffData) ? [...allStaffData] : [];
+        if (filterRole !== 'all') rows = rows.filter(x => normalizeAdminRole(x.role) === filterRole);
+        if (search) rows = rows.filter(x =>
+            safeText(x.name).toLowerCase().includes(search) ||
+            safeText(x.username).toLowerCase().includes(search)
+        );
+        rows.sort((a, b) => {
+            const r = getRoleRank(a.role) - getRoleRank(b.role);
+            if (r !== 0) return r;
+            return safeText(a.name).localeCompare(safeText(b.name), 'th');
+        });
+        if (rows.length === 0) {
+            listDiv.innerHTML = '<p style="text-align:center; color:#64748b; padding:20px;">❌ ไม่พบเจ้าหน้าที่ตามเงื่อนไข</p>';
+            return;
+        }
+        listDiv.innerHTML = '';
+        rows.forEach(staff => {
+            const role = normalizeAdminRole(staff.role);
+            const roleLabel = getRoleLabel(role);
+            const canManage = canCurrentUserManageRole(role);
+            const card = document.createElement('div');
+            card.className = 'vhm-table-row';
+            card.style.borderLeft = role === 'hospital' ? '4px solid #10b981' : role === 'admin' ? '4px solid #3b82f6' : '4px solid #f59e0b';
+            card.innerHTML = `
+                <div class="vhm-row-header"><span>ชื่อเจ้าหน้าที่: <b>${escapeHTML(staff.name || '-')}</b> <span class="role-pill ${role}">${escapeHTML(roleLabel)}</span></span><span>Username: ${escapeHTML(staff.username || '-')}</span></div>
+                <div class="info-row"><span>รหัสเข้าใช้งาน (Password):</span> <span>${escapeHTML(staff.password || '-')}</span></div>
+                <div class="info-row"><span>รหัสลับกู้บัญชี:</span> <span>${escapeHTML(staff.secretKey || '-')}</span></div>
+                <div class="info-row"><span>LINE User ID:</span> <span>${staff.lineId ? 'ผูกแล้ว' : 'ยังไม่ผูก'}</span></div>
+                <div class="info-row"><span>LINE Updated At:</span> <span>${escapeHTML(staff.lineUpdatedAt || '-')}</span></div>
+                <div class="row-actions" style="text-align: right; margin-top: 10px;"></div>
+            `;
+            const actions = card.querySelector('.row-actions');
+            if (canManage) {
+                const editBtn = document.createElement('button');
+                editBtn.className = 'btn-action edit';
+                editBtn.textContent = '✏️ แก้ไข';
+                editBtn.addEventListener('click', () => enableStaffEditMode(staff));
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn-action delete';
+                deleteBtn.textContent = '❌ ลบออก';
+                deleteBtn.addEventListener('click', () => deleteStaffData(staff.username, role));
+                actions.appendChild(editBtn);
+                actions.appendChild(deleteBtn);
+            } else {
+                const readonly = document.createElement('span');
+                readonly.className = 'booking-readonly';
+                readonly.textContent = '🔒 สิทธิ์ของคุณไม่สามารถแก้ไข/ลบยศนี้ได้';
+                actions.appendChild(readonly);
+            }
+            listDiv.appendChild(card);
+        });
+    }
+
+    function saveStaffData() {
+        const mode = document.getElementById('staffFormMode').value;
+        const originalUsername = document.getElementById('staffOriginalUsername').value.trim();
+        const originalRole = document.getElementById('staffOriginalRole').value.trim();
+        const username = document.getElementById('staffUsernameInput').value.trim();
+        const password = document.getElementById('staffPasswordInput').value.trim();
+        const name = document.getElementById('staffNameInput').value.trim();
+        const secretKey = document.getElementById('staffSecretKeyInput').value.trim();
+        const role = normalizeAdminRole(document.getElementById('staffRoleInput').value);
+        if (!username || !password || !name || !secretKey) { alert('⚠️ กรุณากรอกข้อมูลเจ้าหน้าที่ให้ครบทุกช่อง'); return; }
+        if (!canCurrentUserManageRole(role)) { alert('🔒 สิทธิ์ไม่เพียงพอ: Admin จัดการได้เฉพาะ Admin และ VHV ส่วน Hospital จัดการได้ทุกยศ'); return; }
+        const loading = document.getElementById('loadingText');
+        loading.style.display = 'block';
+        const url = `${GOOGLE_SCRIPT_URL}?action=saveStaff` +
+            `&mode=${encodeURIComponent(mode)}` +
+            `&username=${encodeURIComponent(username)}` +
+            `&password=${encodeURIComponent(password)}` +
+            `&name=${encodeURIComponent(name)}` +
+            `&secretKey=${encodeURIComponent(secretKey)}` +
+            `&role=${encodeURIComponent(role)}` +
+            `&originalUsername=${encodeURIComponent(originalUsername)}` +
+            `&originalRole=${encodeURIComponent(originalRole)}` +
+            `&actorUsername=${encodeURIComponent(currentAdminUsername)}`;
+        fetch(url)
+            .then(res => { if (!res.ok) throw new Error('HTTP Status ' + res.status); return res.json(); })
+            .then(res => {
+                loading.style.display = 'none';
+                if (res.success) { alert('🎉 บันทึกข้อมูลเจ้าหน้าที่สำเร็จ'); cancelStaffEditMode(); fetchStaffData(); }
+                else alert('❌ ข้อผิดพลาด: ' + (res.message || 'ไม่ทราบสาเหตุ'));
+            })
+            .catch(err => { loading.style.display = 'none'; alert('❌ บันทึกข้อมูลเจ้าหน้าที่ไม่สำเร็จ: ' + err.message); });
+    }
+
+    function deleteStaffData(username, role) {
+        const r = normalizeAdminRole(role);
+        if (!canCurrentUserManageRole(r)) { alert('🔒 สิทธิ์ไม่เพียงพอในการลบเจ้าหน้าที่ระดับนี้'); return; }
+        if (!confirm(`🚨 ต้องการลบบัญชี ${getRoleLabel(r)} Username: "${username}" ใช่หรือไม่?`)) return;
+        const loading = document.getElementById('loadingText');
+        loading.style.display = 'block';
+        fetch(`${GOOGLE_SCRIPT_URL}?action=deleteStaff&username=${encodeURIComponent(username)}&role=${encodeURIComponent(r)}&actorUsername=${encodeURIComponent(currentAdminUsername)}`)
+            .then(res => { if (!res.ok) throw new Error('HTTP Status ' + res.status); return res.json(); })
+            .then(res => {
+                loading.style.display = 'none';
+                if (res.success) { alert('🗑️ ลบข้อมูลเจ้าหน้าที่สำเร็จ'); fetchStaffData(); }
+                else alert('❌ ไม่สามารถลบได้: ' + (res.message || 'ไม่ทราบสาเหตุ'));
+            })
+            .catch(err => { loading.style.display = 'none'; alert('❌ ลบข้อมูลเจ้าหน้าที่ไม่สำเร็จ: ' + err.message); });
+    }
+
+    function enableStaffEditMode(staff) {
+        const role = normalizeAdminRole(staff.role);
+        document.getElementById('formStaffTitle').innerText = `✏️ กำลังแก้ไขข้อมูลเจ้าหน้าที่ (${staff.username})`;
+        document.getElementById('staffFormMode').value = 'edit';
+        document.getElementById('staffOriginalUsername').value = staff.username || '';
+        document.getElementById('staffOriginalRole').value = role;
+        document.getElementById('staffUsernameInput').value = staff.username || '';
+        document.getElementById('staffUsernameInput').disabled = true;
+        document.getElementById('staffPasswordInput').value = staff.password || '';
+        document.getElementById('staffNameInput').value = staff.name || '';
+        document.getElementById('staffSecretKeyInput').value = staff.secretKey || '';
+        document.getElementById('staffRoleInput').value = role;
+        document.getElementById('btnCancelStaffEdit').style.display = 'inline-block';
+        window.scrollTo(0, 0);
+    }
+
+    function cancelStaffEditMode() {
+        document.getElementById('formStaffTitle').innerText = '➕ เพิ่มเจ้าหน้าที่เข้าระบบ';
+        document.getElementById('staffFormMode').value = 'add';
+        document.getElementById('staffOriginalUsername').value = '';
+        document.getElementById('staffOriginalRole').value = '';
+        document.getElementById('staffUsernameInput').value = '';
+        document.getElementById('staffUsernameInput').disabled = false;
+        document.getElementById('staffPasswordInput').value = '';
+        document.getElementById('staffNameInput').value = '';
+        document.getElementById('staffSecretKeyInput').value = '';
+        document.getElementById('staffRoleInput').value = 'vhv';
+        document.getElementById('btnCancelStaffEdit').style.display = 'none';
+    }
 
     function fetchVhmData() {
         const loading = document.getElementById('loadingText');
