@@ -123,6 +123,27 @@
         .explain-box { background:#f0f9ff; border:1px solid #bae6fd; color:#0f172a; border-radius:12px; padding:12px; margin-bottom:12px; font-size:13px; line-height:1.55; }
         .overview-note { color:#64748b; font-size:13px; line-height:1.55; margin-top:8px; }
 
+        .chart-dashboard { display:none; background:#ffffff; border:1px solid #cbd5e1; border-radius:16px; padding:16px; margin-top:16px; }
+        .chart-dashboard.active { display:block; }
+        .chart-toolbar { display:flex; gap:8px; flex-wrap:wrap; justify-content:space-between; align-items:center; margin-bottom:14px; }
+        .chart-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+        .chart-card { background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:14px; overflow:hidden; }
+        .chart-card h4 { margin:0 0 6px 0; color:#1e293b; }
+        .chart-help { color:#64748b; font-size:12px; line-height:1.45; margin:0 0 10px 0; }
+        .chart-wide { grid-column:1 / -1; }
+        .chart-svg { width:100%; min-height:260px; display:block; overflow:visible; }
+        .chart-empty { color:#64748b; text-align:center; padding:24px; border:1px dashed #cbd5e1; border-radius:12px; background:#ffffff; }
+        .pie-wrap { display:flex; gap:16px; align-items:center; justify-content:center; flex-wrap:wrap; padding:10px 0; }
+        .pie-chart { width:190px; height:190px; border-radius:50%; border:1px solid #e2e8f0; box-shadow: inset 0 0 0 1px rgba(255,255,255,.5); }
+        .pie-legend { display:flex; flex-direction:column; gap:8px; min-width:180px; }
+        .legend-row { display:flex; align-items:center; gap:8px; color:#334155; font-size:14px; }
+        .legend-dot { width:14px; height:14px; border-radius:50%; display:inline-block; }
+        .dot-green { background:#22c55e; }
+        .dot-yellow { background:#facc15; }
+        .dot-red { background:#ef4444; }
+        .btn-search.wrap, .btn-refresh.wrap { white-space:normal; line-height:1.35; }
+
+
         @media (max-width: 600px) { .profile-info-grid { grid-template-columns:1fr !important; } .patient-photo-box { width:96px; height:96px; min-width:96px; } }
         .mini-section-title { font-weight:bold; color:#1e293b; border-left:4px solid #3b82f6; padding-left:8px; margin:14px 0 8px 0; }
         textarea { width:100%; padding:12px; border:2px solid #cbd5e1; border-radius:10px; box-sizing:border-box; font-size:15px; }
@@ -130,6 +151,7 @@
         @media (max-width: 600px) {
             .admin-card { padding: 18px; }
             .summary-panel { grid-template-columns: 1fr !important; }
+            .chart-grid { grid-template-columns: 1fr !important; }
             .tabs-bar { flex-wrap: wrap !important; gap: 8px !important; }
             .tab-btn { flex: 1 1 calc(50% - 10px) !important; padding: 10px !important; font-size: 14px !important; text-align: center !important; }
             .inputs-row, .controls-row { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; }
@@ -305,17 +327,33 @@
         </div>
 
         <div id="overviewTab" class="tab-content">
-            <div id="dashboardSummaryPanel" class="summary-panel">
-                <div class="summary-card"><h4>เคสทั้งหมด</h4><div class="big-number" id="sumTotalCases">0</div><div class="case-status-muted">จำนวนรายการคัดกรองทั้งหมด</div></div>
-                <div class="summary-card"><h4>🟢 เขียว</h4><div class="big-number" id="sumGreenCases">0</div><div class="case-status-muted">ยังไม่พบความเสี่ยงเด่น</div></div>
-                <div class="summary-card"><h4>🟡 เหลือง</h4><div class="big-number" id="sumYellowCases">0</div><div class="case-status-muted">ควรติดตาม/ซักเพิ่ม</div></div>
-                <div class="summary-card"><h4>🔴 แดง</h4><div class="big-number" id="sumRedCases">0</div><div class="case-status-muted">ควรจัดการเร่งด่วน</div></div>
+            <div id="overviewHomePage">
+                <div id="dashboardSummaryPanel" class="summary-panel">
+                    <div class="summary-card"><h4>เคสทั้งหมด</h4><div class="big-number" id="sumTotalCases">0</div><div class="case-status-muted">จำนวนรายการคัดกรองทั้งหมด</div></div>
+                    <div class="summary-card"><h4>🟢 เขียว</h4><div class="big-number" id="sumGreenCases">0</div><div class="case-status-muted">ยังไม่พบความเสี่ยงเด่น</div></div>
+                    <div class="summary-card"><h4>🟡 เหลือง</h4><div class="big-number" id="sumYellowCases">0</div><div class="case-status-muted">ควรติดตาม/ซักเพิ่ม</div></div>
+                    <div class="summary-card"><h4>🔴 แดง</h4><div class="big-number" id="sumRedCases">0</div><div class="case-status-muted">ควรจัดการเร่งด่วน</div></div>
+                </div>
+                <div id="villageRiskSummary" class="search-container" style="background:#ffffff;"></div>
+                <div class="search-container" style="background:#ffffff; border:1px solid #cbd5e1;">
+                    <h4 style="margin-top:0; color:#334155;">📊 อัปเดตข้อมูลสรุปรายเดือน / Heatmap</h4>
+                    <p class="overview-note">กดปุ่มนี้เพื่อให้ระบบคำนวณแท็บ <b>Monthly Summary</b> และ <b>Heatmap Data</b> ใหม่ และเปิดหน้าแสดงกราฟในระบบนี้ทันที โดยไม่ต้องเปิด Looker Studio</p>
+                    <button class="btn-search wrap" onclick="refreshMonthlyAggregationFromWeb(true)">📊 อัปเดตและเปิดกราฟภาพรวมเคส</button>
+                </div>
             </div>
-            <div id="villageRiskSummary" class="search-container" style="background:#ffffff;"></div>
-            <div class="search-container" style="background:#ffffff; border:1px solid #cbd5e1;">
-                <h4 style="margin-top:0; color:#334155;">📊 อัปเดตข้อมูลสรุปรายเดือน / Heatmap</h4>
-                <p class="overview-note">ใช้ปุ่มนี้เมื่อต้องการให้ระบบคำนวณแท็บ <b>Monthly Summary</b> และ <b>Heatmap Data</b> ใหม่ทันที สำหรับนำไปใช้ประชุมทีมสุขภาพหรือต่อกับ Looker Studio</p>
-                <button class="btn-search" onclick="refreshMonthlyAggregationFromWeb()">📊 อัปเดต Monthly Summary / Heatmap</button>
+
+            <div id="overviewChartsPage" class="chart-dashboard">
+                <div class="chart-toolbar">
+                    <div>
+                        <h3 style="margin:0; color:#1e293b;">📈 กราฟภาพรวมสุขภาพจิต</h3>
+                        <div class="case-status-muted">คำนวณจากข้อมูลผู้ป่วยล่าสุดในระบบ ใช้ดูภาพรวมรายหมู่บ้าน สีความเสี่ยง และแนวโน้มรายเดือน</div>
+                    </div>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button type="button" class="btn-refresh wrap" onclick="showOverviewHomePage()">⬅️ กลับหน้าสรุปตัวเลข</button>
+                        <button type="button" class="btn-search wrap" onclick="refreshMonthlyAggregationFromWeb(true)">🔄 คำนวณ/รีเฟรชกราฟใหม่</button>
+                    </div>
+                </div>
+                <div id="overviewChartsContainer" class="chart-grid"></div>
             </div>
         </div>
 
@@ -508,23 +546,39 @@
         if (y > 2400) y -= 543;
         return `${String(y).padStart(4,'0')}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
     }
+    function getRiskCounts(records) {
+        const counts = { green: 0, yellow: 0, red: 0, total: 0 };
+        (Array.isArray(records) ? records : []).forEach(item => {
+            const risk = deriveRiskLevel(item);
+            counts.total++;
+            if (risk.includes('แดง')) counts.red++;
+            else if (risk.includes('เหลือง')) counts.yellow++;
+            else counts.green++;
+        });
+        return counts;
+    }
+
     function renderDashboardSummary(data) {
         const records = Array.isArray(data) ? data : [];
-        let green = 0, yellow = 0, red = 0;
+        const riskCounts = getRiskCounts(records);
         const villages = {};
         records.forEach(item => {
             const risk = deriveRiskLevel(item);
             const village = safeText(item.villageNo) || '-';
             if (!villages[village]) villages[village] = { green:0, yellow:0, red:0, total:0 };
             villages[village].total++;
-            if (risk.includes('แดง')) { red++; villages[village].red++; }
-            else if (risk.includes('เหลือง')) { yellow++; villages[village].yellow++; }
-            else { green++; villages[village].green++; }
+            if (risk.includes('แดง')) villages[village].red++;
+            else if (risk.includes('เหลือง')) villages[village].yellow++;
+            else villages[village].green++;
         });
-        document.getElementById('sumTotalCases').innerText = records.length;
-        document.getElementById('sumGreenCases').innerText = green;
-        document.getElementById('sumYellowCases').innerText = yellow;
-        document.getElementById('sumRedCases').innerText = red;
+        const totalEl = document.getElementById('sumTotalCases');
+        const greenEl = document.getElementById('sumGreenCases');
+        const yellowEl = document.getElementById('sumYellowCases');
+        const redEl = document.getElementById('sumRedCases');
+        if (totalEl) totalEl.innerText = records.length;
+        if (greenEl) greenEl.innerText = riskCounts.green;
+        if (yellowEl) yellowEl.innerText = riskCounts.yellow;
+        if (redEl) redEl.innerText = riskCounts.red;
         const box = document.getElementById('villageRiskSummary');
         if (!box) return;
         const villageRows = Object.keys(villages).sort((a,b)=>a.localeCompare(b,'th')).map(v => {
@@ -533,6 +587,117 @@
         }).join('');
         box.innerHTML = `<h4 style="margin-top:0; color:#334155;">🗺️ สรุปความเสี่ยงรายหมู่บ้าน</h4>${villageRows || '<p class="case-status-muted">ยังไม่มีข้อมูล</p>'}`;
     }
+
+    function getVillageChartData(records) {
+        const map = {};
+        (Array.isArray(records) ? records : []).forEach(item => {
+            const village = safeText(item.villageNo) || '-';
+            if (!map[village]) map[village] = { village, green: 0, yellow: 0, red: 0, total: 0 };
+            const risk = deriveRiskLevel(item);
+            map[village].total++;
+            if (risk.includes('แดง')) map[village].red++;
+            else if (risk.includes('เหลือง')) map[village].yellow++;
+            else map[village].green++;
+        });
+        return Object.values(map).sort((a,b) => a.village.localeCompare(b.village, 'th'));
+    }
+
+    function getMonthlyTrendData(records) {
+        const map = {};
+        (Array.isArray(records) ? records : []).forEach(item => {
+            const d = parseTimestamp(item.timestamp);
+            if (!d || isNaN(d.getTime()) || d.getTime() === 0) return;
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            const label = d.toLocaleDateString('th-TH', { year: 'numeric', month: 'short' });
+            if (!map[key]) map[key] = { key, label, total: 0 };
+            map[key].total++;
+        });
+        return Object.values(map).sort((a,b) => a.key.localeCompare(b.key)).slice(-12);
+    }
+
+    function showOverviewHomePage() {
+        const home = document.getElementById('overviewHomePage');
+        const charts = document.getElementById('overviewChartsPage');
+        if (home) home.style.display = 'block';
+        if (charts) charts.classList.remove('active');
+        window.scrollTo(0, 0);
+    }
+
+    function showOverviewChartsPage() {
+        const home = document.getElementById('overviewHomePage');
+        const charts = document.getElementById('overviewChartsPage');
+        if (home) home.style.display = 'none';
+        if (charts) charts.classList.add('active');
+        renderOverviewCharts();
+        window.scrollTo(0, 0);
+    }
+
+    function renderOverviewCharts() {
+        const container = document.getElementById('overviewChartsContainer');
+        if (!container) return;
+        const records = Array.isArray(allData) ? allData : [];
+        if (records.length === 0) {
+            container.innerHTML = '<div class="chart-empty chart-wide">ยังไม่มีข้อมูลสำหรับแสดงกราฟ กรุณากดรีเฟรชข้อมูลผู้ป่วยก่อน</div>';
+            return;
+        }
+        container.innerHTML = renderVillageBarChart(records) + renderRiskPieChart(records) + renderMonthlyLineChart(records);
+    }
+
+    function renderVillageBarChart(records) {
+        const data = getVillageChartData(records);
+        if (data.length === 0) return '<div class="chart-card chart-wide"><div class="chart-empty">ยังไม่มีข้อมูลรายหมู่บ้าน</div></div>';
+        const maxTotal = Math.max(...data.map(d => d.total), 1);
+        const width = 760;
+        const rowHeight = 42;
+        const left = 92;
+        const right = 40;
+        const top = 34;
+        const barHeight = 22;
+        const height = top + data.length * rowHeight + 34;
+        const plotWidth = width - left - right;
+        const rows = data.map((d, idx) => {
+            const y = top + idx * rowHeight;
+            const redW = plotWidth * d.red / maxTotal;
+            const yellowW = plotWidth * d.yellow / maxTotal;
+            const greenW = plotWidth * d.green / maxTotal;
+            let x = left;
+            const red = `<rect x="${x}" y="${y}" width="${redW}" height="${barHeight}" rx="6" fill="#ef4444"></rect>`; x += redW;
+            const yellow = `<rect x="${x}" y="${y}" width="${yellowW}" height="${barHeight}" rx="6" fill="#facc15"></rect>`; x += yellowW;
+            const green = `<rect x="${x}" y="${y}" width="${greenW}" height="${barHeight}" rx="6" fill="#22c55e"></rect>`;
+            return `<text x="12" y="${y + 16}" font-size="13" fill="#334155" font-weight="700">${escapeHTML(d.village)}</text><rect x="${left}" y="${y}" width="${plotWidth}" height="${barHeight}" rx="6" fill="#e2e8f0"></rect>${red}${yellow}${green}<text x="${left + plotWidth + 8}" y="${y + 16}" font-size="12" fill="#475569">${d.total}</text>`;
+        }).join('');
+        return `<div class="chart-card chart-wide"><h4>📊 กราฟแท่งรายหมู่บ้าน</h4><p class="chart-help">แสดงจำนวนรายการคัดกรองในแต่ละหมู่บ้าน แบ่งสีตามระดับความเสี่ยง แดง/เหลือง/เขียว</p><svg class="chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="กราฟแท่งรายหมู่บ้าน">${rows}<text x="${left}" y="${height - 8}" font-size="12" fill="#64748b">จำนวนรายการคัดกรอง</text><text x="${width - 190}" y="${height - 8}" font-size="12" fill="#64748b">แดง / เหลือง / เขียว</text></svg></div>`;
+    }
+
+    function renderRiskPieChart(records) {
+        const c = getRiskCounts(records);
+        if (!c.total) return '<div class="chart-card"><div class="chart-empty">ยังไม่มีข้อมูลความเสี่ยง</div></div>';
+        const redDeg = 360 * c.red / c.total;
+        const yellowDeg = 360 * c.yellow / c.total;
+        const greenDeg = 360 - redDeg - yellowDeg;
+        const redEnd = redDeg;
+        const yellowEnd = redDeg + yellowDeg;
+        const bg = `conic-gradient(#ef4444 0deg ${redEnd}deg, #facc15 ${redEnd}deg ${yellowEnd}deg, #22c55e ${yellowEnd}deg 360deg)`;
+        return `<div class="chart-card"><h4>🥧 กราฟวงกลม เขียว/เหลือง/แดง</h4><p class="chart-help">สัดส่วนระดับความเสี่ยงจากรายการคัดกรองทั้งหมด</p><div class="pie-wrap"><div class="pie-chart" style="background:${bg};"></div><div class="pie-legend"><div class="legend-row"><span class="legend-dot dot-red"></span>แดง ${c.red} รายการ (${Math.round(c.red*100/c.total)}%)</div><div class="legend-row"><span class="legend-dot dot-yellow"></span>เหลือง ${c.yellow} รายการ (${Math.round(c.yellow*100/c.total)}%)</div><div class="legend-row"><span class="legend-dot dot-green"></span>เขียว ${c.green} รายการ (${Math.round(c.green*100/c.total)}%)</div><div class="case-status-muted">รวม ${c.total} รายการ</div></div></div></div>`;
+    }
+
+    function renderMonthlyLineChart(records) {
+        const data = getMonthlyTrendData(records);
+        if (data.length === 0) return '<div class="chart-card"><div class="chart-empty">ยังไม่มีข้อมูลรายเดือน</div></div>';
+        const width = 760, height = 300, left = 48, right = 26, top = 28, bottom = 58;
+        const plotW = width - left - right, plotH = height - top - bottom;
+        const max = Math.max(...data.map(d => d.total), 1);
+        const points = data.map((d, i) => {
+            const x = left + (data.length === 1 ? plotW / 2 : i * plotW / (data.length - 1));
+            const y = top + plotH - (d.total / max) * plotH;
+            return { ...d, x, y };
+        });
+        const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+        const circles = points.map(p => `<circle cx="${p.x}" cy="${p.y}" r="5" fill="#3b82f6"></circle><text x="${p.x}" y="${p.y - 10}" text-anchor="middle" font-size="12" fill="#334155" font-weight="700">${p.total}</text><text x="${p.x}" y="${height - 24}" text-anchor="middle" font-size="11" fill="#64748b">${escapeHTML(p.label)}</text>`).join('');
+        const grid = [0, .25, .5, .75, 1].map(t => { const y = top + plotH - t * plotH; const val = Math.round(t * max); return `<line x1="${left}" y1="${y}" x2="${left+plotW}" y2="${y}" stroke="#e2e8f0"></line><text x="${left-10}" y="${y+4}" text-anchor="end" font-size="11" fill="#64748b">${val}</text>`; }).join('');
+        return `<div class="chart-card chart-wide"><h4>📈 กราฟเส้นรายเดือน</h4><p class="chart-help">แนวโน้มจำนวนรายการคัดกรองรายเดือน แสดงย้อนหลังสูงสุด 12 เดือนล่าสุด</p><svg class="chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="กราฟเส้นรายเดือน"><line x1="${left}" y1="${top}" x2="${left}" y2="${top+plotH}" stroke="#cbd5e1"></line><line x1="${left}" y1="${top+plotH}" x2="${left+plotW}" y2="${top+plotH}" stroke="#cbd5e1"></line>${grid}<path d="${path}" fill="none" stroke="#3b82f6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>${circles}<text x="${left}" y="18" font-size="12" fill="#64748b">จำนวนรายการ</text></svg></div>`;
+    }
+
     function logAuditEvent(action, patientName = '', gender = '', village = '', rowId = '', detail = '') {
         if (!currentAdminUsername) return;
         const adminName = document.getElementById('adminDisplayName')?.innerText || '';
@@ -641,7 +806,7 @@
         const target = document.getElementById(tabId);
         if (target) target.classList.add('active');
         if (tabId === 'patientsTab') { document.getElementById('tabPatientsBtn').classList.add('active'); fetchPatientData(); }
-        else if (tabId === 'overviewTab') { document.getElementById('tabOverviewBtn').classList.add('active'); if (!Array.isArray(allData) || allData.length === 0) fetchPatientData(); else renderDashboardSummary(allData); }
+        else if (tabId === 'overviewTab') { document.getElementById('tabOverviewBtn').classList.add('active'); showOverviewHomePage(); if (!Array.isArray(allData) || allData.length === 0) fetchPatientData(); else renderDashboardSummary(allData); }
         else if (tabId === 'staffTab') { document.getElementById('tabStaffBtn').classList.add('active'); fetchStaffData(); }
         else if (tabId === 'feedbackTab') { document.getElementById('tabFeedbackBtn').classList.add('active'); fetchFeedbackData(); }
         else if (tabId === 'systemTab') { document.getElementById('tabSystemBtn').classList.add('active'); }
@@ -759,13 +924,26 @@
         return CASE_STATUSES.includes(s) ? s : "ยังไม่รับเคส";
     }
     function getCaseStatusClass(status) { return normalizeCaseStatus(status) === "จองคิวแล้ว" ? "case-status-done" : "case-status-unaccepted"; }
-    function renderBookingStatusPill(source) {
+    function getBookingDateTimeFromSource(source) {
+        return safeText(source && (source.bookingDateTime || source.latestBookingDateTime));
+    }
+    function getBookingByFromSource(source) {
+        return safeText(source && (source.bookingBy || source.latestBookingBy));
+    }
+    function renderBookingStatusPill(source, includeTime = false) {
         const status = normalizeCaseStatus(source && (source.alertStatus || source.latestStatus));
         const booked = status === 'จองคิวแล้ว';
-        const dt = safeText(source && (source.bookingDateTime || source.latestBookingDateTime));
-        const by = safeText(source && (source.bookingBy || source.latestBookingBy));
-        const detail = booked && dt && dt !== '-' ? ` · ${dt}${by && by !== '-' ? ' โดย ' + by : ''}` : '';
+        const dt = getBookingDateTimeFromSource(source);
+        const by = getBookingByFromSource(source);
+        const detail = includeTime && booked && dt && dt !== '-' ? ` · ${dt}${by && by !== '-' ? ' โดย ' + by : ''}` : '';
         return `<span class="booking-status-pill ${booked ? 'booking-booked' : 'booking-unbooked'}">${booked ? '✅ จองคิวแล้ว' : '⏳ ยังไม่จองคิว'}${escapeHTML(detail)}</span>`;
+    }
+    function renderBookingTimeText(source) {
+        const status = normalizeCaseStatus(source && (source.alertStatus || source.latestStatus));
+        const dt = getBookingDateTimeFromSource(source);
+        const by = getBookingByFromSource(source);
+        if (status === 'จองคิวแล้ว' && dt && dt !== '-') return `🗓️ เวลาจองคิว: ${dt}${by && by !== '-' ? ' โดย ' + by : ''}`;
+        return '🗓️ ยังไม่มีเวลาจองคิว';
     }
     function getCurrentAdminNameForCase() {
         const name = document.getElementById('adminDisplayName')?.innerText || "";
@@ -790,7 +968,7 @@
         let confirmText = `ต้องการบันทึกสถานะเคสนี้เป็น "${normalizedStatus}" ใช่หรือไม่?`;
         if (action === "book") confirmText = `ต้องการรับจองคิวเคสนี้ในวันที่/เวลา ${formatThaiDateTimeInputValue(bookingDateTime)} ใช่หรือไม่?`;
         else if (action === "edit") confirmText = `ต้องการแก้ไขเวลาจองคิวเป็น ${formatThaiDateTimeInputValue(bookingDateTime)} ใช่หรือไม่?`;
-        else if (action === "cancel") confirmText = "ต้องการยกเลิกจองคิวเคสนี้ใช่หรือไม่? สถานะจะกลับเป็น ยังไม่รับเคส";
+        else if (action === "cancel") confirmText = "ต้องการยกเลิกจองคิวเคสนี้ใช่หรือไม่? สถานะจะแสดงเป็น ยังไม่จองคิว";
         if (!confirm(confirmText)) return;
 
         const originalText = buttonEl ? buttonEl.innerText : "";
@@ -914,8 +1092,7 @@
             const highestRisk = p.records.reduce((max, rec) => riskRank(deriveRiskLevel(rec)) > riskRank(max) ? deriveRiskLevel(rec) : max, '🟢 เขียว');
             const highestRiskClass = getRiskClass(highestRisk);
             const trajectoryInfo = getTrajectoryInfo(p.records);
-            const countText = `รวม ${summary.total} เคส | ยังไม่รับเคส ${summary.counts['ยังไม่รับเคส'] || 0} | จองคิวแล้ว ${summary.counts['จองคิวแล้ว'] || 0}`;
-            const bookingSummaryText = summary.latestBookingDateTime && summary.latestBookingDateTime !== "-" ? `🗓️ วันเวลาจองล่าสุด: ${summary.latestBookingDateTime} โดย ${summary.latestBookingBy || "-"}` : "🗓️ ยังไม่มีวันเวลาจองคิว";
+            const bookingSummaryText = renderBookingTimeText(summary);
             const rowCard = document.createElement('div');
             rowCard.className = 'patient-row-card';
             rowCard.addEventListener('click', () => showPatientDetail(p.name, p.gender, p.village));
@@ -928,9 +1105,8 @@
                     </div>
                     <div class="case-status-summary">
                         <span>📌 สถานะการรับเคสล่าสุด:</span>
-                        <span class="case-status-pill ${statusClass}">${escapeHTML(summary.latestStatus)}</span>
-                        <span class="case-status-muted">${escapeHTML(countText)}</span>
                         ${renderBookingStatusPill(summary)}
+                        <span class="case-status-muted">รวม ${summary.total} เคส | จองคิวแล้ว ${summary.counts['จองคิวแล้ว'] || 0} | ยังไม่จองคิว ${summary.counts['ยังไม่รับเคส'] || 0}</span>
                         <span class="case-status-muted">${escapeHTML(bookingSummaryText)}</span>
                         <span class="risk-pill ${highestRiskClass}">ความเสี่ยงสูงสุด: ${escapeHTML(highestRisk)}</span>
                         ${renderTrajectoryPill(trajectoryInfo)}
@@ -959,7 +1135,7 @@
         const p = getLatestProfileRecord(records || []);
         const ageText = calculateAgeDetailed(p.birthDay, p.birthMonth, p.birthYear);
         const latest = (records && records.length) ? records[0] : {};
-        const booking = renderBookingStatusPill(latest);
+        const booking = renderBookingStatusPill(latest, true);
         const risk = latest && latest.patientName ? `<span class="risk-pill ${getRiskClass(deriveRiskLevel(latest))}">Risk ล่าสุด: ${escapeHTML(deriveRiskLevel(latest))}</span>` : '';
         const trajectory = renderTrajectoryPill(getTrajectoryInfo(records || []));
         const el = document.getElementById('patientDetailMiniHeader');
@@ -1231,11 +1407,11 @@
         const updatedText = updatedAt && updatedAt !== '-' ? `อัปเดตล่าสุด: ${updatedAt} โดย ${updatedBy || '-'}` : 'ยังไม่มีการอัปเดตสถานะ';
         const bookingDateTime = safeText(item.bookingDateTime);
         const bookingBy = safeText(item.bookingBy);
-        const bookingText = bookingDateTime && bookingDateTime !== '-' ? `จองคิว: ${bookingDateTime} โดย ${bookingBy || '-'}` : 'ยังไม่มีวันเวลาจองคิว';
+        const bookingText = renderBookingTimeText(item);
         return `
             <div class="case-status-box">
-                <div class="case-status-line"><div><b>📌 สถานะการรับเคสนี้:</b> <span class="case-status-pill ${statusClass}">${escapeHTML(caseStatus)}</span></div><div class="case-status-muted">${escapeHTML(updatedText)}</div></div>
-                <div class="booking-alert">🗓️ ${escapeHTML(bookingText)}</div>
+                <div class="case-status-line"><div><b>📌 สถานะการรับเคสนี้:</b> ${renderBookingStatusPill(item)}</div><div class="case-status-muted">${escapeHTML(updatedText)}</div></div>
+                <div class="booking-alert">${escapeHTML(bookingText)}</div>
                 <div class="case-status-buttons"></div>
             </div>
             <div class="clinical-box"><b>Risk:</b> <span class="risk-pill ${getRiskClass(deriveRiskLevel(item))}">${escapeHTML(deriveRiskLevel(item))}</span><br><b>Psych:</b> ${escapeHTML(formatOptionalClinicalText(item.psychComorbidities))}<br><b>Medical:</b> ${escapeHTML(formatOptionalClinicalText(item.medicalComorbidities))}<br><b>10X:</b> ${formatSubstance10XDisplay(item)}</div>
@@ -1375,14 +1551,23 @@
         finally { buttonEl.disabled = false; buttonEl.innerText = original; }
     }
 
-    async function refreshMonthlyAggregationFromWeb() {
+    async function refreshMonthlyAggregationFromWeb(openCharts = false) {
         const loading = document.getElementById('loadingText');
         try {
             loading.style.display = 'block';
             const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=refreshMonthlyAggregation&actorUsername=${encodeURIComponent(currentAdminUsername)}&authToken=${encodeURIComponent(currentAdminAuthToken)}`);
             if (!res.ok) throw new Error('HTTP Status ' + res.status);
             const result = await res.json();
-            alert((result.success ? '✅ ' : '❌ ') + (result.message || 'ดำเนินการเสร็จ'));
+            if (!result.success) {
+                alert('❌ ' + (result.message || 'อัปเดตสรุปรายเดือนไม่สำเร็จ'));
+                return;
+            }
+            if (openCharts) {
+                renderDashboardSummary(allData);
+                showOverviewChartsPage();
+            } else {
+                alert('✅ ' + (result.message || 'อัปเดตสรุปรายเดือน/Heatmap สำเร็จ'));
+            }
         } catch (err) { alert('❌ อัปเดตสรุปรายเดือนไม่สำเร็จ: ' + err.message); }
         finally { loading.style.display = 'none'; }
     }
