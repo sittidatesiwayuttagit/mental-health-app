@@ -220,8 +220,29 @@
             <div class="form-group"><label>8. มีปัญหาเรื่องการควบคุมตนเองไม่ได้ จนคิดหรือพยายามฆ่าตัวตาย</label><select id="q8q8"><option value="">-- เลือกคำตอบ --</option><option value="0">ไม่มี</option><option value="12">มี</option></select></div>
         </div>
 
+
+        <div id="panelST5" class="sub-questions">
+            <h4>🌡️ ส่วนที่ 4: แบบประเมินความเครียด ST-5</h4>
+            <div class="context-guidance" style="background:#eef2ff; border:1px solid #c7d2fe; color:#3730a3; padding:12px; border-radius:10px; font-size:13px; line-height:1.6;">
+                <b>ควรประเมิน ST-5 เมื่อใด?</b><br>
+                ควรถามเมื่อผู้รับการประเมินมีความเครียดจากปัญหาครอบครัว/งาน/เงิน/การเจ็บป่วย, นอนไม่หลับ, หงุดหงิดง่าย, เบื่อ เซ็ง, ไม่อยากพบคน, หรือเมื่อ 2Q/9Q/8Q มีความเสี่ยงและต้องการข้อมูลความเครียดประกอบการดูแล<br>
+                <b>ถ้าไม่ได้ถามหรือสถานการณ์ไม่เหมาะสม:</b> ไม่ต้องกดประเมิน ระบบจะแสดงและบันทึกเป็น “ไม่ได้ประเมิน”
+            </div>
+            <p class="mini-note">ST-5 เป็นแบบคัดกรองระดับความเครียดเบื้องต้น ใช้เพื่อช่วยคัดกรองและวางแผนติดตาม ไม่ใช่การวินิจฉัยแทนบุคลากรสุขภาพ</p>
+            <button type="button" id="btnToggleST5" class="optional-toggle off" onclick="toggleST5Assessment()">➕ ต้องการประเมิน ST-5</button>
+            <div id="st5Fields" class="optional-panel">
+                <p style="font-size:12px; color:#64748b; margin-bottom:12px;">เกณฑ์คำตอบ: 0=แทบไม่มี, 1=เป็นบางครั้ง, 2=บ่อยครั้ง, 3=เป็นประจำ</p>
+                <div class="form-group"><label>1. มีปัญหาการนอน นอนไม่หลับหรือนอนมาก</label><select id="st5q1" onchange="updateST5Preview()"><option value="">-- ยังไม่ได้ประเมิน --</option><option value="0">0 แทบไม่มี</option><option value="1">1 เป็นบางครั้ง</option><option value="2">2 บ่อยครั้ง</option><option value="3">3 เป็นประจำ</option></select></div>
+                <div class="form-group"><label>2. มีสมาธิน้อยลง</label><select id="st5q2" onchange="updateST5Preview()"><option value="">-- ยังไม่ได้ประเมิน --</option><option value="0">0 แทบไม่มี</option><option value="1">1 เป็นบางครั้ง</option><option value="2">2 บ่อยครั้ง</option><option value="3">3 เป็นประจำ</option></select></div>
+                <div class="form-group"><label>3. หงุดหงิด กระวนกระวาย ว้าวุ่นใจ</label><select id="st5q3" onchange="updateST5Preview()"><option value="">-- ยังไม่ได้ประเมิน --</option><option value="0">0 แทบไม่มี</option><option value="1">1 เป็นบางครั้ง</option><option value="2">2 บ่อยครั้ง</option><option value="3">3 เป็นประจำ</option></select></div>
+                <div class="form-group"><label>4. รู้สึกเบื่อ เซ็ง</label><select id="st5q4" onchange="updateST5Preview()"><option value="">-- ยังไม่ได้ประเมิน --</option><option value="0">0 แทบไม่มี</option><option value="1">1 เป็นบางครั้ง</option><option value="2">2 บ่อยครั้ง</option><option value="3">3 เป็นประจำ</option></select></div>
+                <div class="form-group"><label>5. ไม่อยากพบปะผู้คน</label><select id="st5q5" onchange="updateST5Preview()"><option value="">-- ยังไม่ได้ประเมิน --</option><option value="0">0 แทบไม่มี</option><option value="1">1 เป็นบางครั้ง</option><option value="2">2 บ่อยครั้ง</option><option value="3">3 เป็นประจำ</option></select></div>
+                <div id="st5Preview" class="sub-score">ผลคัดกรอง ST-5: ไม่ได้ประเมิน</div>
+            </div>
+        </div>
+
         <div id="panelClinicalContext" class="sub-questions">
-            <h4>🩺 ส่วนที่ 4: ประวัติโรคประจำตัวเดิม / ปัจจัยร่วมทางคลินิก</h4>
+            <h4>🩺 ส่วนที่ 5: ประวัติโรคประจำตัวเดิม / ปัจจัยร่วมทางคลินิก</h4>
             <div class="context-guidance">
                 <b>ควรกรอกเมื่อใด?</b><br>
                 ควรถาม/ติ๊กเมื่อผู้รับการประเมินมีคะแนน 2Q/9Q/8Q เสี่ยง, มีประวัติเคยรักษาจิตเวช, ใช้ยาจิตเวชหรือขาดยา, มีโรคทางกายเรื้อรัง/ปวดเรื้อรัง/มะเร็ง/ไทรอยด์, มีอาการนอนไม่หลับเรื้อรัง หรือ อสม. สังเกตว่าปัจจัยเหล่านี้อาจเกี่ยวข้องกับอารมณ์ของผู้ป่วย<br>
@@ -262,7 +283,7 @@
         </div>
 
         <div id="panelSubstance10X" class="sub-questions">
-            <h4>🍺 ส่วนที่ 5: Alcohol / Substance Screening - 10X</h4>
+            <h4>🍺 ส่วนที่ 6: Alcohol / Substance Screening - 10X</h4>
             <div class="context-guidance" style="background:#fefce8; border-color:#fde68a; color:#854d0e;">
                 <b>ควรกรอกเมื่อใด?</b><br>
                 ควรถามเมื่อ 2Q/9Q/8Q มีความเสี่ยง, มีความคิดทำร้ายตนเอง, ญาติ/ชุมชนบอกว่าดื่มสุราหรือใช้สาร, มีประวัติอุบัติเหตุ/ทะเลาะ/ขาดงานจากการดื่มหรือสาร, หรือ อสม. สงสัยว่าสุรา/สารเสพติดอาจกระตุ้นอารมณ์ดิ่ง<br>
@@ -309,6 +330,7 @@
             <div class="summary-item"><span>ผลประเมินด่วน 2Q:</span> <span id="smQ2Result">-</span></div>
             <div class="summary-item"><span>คะแนนสรุป 9Q:</span> <span id="smQ9Score">-(ไม่ได้ประเมิน)-</span></div>
             <div class="summary-item"><span>คะแนนสรุป 8Q:</span> <span id="smQ8Result">-(ไม่ได้ประเมิน)-</span></div>
+            <div class="summary-item"><span>ผลประเมิน ST-5:</span> <span id="smST5Result">ไม่ได้ประเมิน</span></div>
             <div class="summary-item"><span>หมายเหตุผู้คัดกรอง:</span> <span id="smComment">-</span></div>
         </div>
         <div class="summary-box">
@@ -354,6 +376,60 @@
         panel.classList.toggle('active', !!active);
         btn.classList.toggle('off', !active);
         btn.innerText = active ? activeText : inactiveText;
+    }
+
+
+    function toggleST5Assessment() {
+        const panel = document.getElementById('st5Fields');
+        const next = !(panel && panel.classList.contains('active'));
+        setOptionalPanelState(
+            'st5Fields',
+            'btnToggleST5',
+            next,
+            '➖ ซ่อนแบบประเมิน ST-5',
+            '➕ ต้องการประเมิน ST-5'
+        );
+    }
+
+    function getST5Data() {
+        let score = 0;
+        let answeredCount = 0;
+        const highItems = [];
+        for (let i = 1; i <= 5; i++) {
+            const el = document.getElementById('st5q' + i);
+            const raw = el ? el.value : '';
+            if (raw !== '') answeredCount++;
+            const val = raw === '' ? 0 : parseInt(raw, 10);
+            if (val > 0) score += val;
+            if (val >= 2) highItems.push('ข้อ ' + i);
+        }
+        const assessed = answeredCount > 0;
+        const completed = answeredCount === 0 || answeredCount === 5;
+        if (!assessed) return { assessed: false, completed: true, score: '', level: 'ไม่ได้ประเมิน', details: 'ไม่ได้ประเมิน' };
+        let level = '🟢 เครียดน้อย';
+        if (score >= 10) level = '🔴 เครียดมากที่สุด';
+        else if (score >= 8) level = '🟠 เครียดมาก';
+        else if (score >= 5) level = '🟡 เครียดปานกลาง';
+        return {
+            assessed,
+            completed,
+            score,
+            level,
+            details: highItems.length ? 'ข้อที่มีอาการบ่อย/ประจำ: ' + highItems.join(', ') : 'ไม่มีข้อที่ตอบบ่อยครั้งหรือเป็นประจำ'
+        };
+    }
+
+    function updateST5Preview() {
+        const data = getST5Data();
+        const el = document.getElementById('st5Preview');
+        if (!el) return;
+        if (!data.assessed) {
+            el.innerText = 'ผลคัดกรอง ST-5: ไม่ได้ประเมิน';
+        } else if (!data.completed) {
+            el.innerText = '⚠️ เริ่มกรอก ST-5 แล้ว กรุณาตอบให้ครบทั้ง 5 ข้อ หรือปล่อยว่างทุกข้อถ้าไม่ได้ประเมิน';
+        } else {
+            el.innerText = `ผลคัดกรอง ST-5: ${data.score} คะแนน (${data.level}) | ${data.details}`;
+        }
     }
 
     function toggleClinicalContextAssessment() {
@@ -746,10 +822,15 @@
         document.querySelectorAll('input[name="q2q1"], input[name="q2q2"]').forEach(radio => radio.checked = false);
         for (let i = 1; i <= 9; i++) { const el = document.getElementById('q9q' + i); if (el) el.value = ""; }
         for (let i = 1; i <= 8; i++) { const el = document.getElementById('q8q' + i); if (el) el.value = ""; }
+        for (let i = 1; i <= 5; i++) { const el = document.getElementById('st5q' + i); if (el) el.value = ''; }
+        updateST5Preview();
+        setOptionalPanelState('st5Fields','btnToggleST5',false,'➖ ซ่อนแบบประเมิน ST-5','➕ ต้องการประเมิน ST-5');
         document.querySelectorAll('input[name="psychComorbidity"], input[name="medicalComorbidity"]').forEach(chk => chk.checked = false);
         ['psychComorbidityOther','medicalComorbidityOther'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
         for (let i = 1; i <= 10; i++) { const el = document.getElementById('sub10x' + i); if (el) el.value = ''; }
         updateSubstance10XPreview();
+        setOptionalPanelState('clinicalContextFields','btnToggleClinicalContext',false,'➖ ซ่อนแบบบันทึกปัจจัยร่วมทางคลินิก','➕ ต้องการประเมิน/บันทึกปัจจัยร่วมทางคลินิก');
+        setOptionalPanelState('substance10XFields','btnToggleSubstance10X',false,'➖ ซ่อนแบบประเมิน Alcohol / Substance 10X','➕ ต้องการประเมิน Alcohol / Substance 10X');
         
         document.getElementById('assessmentTypeSelect').value = "2Q";
         switchAssessment();
@@ -876,6 +957,12 @@ ${listText}
             }
         }
 
+        const st5Check = getST5Data();
+        if (st5Check.assessed && !st5Check.completed) {
+            alert('⚠️ แบบประเมิน ST-5 ยังตอบไม่ครบ ถ้าจะประเมินกรุณาตอบให้ครบทั้ง 5 ข้อ หรือถ้าไม่ได้ประเมินให้ปล่อยว่างทุกข้อครับ');
+            return;
+        }
+
         const sub10xCheck = getSubstance10XData();
         if (sub10xCheck.assessed && !sub10xCheck.completed) {
             alert('⚠️ แบบคัดกรอง Alcohol/Substance 10X ยังตอบไม่ครบ ถ้าจะประเมินกรุณาตอบให้ครบทั้ง 10 ข้อ หรือถ้าไม่ได้ประเมินให้ปล่อยว่างทุกข้อครับ');
@@ -898,6 +985,8 @@ ${listText}
             document.getElementById('smQ8Result').innerText = `${score8Q} คะแนน (${severity8Q})`;
         } else { document.getElementById('smQ8Result').innerText = "-(ไม่ได้ประเมิน)-"; }
 
+        const st5 = getST5Data();
+        document.getElementById('smST5Result').innerText = st5.assessed ? `${st5.score} คะแนน (${st5.level}) | ${st5.details}` : 'ไม่ได้ประเมิน';
         document.getElementById('smComment').innerText = document.getElementById('comment').value.trim() || "-(ว่าง)-";
         document.getElementById('smPsychComorbidity').innerText = getCheckedValues('psychComorbidity', 'psychComorbidityOther');
         document.getElementById('smMedicalComorbidity').innerText = getCheckedValues('medicalComorbidity', 'medicalComorbidityOther');
@@ -913,6 +1002,9 @@ ${listText}
         document.querySelectorAll('input[name="q2q1"], input[name="q2q2"]').forEach(radio => radio.checked = false);
         for (let i = 1; i <= 9; i++) { const el = document.getElementById('q9q' + i); if (el) el.value = ""; }
         for (let i = 1; i <= 8; i++) { const el = document.getElementById('q8q' + i); if (el) el.value = ""; }
+        for (let i = 1; i <= 5; i++) { const el = document.getElementById('st5q' + i); if (el) el.value = ''; }
+        updateST5Preview();
+        setOptionalPanelState('st5Fields','btnToggleST5',false,'➖ ซ่อนแบบประเมิน ST-5','➕ ต้องการประเมิน ST-5');
         document.querySelectorAll('input[name="psychComorbidity"], input[name="medicalComorbidity"]').forEach(chk => chk.checked = false);
         ['psychComorbidityOther','medicalComorbidityOther'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
         for (let i = 1; i <= 10; i++) { const el = document.getElementById('sub10x' + i); if (el) el.value = ''; }
@@ -961,6 +1053,7 @@ ${listText}
 
     function buildScreeningPayloadObject() {
         const type = document.getElementById('assessmentTypeSelect').value;
+        const st5Data = getST5Data();
         const subData = getSubstance10XData();
         return {
             action: 'submitScreening',
@@ -973,6 +1066,9 @@ ${listText}
             q2Result: document.getElementById('smQ2Result').innerText,
             q9Score: (type === '9Q' || type === '8Q') ? document.getElementById('smQ9Score').innerText : '',
             q8Result: (type === '8Q') ? document.getElementById('smQ8Result').innerText : '',
+            st5Score: st5Data.assessed ? String(st5Data.score) : 'ไม่ได้ประเมิน',
+            st5Level: st5Data.assessed ? st5Data.level : 'ไม่ได้ประเมิน',
+            st5Details: st5Data.assessed ? st5Data.details : 'ไม่ได้ประเมิน',
             comment: document.getElementById('comment').value.trim(),
             psychComorbidities: getCheckedValues('psychComorbidity', 'psychComorbidityOther'),
             medicalComorbidities: getCheckedValues('medicalComorbidity', 'medicalComorbidityOther'),
@@ -1084,6 +1180,12 @@ ${listText}
             return;
         }
         document.getElementById('patientName').value = validation.normalized;
+        const st5Check = getST5Data();
+        if (st5Check.assessed && !st5Check.completed) {
+            alert('⚠️ แบบประเมิน ST-5 ยังตอบไม่ครบ ถ้าจะประเมินกรุณาตอบให้ครบทั้ง 5 ข้อ หรือถ้าไม่ได้ประเมินให้ปล่อยว่างทุกข้อครับ');
+            return;
+        }
+
         const sub10xCheck = getSubstance10XData();
         if (sub10xCheck.assessed && !sub10xCheck.completed) {
             alert('⚠️ 10X ยังตอบไม่ครบ กรุณากลับไปตอบให้ครบทั้ง 10 ข้อ หรือปล่อยว่างทุกข้อถ้าไม่ได้ประเมิน');
