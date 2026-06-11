@@ -166,6 +166,67 @@
             .patient-row-right { align-items: flex-start !important; margin-left: 0 !important; text-align: left !important; }
             .case-status-line, .history-header, .vhm-row-header, .feedback-header, .info-row { align-items: flex-start !important; flex-direction: column !important; }
         }
+
+        .staff-add-collapsed-box {
+            border: 2px dashed #93c5fd;
+            background: #eff6ff;
+            border-radius: 18px;
+            padding: 18px;
+            margin-bottom: 18px;
+            text-align: center;
+        }
+        .staff-add-toggle-btn {
+            border: none;
+            border-radius: 16px;
+            padding: 16px 18px;
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: white;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
+            cursor: pointer;
+            width: 100%;
+            max-width: 480px;
+        }
+        .staff-add-toggle-btn:active { transform: translateY(1px); }
+        .credential-input-wrap {
+            position: relative;
+            flex: 1;
+            min-width: 220px;
+        }
+        .credential-input-wrap input {
+            width: 100%;
+            box-sizing: border-box;
+            padding-right: 64px !important;
+        }
+        .credential-eye-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            color: #334155;
+            border-radius: 10px;
+            padding: 7px 9px;
+            font-size: 1rem;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .credential-eye-btn:hover { background: #e0f2fe; border-color: #7dd3fc; }
+        .tiny-eye-btn {
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            color: #334155;
+            border-radius: 10px;
+            padding: 5px 8px;
+            margin-left: 6px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .tiny-eye-btn:hover { background: #e0f2fe; border-color: #7dd3fc; }
+
     </style>
 </head>
 <body>
@@ -376,7 +437,12 @@
         </div>
 
         <div id="staffTab" class="tab-content">
-            <div class="vhm-form-box" style="border: 2px solid #3b82f6;">
+            <div id="staffAddCollapsedBox" class="staff-add-collapsed-box">
+                <button type="button" class="staff-add-toggle-btn" onclick="openStaffAddForm()">➕ เพิ่มเจ้าหน้าที่เข้าระบบ</button>
+                <p class="case-status-muted" style="margin:12px 0 0; line-height:1.5;">กดปุ่มนี้เมื่อต้องการเพิ่มบัญชี Hospital / Admin / VHV ใหม่</p>
+            </div>
+
+            <div id="staffFormBox" class="vhm-form-box" style="display:none; border: 2px solid #3b82f6;">
                 <h4 id="formStaffTitle" style="margin-top: 0; color: #3b82f6;">➕ เพิ่มเจ้าหน้าที่เข้าระบบ</h4>
                 <input type="hidden" id="staffFormMode" value="add">
                 <input type="hidden" id="staffOriginalUsername" value="">
@@ -386,11 +452,17 @@
                 </p>
                 <div class="inputs-row">
                     <input type="text" id="staffUsernameInput" placeholder="Username (ภาษาอังกฤษ)">
-                    <input type="text" id="staffPasswordInput" placeholder="Password เข้าใช้งาน (ตอนแก้ไข: เว้นว่างถ้าไม่เปลี่ยน)">
+                    <div class="credential-input-wrap">
+                        <input type="password" id="staffPasswordInput" placeholder="Password เข้าใช้งาน (ตอนแก้ไข: เว้นว่างถ้าไม่เปลี่ยน)">
+                        <button type="button" id="staffPasswordEyeBtn" class="credential-eye-btn" onclick="toggleStaffCredentialVisibility('staffPasswordInput','staffPasswordEyeBtn')" aria-label="แสดงหรือซ่อน Password">👁️</button>
+                    </div>
                 </div>
                 <div class="inputs-row">
                     <input type="text" id="staffNameInput" placeholder="ชื่อ-นามสกุล/ตำแหน่ง เจ้าหน้าที่">
-                    <input type="text" id="staffSecretKeyInput" placeholder="รหัสลับส่วนตัว (ตอนแก้ไข: เว้นว่างถ้าไม่เปลี่ยน)">
+                    <div class="credential-input-wrap">
+                        <input type="password" id="staffSecretKeyInput" placeholder="รหัสลับส่วนตัว (ตอนแก้ไข: เว้นว่างถ้าไม่เปลี่ยน)">
+                        <button type="button" id="staffSecretKeyEyeBtn" class="credential-eye-btn" onclick="toggleStaffCredentialVisibility('staffSecretKeyInput','staffSecretKeyEyeBtn')" aria-label="แสดงหรือซ่อนรหัสลับ">👁️</button>
+                    </div>
                 </div>
                 <div class="inputs-row">
                     <select id="staffRoleInput" onchange="updateStaffAreaFields()">
@@ -410,7 +482,7 @@
                     </div>
                 </div>
                 <div style="text-align: right;">
-                    <button id="btnCancelStaffEdit" class="btn-refresh" style="display:none; margin-right:5px;" onclick="cancelStaffEditMode()">ยกเลิก</button>
+                    <button id="btnCancelStaffEdit" class="btn-refresh" style="margin-right:5px;" onclick="cancelStaffEditMode()">ยกเลิก</button>
                     <button class="btn-search" onclick="saveStaffData()">💾 บันทึกข้อมูลเจ้าหน้าที่</button>
                 </div>
             </div>
@@ -1899,6 +1971,98 @@
     function backToPatientList() { document.getElementById('patientListSection').style.display = 'block'; document.getElementById('patientDetailSection').style.display = 'none'; processData(); }
 
 
+
+    function showStaffFormBox() {
+        const box = document.getElementById('staffFormBox');
+        const collapsed = document.getElementById('staffAddCollapsedBox');
+        if (box) box.style.display = 'block';
+        if (collapsed) collapsed.style.display = 'none';
+    }
+
+    function hideStaffFormBox() {
+        const box = document.getElementById('staffFormBox');
+        const collapsed = document.getElementById('staffAddCollapsedBox');
+        if (box) box.style.display = 'none';
+        if (collapsed) collapsed.style.display = 'block';
+    }
+
+    function toggleStaffCredentialVisibility(inputId, buttonId) {
+        const input = document.getElementById(inputId);
+        const btn = document.getElementById(buttonId);
+        if (!input) return;
+        const willShow = input.type === 'password';
+        input.type = willShow ? 'text' : 'password';
+        if (btn) btn.textContent = willShow ? '🙈' : '👁️';
+    }
+
+    function resetStaffFormFields() {
+        document.getElementById('formStaffTitle').innerText = '➕ เพิ่มเจ้าหน้าที่เข้าระบบ';
+        document.getElementById('staffFormMode').value = 'add';
+        document.getElementById('staffOriginalUsername').value = '';
+        document.getElementById('staffOriginalRole').value = '';
+        document.getElementById('staffUsernameInput').value = '';
+        document.getElementById('staffUsernameInput').disabled = false;
+        document.getElementById('staffPasswordInput').value = '';
+        document.getElementById('staffPasswordInput').type = 'password';
+        document.getElementById('staffPasswordInput').placeholder = 'Password เข้าใช้งาน (ตอนแก้ไข: เว้นว่างถ้าไม่เปลี่ยน)';
+        const passwordEye = document.getElementById('staffPasswordEyeBtn');
+        if (passwordEye) passwordEye.textContent = '👁️';
+        document.getElementById('staffNameInput').value = '';
+        document.getElementById('staffSecretKeyInput').value = '';
+        document.getElementById('staffSecretKeyInput').type = 'password';
+        document.getElementById('staffSecretKeyInput').placeholder = 'รหัสลับส่วนตัว (ตอนแก้ไข: เว้นว่างถ้าไม่เปลี่ยน)';
+        const secretEye = document.getElementById('staffSecretKeyEyeBtn');
+        if (secretEye) secretEye.textContent = '👁️';
+        document.getElementById('staffRoleInput').value = '';
+        document.getElementById('staffTambonInput').value = '';
+        document.getElementById('staffFacilityInput').value = '';
+        document.getElementById('staffVillageScopeInput').value = '';
+        updateStaffAreaFields();
+    }
+
+    function openStaffAddForm() {
+        resetStaffFormFields();
+        showStaffFormBox();
+        setTimeout(() => document.getElementById('staffUsernameInput')?.focus(), 50);
+    }
+
+    function toggleSavedStaffCredential(encodedUsername, role, type, targetId, button) {
+        const target = document.getElementById(targetId);
+        if (!target) return;
+        const isVisible = target.dataset.visible === '1';
+        if (isVisible) {
+            target.textContent = '••••••••';
+            target.dataset.visible = '0';
+            if (button) button.textContent = '👁️';
+            return;
+        }
+        const username = decodeURIComponent(encodedUsername || '');
+        if (!username) return;
+        if (button) {
+            button.disabled = true;
+            button.textContent = '⏳';
+        }
+        const url = `${GOOGLE_SCRIPT_URL}?action=getStaffCredential` +
+            `&username=${encodeURIComponent(username)}` +
+            `&role=${encodeURIComponent(role)}` +
+            `&type=${encodeURIComponent(type)}` +
+            `&actorUsername=${encodeURIComponent(currentAdminUsername)}` +
+            `&authToken=${encodeURIComponent(currentAdminAuthToken)}`;
+        fetch(url)
+            .then(res => { if (!res.ok) throw new Error('HTTP Status ' + res.status); return res.json(); })
+            .then(res => {
+                if (!res.success) throw new Error(res.message || 'ไม่สามารถดึงรหัสได้');
+                target.textContent = res.value || '(ว่าง)';
+                target.dataset.visible = '1';
+                if (button) button.textContent = '🙈';
+            })
+            .catch(err => {
+                alert('❌ ไม่สามารถแสดงรหัสได้: ' + err.message);
+                if (button) button.textContent = '👁️';
+            })
+            .finally(() => { if (button) button.disabled = false; });
+    }
+
     function canCurrentUserManageRole(targetRole) {
         const actor = normalizeAdminRole(currentAdminRole);
         const target = normalizeAdminRole(targetRole);
@@ -1949,13 +2113,22 @@
             return;
         }
         listDiv.innerHTML = '';
-        rows.forEach(staff => {
+        rows.forEach((staff, idx) => {
             const role = normalizeAdminRole(staff.role);
             const roleLabel = getRoleLabel(role);
             const canManage = canCurrentUserManageRole(role);
             const card = document.createElement('div');
             card.className = 'vhm-table-row';
             card.style.borderLeft = role === 'hospital' ? '4px solid #10b981' : role === 'admin' ? '4px solid #3b82f6' : '4px solid #f59e0b';
+            const encodedUsername = encodeURIComponent(staff.username || '');
+            const passwordTargetId = `staffCredPassword_${idx}`;
+            const secretTargetId = `staffCredSecret_${idx}`;
+            const passwordDisplay = staff.passwordSet
+                ? `<span id="${passwordTargetId}" data-visible="0">••••••••</span><button type="button" class="tiny-eye-btn" onclick="toggleSavedStaffCredential('${encodedUsername}','${role}','password','${passwordTargetId}', this)" aria-label="แสดงหรือซ่อน Password">👁️</button><span class="case-status-muted"> (กดตาเพื่อแสดง)</span>`
+                : `<span class="case-status-muted">ยังไม่ได้ตั้งค่า</span>`;
+            const secretDisplay = staff.secretKeySet
+                ? `<span id="${secretTargetId}" data-visible="0">••••••••</span><button type="button" class="tiny-eye-btn" onclick="toggleSavedStaffCredential('${encodedUsername}','${role}','secretKey','${secretTargetId}', this)" aria-label="แสดงหรือซ่อนรหัสลับ">👁️</button><span class="case-status-muted"> (กดตาเพื่อแสดง)</span>`
+                : `<span class="case-status-muted">ยังไม่ได้ตั้งค่า</span>`;
             const areaRows = role === 'hospital'
                 ? ''
                 : role === 'admin'
@@ -1964,8 +2137,8 @@
             card.innerHTML = `
                 <div class="vhm-row-header"><span>ชื่อเจ้าหน้าที่: <b>${escapeHTML(staff.name || '-')}</b> <span class="role-pill ${role}">${escapeHTML(roleLabel)}</span></span><span>Username: ${escapeHTML(staff.username || '-')}</span></div>
                 ${areaRows}
-                <div class="info-row"><span>รหัสเข้าใช้งาน (Password):</span> <span>•••••••• <span class="case-status-muted">(ซ่อนไว้เพื่อความปลอดภัย)</span></span></div>
-                <div class="info-row"><span>รหัสลับกู้บัญชี:</span> <span>•••••••• <span class="case-status-muted">(ซ่อนไว้เพื่อความปลอดภัย)</span></span></div>
+                <div class="info-row"><span>รหัสเข้าใช้งาน (Password):</span> <span>${passwordDisplay}</span></div>
+                <div class="info-row"><span>รหัสลับกู้บัญชี:</span> <span>${secretDisplay}</span></div>
                 <div class="info-row"><span>LINE User ID:</span> <span>${staff.lineId ? 'ผูกแล้ว' : 'ยังไม่ผูก'}</span></div>
                 <div class="info-row"><span>LINE Updated At:</span> <span>${escapeHTML(staff.lineUpdatedAt || '-')}</span></div>
                 <div class="row-actions" style="text-align: right; margin-top: 10px;"></div>
@@ -2054,6 +2227,7 @@
     }
 
     function enableStaffEditMode(staff) {
+        showStaffFormBox();
         const role = normalizeAdminRole(staff.role);
         document.getElementById('formStaffTitle').innerText = `✏️ กำลังแก้ไขข้อมูลเจ้าหน้าที่ (${staff.username})`;
         document.getElementById('staffFormMode').value = 'edit';
@@ -2062,9 +2236,13 @@
         document.getElementById('staffUsernameInput').value = staff.username || '';
         document.getElementById('staffUsernameInput').disabled = true;
         document.getElementById('staffPasswordInput').value = '';
+        document.getElementById('staffPasswordInput').type = 'password';
+        document.getElementById('staffPasswordEyeBtn').textContent = '👁️';
         document.getElementById('staffPasswordInput').placeholder = 'เว้นว่างถ้าไม่ต้องการเปลี่ยน Password';
         document.getElementById('staffNameInput').value = staff.name || '';
         document.getElementById('staffSecretKeyInput').value = '';
+        document.getElementById('staffSecretKeyInput').type = 'password';
+        document.getElementById('staffSecretKeyEyeBtn').textContent = '👁️';
         document.getElementById('staffSecretKeyInput').placeholder = 'เว้นว่างถ้าไม่ต้องการเปลี่ยนรหัสลับ';
         document.getElementById('staffRoleInput').value = role;
         updateStaffAreaFields();
@@ -2077,23 +2255,8 @@
     }
 
     function cancelStaffEditMode() {
-        document.getElementById('formStaffTitle').innerText = '➕ เพิ่มเจ้าหน้าที่เข้าระบบ';
-        document.getElementById('staffFormMode').value = 'add';
-        document.getElementById('staffOriginalUsername').value = '';
-        document.getElementById('staffOriginalRole').value = '';
-        document.getElementById('staffUsernameInput').value = '';
-        document.getElementById('staffUsernameInput').disabled = false;
-        document.getElementById('staffPasswordInput').value = '';
-        document.getElementById('staffPasswordInput').placeholder = 'Password เข้าใช้งาน (ตอนแก้ไข: เว้นว่างถ้าไม่เปลี่ยน)';
-        document.getElementById('staffNameInput').value = '';
-        document.getElementById('staffSecretKeyInput').value = '';
-        document.getElementById('staffSecretKeyInput').placeholder = 'รหัสลับส่วนตัว (ตอนแก้ไข: เว้นว่างถ้าไม่เปลี่ยน)';
-        document.getElementById('staffRoleInput').value = '';
-        document.getElementById('staffTambonInput').value = '';
-        document.getElementById('staffFacilityInput').value = '';
-        document.getElementById('staffVillageScopeInput').value = '';
-        updateStaffAreaFields();
-        document.getElementById('btnCancelStaffEdit').style.display = 'none';
+        resetStaffFormFields();
+        hideStaffFormBox();
     }
 
     function fetchVhmData() {
