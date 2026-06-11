@@ -317,6 +317,7 @@
                                 <option value="2Q">เปรียบเทียบ 2Q</option>
                                 <option value="9Q">เปรียบเทียบ 9Q</option>
                                 <option value="8Q">เปรียบเทียบ 8Q</option>
+                                <option value="ST5">เปรียบเทียบ ST-5</option>
                             </select>
                             <button type="button" class="btn-refresh" onclick="moveComparisonPage(5)">⬅️ 5 รายการก่อนหน้า</button>
                             <button type="button" class="btn-refresh" onclick="moveComparisonPage(-5)">➡️ 5 รายการล่าสุด</button>
@@ -387,6 +388,7 @@
                 </div>
                 <div class="inputs-row">
                     <select id="staffRoleInput" onchange="updateStaffAreaFields()">
+                        <option value="">-- เลือกระดับเจ้าหน้าที่ --</option>
                         <option value="vhv">VHV - อสม. ใช้หน้าคัดกรอง</option>
                         <option value="admin">Admin - ดูข้อมูลและจัดการระบบ แต่จองคิวไม่ได้</option>
                         <option value="hospital">Hospital - ดูข้อมูล จัดการระบบ และรับจองคิวได้</option>
@@ -825,7 +827,7 @@
     const SERVICE_AREA_LIST = [
         { facility: 'รพ.สต.บ้านบางอ้อ', tambon: 'บางอ้อ', villages: ['หมู่ 1','หมู่ 2','หมู่ 3','หมู่ 4','หมู่ 5','หมู่ 6','หมู่ 7','หมู่ 8','หมู่ 9','หมู่ 10','หมู่ 11','หมู่ 12','หมู่ 13','หมู่ 14'] },
         { facility: 'รพ.สต.บ้านแหลมไม้ย้อย', tambon: 'พิกุลออก', villages: ['หมู่ 1','หมู่ 2','หมู่ 3','หมู่ 4','หมู่ 5','หมู่ 6','หมู่ 7','หมู่ 8','หมู่ 9','หมู่ 10','หมู่ 11','หมู่ 12'] },
-        { facility: 'รพ.สต.บ้านกว่างประตูวัง', tambon: 'ป่าขะ', villages: ['หมู่ 1','หมู่ 2','หมู่ 3','หมู่ 4','หมู่ 5','หมู่ 6','หมู่ 7','หมู่ 8','หมู่ 9','หมู่ 10','หมู่ 11','หมู่ 12','หมู่ 13'] },
+        { facility: 'รพ.สต.บ้านกร่างประตูวัง', tambon: 'ป่าขะ', villages: ['หมู่ 1','หมู่ 2','หมู่ 3','หมู่ 4','หมู่ 5','หมู่ 6','หมู่ 7','หมู่ 8','หมู่ 9','หมู่ 10','หมู่ 11','หมู่ 12','หมู่ 13'] },
         { facility: 'รพ.สต.บ้านไผ่ขวาง', tambon: 'อาษา', villages: ['หมู่ 1','หมู่ 2','หมู่ 3','หมู่ 4','หมู่ 5','หมู่ 6','หมู่ 7','หมู่ 8'] },
         { facility: 'รพ.สต.บ้านละว้า', tambon: 'ศรีกะอาง', villages: ['หมู่ 1','หมู่ 2','หมู่ 3','หมู่ 4','หมู่ 5','หมู่ 6','หมู่ 7','หมู่ 8','หมู่ 9'] },
         { facility: 'รพ.สต.บ้านหนองรี', tambon: 'บ้านพร้าว', villages: ['หมู่ 1','หมู่ 3','หมู่ 4','หมู่ 6','หมู่ 7','หมู่ 9'] },
@@ -854,16 +856,34 @@
 
     function updateStaffAreaFields() {
         populateStaffTambonOptions();
-        const role = normalizeAdminRole(document.getElementById('staffRoleInput')?.value);
+        const rawRole = safeText(document.getElementById('staffRoleInput')?.value).trim();
+        const role = rawRole ? normalizeAdminRole(rawRole) : '';
         const areaBox = document.getElementById('staffAreaFields');
+        const tambon = document.getElementById('staffTambonInput');
         const facility = document.getElementById('staffFacilityInput');
         const village = document.getElementById('staffVillageScopeInput');
         const help = document.getElementById('staffAreaHelp');
-        if (!areaBox || !facility || !village || !help) return;
+        if (!areaBox || !tambon || !facility || !village || !help) return;
+
+        if (!role) {
+            areaBox.style.display = 'none';
+            tambon.value = '';
+            facility.value = '';
+            village.value = '';
+            facility.style.display = 'none';
+            village.style.display = 'none';
+            help.innerText = '';
+            return;
+        }
+
         if (role === 'hospital') {
             areaBox.style.display = 'none';
-            document.getElementById('staffTambonInput').value = '';
-            facility.value = ''; village.value = '';
+            tambon.value = '';
+            facility.value = '';
+            village.value = '';
+            facility.style.display = 'none';
+            village.style.display = 'none';
+            help.innerText = '';
             return;
         }
         areaBox.style.display = 'block';
@@ -1550,7 +1570,21 @@
         const records = getPatientGroupRecords();
         if (topic === '9Q') return records.filter(item => hasMeasured9Q(item));
         if (topic === '8Q') return records.filter(item => safeText(item.assessmentType).includes('8Q') || safeText(item.q8Result).includes('คะแนน'));
+        if (topic === 'ST5') return records.filter(item => formatST5Display(item) !== 'ไม่ได้ประเมิน');
         return records.filter(item => safeText(item.q2Result));
+    }
+
+    function getComparisonTopicLabel(topic) {
+        if (topic === 'ST5') return 'ST-5';
+        return topic;
+    }
+
+    function getComparisonResultText(topic, item) {
+        if (topic === '2Q') return safeText(item.q2Result) || '-';
+        if (topic === '9Q') return safeText(item.q9Score) || '-';
+        if (topic === '8Q') return safeText(item.q8Result) || '-';
+        if (topic === 'ST5') return formatST5Display(item);
+        return '-';
     }
 
     function renderAssessmentComparison() {
@@ -1560,13 +1594,11 @@
         if (comparisonPageOffset >= records.length) comparisonPageOffset = Math.max(0, records.length - 5);
         const page = records.slice(comparisonPageOffset, comparisonPageOffset + 5);
         const rows = page.map((item, idx) => {
-            let result = '-';
-            if (topic === '2Q') result = safeText(item.q2Result) || '-';
-            else if (topic === '9Q') result = safeText(item.q9Score) || '-';
-            else result = safeText(item.q8Result) || '-';
-            return `<tr><td>${comparisonPageOffset + idx + 1}</td><td>${escapeHTML(item.timestamp || '-')}</td><td>${escapeHTML(result)}</td><td>${escapeHTML(deriveRiskLevel(item))}</td></tr>`;
+            const result = getComparisonResultText(topic, item);
+            return `<tr><td>${comparisonPageOffset + idx + 1}</td><td>${escapeHTML(item.timestamp || '-')}</td><td>${result === 'ไม่ได้ประเมิน' ? 'ไม่ได้ประเมิน' : escapeHTML(result)}</td><td>${escapeHTML(deriveRiskLevel(item))}</td></tr>`;
         }).join('');
-        document.getElementById('comparisonTableBox').innerHTML = rows ? `<table class="compare-table"><thead><tr><th>#</th><th>วันที่เวลา</th><th>ผล ${escapeHTML(topic)}</th><th>Risk</th></tr></thead><tbody>${rows}</tbody></table><div class="mini-note">แสดงครั้งละ 5 รายการ โดยเรียงจากล่าสุดไปเก่าสุด</div>` : '<p class="case-status-muted">ยังไม่มีข้อมูลสำหรับหัวข้อนี้</p>';
+        const topicLabel = getComparisonTopicLabel(topic);
+        document.getElementById('comparisonTableBox').innerHTML = rows ? `<table class="compare-table"><thead><tr><th>#</th><th>วันที่เวลา</th><th>ผล ${escapeHTML(topicLabel)}</th><th>Risk</th></tr></thead><tbody>${rows}</tbody></table><div class="mini-note">แสดงครั้งละ 5 รายการ โดยเรียงจากล่าสุดไปเก่าสุด</div>` : '<p class="case-status-muted">ยังไม่มีข้อมูลสำหรับหัวข้อนี้</p>';
     }
 
     function moveComparisonPage(delta) {
@@ -1904,7 +1936,9 @@
         const password = document.getElementById('staffPasswordInput').value.trim();
         const name = document.getElementById('staffNameInput').value.trim();
         const secretKey = document.getElementById('staffSecretKeyInput').value.trim();
-        const role = normalizeAdminRole(document.getElementById('staffRoleInput').value);
+        const rawRole = safeText(document.getElementById('staffRoleInput').value).trim();
+        if (!rawRole) { alert('⚠️ กรุณาเลือกระดับเจ้าหน้าที่ก่อนบันทึก'); return; }
+        const role = normalizeAdminRole(rawRole);
         const subdistrict = document.getElementById('staffTambonInput')?.value || '';
         const facility = role === 'admin' ? (document.getElementById('staffFacilityInput')?.value || '') : '';
         const villageScope = role === 'vhv' ? (document.getElementById('staffVillageScopeInput')?.value || '') : '';
@@ -1984,7 +2018,7 @@
         document.getElementById('staffPasswordInput').value = '';
         document.getElementById('staffNameInput').value = '';
         document.getElementById('staffSecretKeyInput').value = '';
-        document.getElementById('staffRoleInput').value = 'vhv';
+        document.getElementById('staffRoleInput').value = '';
         document.getElementById('staffTambonInput').value = '';
         document.getElementById('staffFacilityInput').value = '';
         document.getElementById('staffVillageScopeInput').value = '';
