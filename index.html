@@ -166,13 +166,16 @@
             </select>
         </div>
         <div class="form-group">
+            <label>ตำบล *</label>
+            <select id="patientSubdistrict" onchange="handlePatientSubdistrictChange()">
+                <option value="">-- เลือกตำบล --</option>
+            </select>
+            <div class="mini-note">เลือกตำบลก่อน ระบบจะแสดงเฉพาะหมู่ที่อยู่ในตำบลนั้น เพื่อลดการส่งข้อมูลผิดพื้นที่และช่วยให้ LINE แจ้งเตือนไปยัง รพ.สต. ที่รับผิดชอบถูกต้อง</div>
+        </div>
+        <div class="form-group">
             <label>หมู่บ้าน *</label>
-            <select id="villageNo">
-                <option value="">-- เลือกหมู่ที่ --</option>
-                <option value="หมู่ 1">หมู่ 1</option>
-                <option value="หมู่ 2">หมู่ 2</option>
-                <option value="หมู่ 5">หมู่ 5</option>
-                <option value="หมู่ 8">หมู่ 8</option>
+            <select id="villageNo" disabled>
+                <option value="">-- เลือกตำบลก่อน --</option>
             </select>
         </div>
         <button class="btn-nav btn-next" onclick="goToStep2()">ถัดไป ➡️</button>
@@ -338,6 +341,7 @@
             <h4>👤 ข้อมูลทั่วไป</h4>
             <div class="summary-item"><span>ชื่อ-สกุล:</span> <span id="smName">-</span></div>
             <div class="summary-item"><span>เพศ:</span> <span id="smGender">-</span></div>
+            <div class="summary-item"><span>ตำบล:</span> <span id="smSubdistrict">-</span></div>
             <div class="summary-item"><span>หมู่บ้าน:</span> <span id="smVillage">-</span></div>
         </div>
         <div class="summary-box">
@@ -374,6 +378,88 @@
 
     function safeText(value) {
         return value === undefined || value === null ? "" : String(value);
+    }
+
+    const SERVICE_AREA_LIST = [
+        { facility: 'รพ.สต.บ้านบางอ้อ', tambon: 'บางอ้อ', villages: ['หมู่ 1','หมู่ 2','หมู่ 3','หมู่ 4','หมู่ 5','หมู่ 6','หมู่ 7','หมู่ 8','หมู่ 9','หมู่ 10','หมู่ 11','หมู่ 12','หมู่ 13','หมู่ 14'] },
+        { facility: 'รพ.สต.บ้านแหลมไม้ย้อย', tambon: 'พิกุลออก', villages: ['หมู่ 1','หมู่ 2','หมู่ 3','หมู่ 4','หมู่ 5','หมู่ 6','หมู่ 7','หมู่ 8','หมู่ 9','หมู่ 10','หมู่ 11','หมู่ 12'] },
+        { facility: 'รพ.สต.บ้านกร่างประตูวัง', tambon: 'ป่าขะ', villages: ['หมู่ 1','หมู่ 2','หมู่ 3','หมู่ 4','หมู่ 5','หมู่ 6','หมู่ 7','หมู่ 8','หมู่ 9','หมู่ 10','หมู่ 11','หมู่ 12','หมู่ 13'] },
+        { facility: 'รพ.สต.บ้านไผ่ขวาง', tambon: 'อาษา', villages: ['หมู่ 1','หมู่ 2','หมู่ 3','หมู่ 4','หมู่ 5','หมู่ 6','หมู่ 7','หมู่ 8'] },
+        { facility: 'รพ.สต.บ้านละว้า', tambon: 'ศรีกะอาง', villages: ['หมู่ 1','หมู่ 2','หมู่ 3','หมู่ 4','หมู่ 5','หมู่ 6','หมู่ 7','หมู่ 8','หมู่ 9'] },
+        { facility: 'รพ.สต.บ้านหนองรี', tambon: 'บ้านพร้าว', villages: ['หมู่ 1','หมู่ 3','หมู่ 4','หมู่ 6','หมู่ 7','หมู่ 9'] },
+        { facility: 'รพ.สต.บ้านทางกระบือ', tambon: 'บ้านพร้าว', villages: ['หมู่ 2','หมู่ 5','หมู่ 8','หมู่ 10','หมู่ 11','หมู่ 12'] },
+        { facility: 'รพ.สต.บ้านเขาเพิ่ม', tambon: 'เขาเพิ่ม', villages: ['หมู่ 1','หมู่ 3','หมู่ 4','หมู่ 11','หมู่ 14','หมู่ 16'] },
+        { facility: 'รพ.สต.บ้านเขาน้อย', tambon: 'เขาเพิ่ม', villages: ['หมู่ 2','หมู่ 5','หมู่ 6','หมู่ 7','หมู่ 15'] },
+        { facility: 'รพ.สต.บ้านกะเหรี่ยง', tambon: 'เขาเพิ่ม', villages: ['หมู่ 8','หมู่ 9','หมู่ 10','หมู่ 12','หมู่ 13'] },
+        { facility: 'รพ.สต.บ้านคลอง30', tambon: 'ทองหลาง', villages: ['หมู่ 3','หมู่ 4','หมู่ 6','หมู่ 7'] },
+        { facility: 'รพ.สต.บ้านทองหลาง', tambon: 'ทองหลาง', villages: ['หมู่ 1','หมู่ 2','หมู่ 5','หมู่ 8'] },
+        { facility: 'รพ.สต.บ้านพริก', tambon: 'บ้านพริก', villages: ['หมู่ 3','หมู่ 5','หมู่ 7','หมู่ 8','หมู่ 9','หมู่ 10'] },
+        { facility: 'รพ.สต.บ้านหนองคันคาม', tambon: 'บ้านพริก', villages: ['หมู่ 1','หมู่ 2','หมู่ 4','หมู่ 6','หมู่ 11','หมู่ 12'] },
+        { facility: 'รพ.บ้านนา', tambon: 'บ้านนา', villages: ['หมู่ 1','หมู่ 2','หมู่ 3','หมู่ 4','หมู่ 5','หมู่ 6','หมู่ 7','หมู่ 8','หมู่ 9','หมู่ 10','หมู่ 11'] }
+    ];
+
+    function getPatientTambonList() {
+        return Array.from(new Set(SERVICE_AREA_LIST.map(x => x.tambon))).sort((a, b) => a.localeCompare(b, 'th'));
+    }
+
+    function getVillagesByTambon(tambon) {
+        const seen = new Set();
+        const list = [];
+        SERVICE_AREA_LIST.filter(x => x.tambon === tambon).forEach(area => {
+            area.villages.forEach(v => { if (!seen.has(v)) { seen.add(v); list.push(v); } });
+        });
+        return list.sort((a, b) => (parseInt(a.replace(/\D/g, ''), 10) || 0) - (parseInt(b.replace(/\D/g, ''), 10) || 0));
+    }
+
+    function inferTambonFromVillageForOldData(village) {
+        // ข้อมูลเก่าของระบบเดิมมีเฉพาะหมู่ 1,2,5,8 ซึ่งเป็นเขตรับผิดชอบ รพ.สต.บ้านทองหลาง
+        return ['หมู่ 1','หมู่ 2','หมู่ 5','หมู่ 8'].includes(safeText(village).trim()) ? 'ทองหลาง' : '';
+    }
+
+    function populatePatientSubdistrictOptions() {
+        const select = document.getElementById('patientSubdistrict');
+        if (!select) return;
+        const current = select.value;
+        select.innerHTML = '<option value="">-- เลือกตำบล --</option>' + getPatientTambonList().map(t => `<option value="${t}">${t}</option>`).join('');
+        if (current) select.value = current;
+        handlePatientSubdistrictChange(true);
+    }
+
+    function handlePatientSubdistrictChange(keepVillage) {
+        const tambon = document.getElementById('patientSubdistrict')?.value || '';
+        const villageSelect = document.getElementById('villageNo');
+        if (!villageSelect) return;
+        const oldVillage = keepVillage ? villageSelect.value : '';
+        if (!tambon) {
+            villageSelect.innerHTML = '<option value="">-- เลือกตำบลก่อน --</option>';
+            villageSelect.value = '';
+            villageSelect.disabled = true;
+            return;
+        }
+        const villages = getVillagesByTambon(tambon);
+        villageSelect.innerHTML = '<option value="">-- เลือกหมู่ที่ --</option>' + villages.map(v => `<option value="${v}">${v}</option>`).join('');
+        villageSelect.disabled = false;
+        if (oldVillage && villages.includes(oldVillage)) villageSelect.value = oldVillage;
+    }
+
+    function setPatientArea(tambon, village) {
+        const subEl = document.getElementById('patientSubdistrict');
+        const villageEl = document.getElementById('villageNo');
+        const finalTambon = safeText(tambon).trim() || inferTambonFromVillageForOldData(village);
+        if (subEl) {
+            subEl.value = finalTambon;
+            handlePatientSubdistrictChange(true);
+        }
+        if (villageEl && village) {
+            const hasOption = Array.from(villageEl.options).some(opt => opt.value === village);
+            if (!hasOption) {
+                const opt = document.createElement('option');
+                opt.value = village; opt.textContent = village;
+                villageEl.appendChild(opt);
+                villageEl.disabled = false;
+            }
+            villageEl.value = village;
+        }
     }
 
     function showSystemNote(message) {
@@ -589,9 +675,10 @@
             const name = normalizePatientName(item.patientName);
             const gender = safeText(item.patientGender).trim();
             const village = safeText(item.villageNo).trim();
+            const subdistrict = safeText(item.patientSubdistrict || item.subdistrict).trim() || inferTambonFromVillageForOldData(village);
             if (!name || name === '-' || name === 'ไม่ระบุชื่อ') return;
-            const key = `${name}|${gender}|${village}`;
-            if (!map[key]) map[key] = { name, gender, village, key };
+            const key = `${name}|${gender}|${subdistrict}|${village}`;
+            if (!map[key]) map[key] = { name, gender, subdistrict, village, key };
         });
         return Object.values(map);
     }
@@ -617,7 +704,7 @@
         let messages = [];
         if (name && !validation.valid) messages.push('⚠️ ' + validation.message);
         if (validation.valid && similar.length > 0) {
-            messages.push('🔎 พบชื่อเดิมที่สะกดใกล้เคียง: ' + similar.map(p => `${p.name} (${p.village || '-'}, ${p.gender || '-'})`).join(' / ') + '<br>ถ้าเป็นคนเดิม แนะนำให้กดเลือกจากรายการที่ระบบแนะนำ เพื่อลดการพิมพ์ชื่อผิด');
+            messages.push('🔎 พบชื่อเดิมที่สะกดใกล้เคียง: ' + similar.map(p => `${p.name} (${p.subdistrict || '-'} ${p.village || '-'}, ${p.gender || '-'})`).join(' / ') + '<br>ถ้าเป็นคนเดิม แนะนำให้กดเลือกจากรายการที่ระบบแนะนำ เพื่อลดการพิมพ์ชื่อผิด');
         }
         warning.innerHTML = messages.join('<br>');
         warning.style.display = messages.length ? 'block' : 'none';
@@ -656,6 +743,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+        populatePatientSubdistrictOptions();
         updateOfflineDraftBadge();
         initLiffAndAuth();
     });
@@ -772,14 +860,14 @@
             tagEl.style.fontSize = '11px'; tagEl.style.marginLeft = '6px'; tagEl.style.color = patient.isSimilar ? '#b45309' : '#64748b';
             tagEl.textContent = patient.isSimilar ? '(ชื่อใกล้เคียง)' : '';
             const metaEl = document.createElement('span'); metaEl.style.fontSize = '12px'; metaEl.style.color = '#64748b'; metaEl.style.float = 'right';
-            metaEl.textContent = `${patient.village || '-'} (${patient.gender || '-'})`;
+            metaEl.textContent = `${patient.subdistrict || '-'} ${patient.village || '-'} (${patient.gender || '-'})`;
 
             row.appendChild(icon); row.appendChild(nameEl); row.appendChild(tagEl); row.appendChild(metaEl);
             row.onclick = () => {
                 document.getElementById('patientName').value = patient.name;
                 document.getElementById('patientGender').value = patient.gender;
-                document.getElementById('villageNo').value = patient.village;
-                selectedPatientKey = patient.key || `${patient.name}|${patient.gender}|${patient.village}`;
+                setPatientArea(patient.subdistrict, patient.village);
+                selectedPatientKey = patient.key || `${patient.name}|${patient.gender}|${patient.subdistrict || ''}|${patient.village}`;
                 box.style.display = 'none';
                 updatePatientNameWarning();
             };
@@ -793,7 +881,7 @@
         const perfectMatch = getUniquePatientsFromHistory().find(p => normalizeNameForCompare(p.name) === normalizeNameForCompare(inputVal));
         if (perfectMatch) {
             document.getElementById('patientGender').value = perfectMatch.gender;
-            document.getElementById('villageNo').value = perfectMatch.village;
+            setPatientArea(perfectMatch.subdistrict, perfectMatch.village);
             selectedPatientKey = perfectMatch.key;
         }
     }
@@ -856,7 +944,7 @@
         localStorage.setItem("vhm_logout_flag", "true");
         
         document.getElementById('vhmInfoHeader').style.display = "none";
-        document.getElementById('patientName').value = ""; document.getElementById('patientGender').value = ""; document.getElementById('villageNo').value = ""; document.getElementById('comment').value = "";
+        document.getElementById('patientName').value = ""; document.getElementById('patientGender').value = ""; document.getElementById('patientSubdistrict').value = ""; handlePatientSubdistrictChange(); document.getElementById('comment').value = "";
         document.getElementById('nameSuggestionsBox').style.display = 'none';
         
         document.querySelectorAll('input[name="q2q1"], input[name="q2q2"]').forEach(radio => radio.checked = false);
@@ -915,16 +1003,18 @@
             nameEl.focus();
             return;
         }
-        if(!document.getElementById('patientGender').value || !document.getElementById('villageNo').value) {
-            alert("⚠️ กรุณากรอกข้อมูลทั่วไปให้ครบทุกข้อ"); return;
+        const patientSubdistrict = document.getElementById('patientSubdistrict').value;
+        const villageNo = document.getElementById('villageNo').value;
+        if(!document.getElementById('patientGender').value || !patientSubdistrict || !villageNo) {
+            alert("⚠️ กรุณากรอกชื่อ-นามสกุล เพศ ตำบล และหมู่บ้านให้ครบทุกข้อ"); return;
         }
 
-        const exactKey = `${validation.normalized}|${document.getElementById('patientGender').value}|${document.getElementById('villageNo').value}`;
+        const exactKey = `${validation.normalized}|${document.getElementById('patientGender').value}|${patientSubdistrict}|${villageNo}`;
         const exactExists = getUniquePatientsFromHistory().some(p => p.key === exactKey);
         const similar = findSimilarPatients(validation.normalized, 5)
-            .filter(p => p.gender === document.getElementById('patientGender').value || p.village === document.getElementById('villageNo').value);
+            .filter(p => p.gender === document.getElementById('patientGender').value || p.village === villageNo || p.subdistrict === patientSubdistrict);
         if (!exactExists && similar.length > 0) {
-            const listText = similar.map(p => `- ${p.name} | ${p.village || '-'} | ${p.gender || '-'}`).join('\n');
+            const listText = similar.map(p => `- ${p.name} | ${p.subdistrict || '-'} ${p.village || '-'} | ${p.gender || '-'}`).join('\n');
             const ok = confirm(`⚠️ พบชื่อเดิมที่สะกดใกล้เคียงกับชื่อที่พิมพ์
 
 ${listText}
@@ -1011,6 +1101,7 @@ ${listText}
 
         document.getElementById('smName').innerText = normalizePatientName(document.getElementById('patientName').value);
         document.getElementById('smGender').innerText = document.getElementById('patientGender').value;
+        document.getElementById('smSubdistrict').innerText = document.getElementById('patientSubdistrict').value;
         document.getElementById('smVillage').innerText = document.getElementById('villageNo').value;
         document.getElementById('smType').innerText = "แบบประเมินผสมระดับ " + type;
         document.getElementById('smQ2Result').innerText = q2Res;
@@ -1036,7 +1127,7 @@ ${listText}
     }
 
     function resetScreeningFormAfterSuccess() {
-        document.getElementById('patientName').value = ""; document.getElementById('patientGender').value = ""; document.getElementById('villageNo').value = ""; document.getElementById('comment').value = "";
+        document.getElementById('patientName').value = ""; document.getElementById('patientGender').value = ""; document.getElementById('patientSubdistrict').value = ""; handlePatientSubdistrictChange(); document.getElementById('comment').value = "";
         document.getElementById('nameSuggestionsBox').style.display = 'none';
         
         document.querySelectorAll('input[name="q2q1"], input[name="q2q2"]').forEach(radio => radio.checked = false);
@@ -1101,6 +1192,7 @@ ${listText}
             patientName: normalizePatientName(document.getElementById('patientName').value),
             patientAge: '',
             patientGender: document.getElementById('patientGender').value,
+            patientSubdistrict: document.getElementById('patientSubdistrict').value,
             villageNo: document.getElementById('villageNo').value,
             assessmentType: type,
             q2Result: document.getElementById('smQ2Result').innerText,
@@ -1134,9 +1226,10 @@ ${listText}
     function saveCurrentFormAsOfflineDraft(mode) {
         const validation = validateFullPatientName(document.getElementById('patientName').value);
         const patientGender = document.getElementById('patientGender').value;
+        const patientSubdistrict = document.getElementById('patientSubdistrict').value;
         const villageNo = document.getElementById('villageNo').value;
-        if (!validation.valid || !patientGender || !villageNo) {
-            alert('⚠️ ต้องมีชื่อ-นามสกุล เพศ และหมู่บ้านก่อนบันทึกร่างครับ');
+        if (!validation.valid || !patientGender || !patientSubdistrict || !villageNo) {
+            alert('⚠️ ต้องมีชื่อ-นามสกุล เพศ ตำบล และหมู่บ้านก่อนบันทึกร่างครับ');
             return;
         }
         document.getElementById('patientName').value = validation.normalized;
@@ -1154,7 +1247,7 @@ ${listText}
         const lines = drafts.map((d, idx) => {
             const p = d.payload || {};
             const dateText = d.savedAt ? new Date(d.savedAt).toLocaleString('th-TH') : '-';
-            return `${idx + 1}. ${p.patientName || '-'} | ${p.patientGender || '-'} | ${p.villageNo || '-'} | ${dateText}`;
+            return `${idx + 1}. ${p.patientName || '-'} | ${p.patientGender || '-'} | ${p.patientSubdistrict || '-'} ${p.villageNo || '-'} | ${dateText}`;
         });
         alert('📦 รายการร่างออฟไลน์ที่ยังไม่ส่ง\n\n' + lines.join('\n'));
     }
