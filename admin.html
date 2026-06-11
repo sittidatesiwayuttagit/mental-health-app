@@ -380,11 +380,11 @@
                 </p>
                 <div class="inputs-row">
                     <input type="text" id="staffUsernameInput" placeholder="Username (ภาษาอังกฤษ)">
-                    <input type="text" id="staffPasswordInput" placeholder="Password เข้าใช้งาน">
+                    <input type="text" id="staffPasswordInput" placeholder="Password เข้าใช้งาน (ตอนแก้ไข: เว้นว่างถ้าไม่เปลี่ยน)">
                 </div>
                 <div class="inputs-row">
                     <input type="text" id="staffNameInput" placeholder="ชื่อ-นามสกุล/ตำแหน่ง เจ้าหน้าที่">
-                    <input type="text" id="staffSecretKeyInput" placeholder="รหัสลับส่วนตัว (สำหรับกู้คืนรหัสผ่าน)">
+                    <input type="text" id="staffSecretKeyInput" placeholder="รหัสลับส่วนตัว (ตอนแก้ไข: เว้นว่างถ้าไม่เปลี่ยน)">
                 </div>
                 <div class="inputs-row">
                     <select id="staffRoleInput" onchange="updateStaffAreaFields()">
@@ -440,9 +440,11 @@
                 <p class="overview-note">หน้านี้รวมปุ่มสำหรับดูแลระบบหลังบ้านและงานติดตาม ไม่ใช่หน้าข้อมูลผู้ป่วยรายบุคคล</p>
                 <div class="controls-row">
                     <button class="btn-refresh" onclick="runFollowupReminderNow()">🔔 ทดสอบแจ้งเตือน Follow-up วันนี้</button>
+                    <button class="btn-search" onclick="createBackupNowFromWeb()">💾 สำรองข้อมูล Google Sheet ตอนนี้</button>
+                    <button class="btn-refresh" onclick="setupBackupTriggerFromWeb()">⏰ ตั้งสำรองข้อมูลอัตโนมัติรายสัปดาห์</button>
                     <button class="btn-action delete" onclick="archiveClosedCasesFromWeb()">🗄️ ย้ายเคสปิดงานเกิน 1 ปีเข้าคลัง</button>
                 </div>
-                <div class="case-status-muted" style="margin-top:8px;">ปุ่มย้ายคลังใช้ได้เฉพาะบัญชี Hospital และจะย้ายเฉพาะเคสที่ Follow-up Status = ปิดเคสแล้ว และ Closed At เกิน 1 ปี</div>
+                <div class="case-status-muted" style="margin-top:8px;">ปุ่มย้ายคลังใช้ได้เฉพาะบัญชี Hospital และจะย้ายเฉพาะเคสที่ Follow-up Status = ปิดเคสแล้ว และ Closed At เกิน 1 ปี ส่วนปุ่มสำรองข้อมูลจะสร้างไฟล์ copy ใน Google Drive โฟลเดอร์ Mental Health App Backups</div>
             </div>
         </div>
     </div>
@@ -1074,6 +1076,7 @@
         document.getElementById('adminDisplayName').innerText = "-";
         currentAdminRole = "admin";
         currentAdminUsername = "";
+        if (currentAdminUsername) fetch(`${GOOGLE_SCRIPT_URL}?action=logoutAdmin&username=${encodeURIComponent(currentAdminUsername)}`).catch(()=>{});
         currentAdminAuthToken = "";
         sessionStorage.removeItem("banthonglang_admin_token");
         updateRoleDisplay();
@@ -1810,6 +1813,35 @@
         finally { loading.style.display = 'none'; }
     }
 
+
+    async function createBackupNowFromWeb() {
+        if (!currentAdminUsername || !currentAdminAuthToken) { alert('⚠️ session ผู้ดูแลไม่สมบูรณ์ กรุณา login ใหม่'); return; }
+        if (!confirm('ต้องการสร้างไฟล์สำรอง Google Sheet ตอนนี้ใช่หรือไม่?')) return;
+        const loading = document.getElementById('loadingText');
+        try {
+            loading.style.display = 'block';
+            const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=createBackupNow&actorUsername=${encodeURIComponent(currentAdminUsername)}&authToken=${encodeURIComponent(currentAdminAuthToken)}`);
+            if (!res.ok) throw new Error('HTTP Status ' + res.status);
+            const result = await res.json();
+            alert((result.success ? '✅ ' : '❌ ') + (result.message || '') + (result.fileName ? `\nไฟล์: ${result.fileName}` : ''));
+        } catch (err) { alert('❌ สำรองข้อมูลไม่สำเร็จ: ' + err.message); }
+        finally { loading.style.display = 'none'; }
+    }
+
+    async function setupBackupTriggerFromWeb() {
+        if (normalizeAdminRole(currentAdminRole) !== 'hospital') { alert('⚠️ แนะนำให้บัญชี Hospital เป็นผู้ตั้ง Trigger สำรองข้อมูล'); return; }
+        if (!confirm('ต้องการตั้ง Trigger สำรองข้อมูลอัตโนมัติรายสัปดาห์ใช่หรือไม่?')) return;
+        const loading = document.getElementById('loadingText');
+        try {
+            loading.style.display = 'block';
+            const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=setupBackupTrigger&actorUsername=${encodeURIComponent(currentAdminUsername)}&authToken=${encodeURIComponent(currentAdminAuthToken)}`);
+            if (!res.ok) throw new Error('HTTP Status ' + res.status);
+            const result = await res.json();
+            alert((result.success ? '✅ ' : '❌ ') + (result.message || ''));
+        } catch (err) { alert('❌ ตั้งสำรองข้อมูลอัตโนมัติไม่สำเร็จ: ' + err.message); }
+        finally { loading.style.display = 'none'; }
+    }
+
     function clearDetailDateFilter() { document.getElementById('detailDateFilter').value = ""; renderPatientDetail(); }
 
     function savePatientBirthdate() {
@@ -1848,7 +1880,7 @@
         const listDiv = document.getElementById('staffList');
         loading.style.display = 'block';
         if (listDiv) listDiv.innerHTML = '';
-        fetch(`${GOOGLE_SCRIPT_URL}?action=getStaffList&actorUsername=${encodeURIComponent(currentAdminUsername)}`)
+        fetch(`${GOOGLE_SCRIPT_URL}?action=getStaffList&actorUsername=${encodeURIComponent(currentAdminUsername)}&authToken=${encodeURIComponent(currentAdminAuthToken)}`)
             .then(res => { if (!res.ok) throw new Error("HTTP Status " + res.status); return res.json(); })
             .then(data => {
                 loading.style.display = 'none';
@@ -1900,8 +1932,8 @@
             card.innerHTML = `
                 <div class="vhm-row-header"><span>ชื่อเจ้าหน้าที่: <b>${escapeHTML(staff.name || '-')}</b> <span class="role-pill ${role}">${escapeHTML(roleLabel)}</span></span><span>Username: ${escapeHTML(staff.username || '-')}</span></div>
                 ${areaRows}
-                <div class="info-row"><span>รหัสเข้าใช้งาน (Password):</span> <span>${escapeHTML(staff.password || '-')}</span></div>
-                <div class="info-row"><span>รหัสลับกู้บัญชี:</span> <span>${escapeHTML(staff.secretKey || '-')}</span></div>
+                <div class="info-row"><span>รหัสเข้าใช้งาน (Password):</span> <span>•••••••• <span class="case-status-muted">(ซ่อนไว้เพื่อความปลอดภัย)</span></span></div>
+                <div class="info-row"><span>รหัสลับกู้บัญชี:</span> <span>•••••••• <span class="case-status-muted">(ซ่อนไว้เพื่อความปลอดภัย)</span></span></div>
                 <div class="info-row"><span>LINE User ID:</span> <span>${staff.lineId ? 'ผูกแล้ว' : 'ยังไม่ผูก'}</span></div>
                 <div class="info-row"><span>LINE Updated At:</span> <span>${escapeHTML(staff.lineUpdatedAt || '-')}</span></div>
                 <div class="row-actions" style="text-align: right; margin-top: 10px;"></div>
@@ -1942,7 +1974,8 @@
         const subdistrict = document.getElementById('staffTambonInput')?.value || '';
         const facility = role === 'admin' ? (document.getElementById('staffFacilityInput')?.value || '') : '';
         const villageScope = role === 'vhv' ? (document.getElementById('staffVillageScopeInput')?.value || '') : '';
-        if (!username || !password || !name || !secretKey) { alert('⚠️ กรุณากรอกข้อมูลเจ้าหน้าที่ให้ครบทุกช่อง'); return; }
+        if (!username || !name) { alert('⚠️ กรุณากรอก Username และชื่อเจ้าหน้าที่ให้ครบ'); return; }
+        if (mode !== 'edit' && (!password || !secretKey)) { alert('⚠️ บัญชีใหม่ต้องระบุ Password และรหัสลับกู้บัญชีให้ครบ'); return; }
         if (role === 'admin' && (!subdistrict || !facility)) { alert('⚠️ กรุณาเลือกตำบลและ รพ.สต.ที่สังกัดสำหรับบัญชี Admin'); return; }
         if (role === 'vhv' && (!subdistrict || !villageScope)) { alert('⚠️ กรุณาเลือกตำบลและหมู่ที่รับผิดชอบสำหรับบัญชี VHV/อสม.'); return; }
         if (!canCurrentUserManageRole(role)) { alert('🔒 สิทธิ์ไม่เพียงพอ: Admin จัดการได้เฉพาะ Admin และ VHV ส่วน Hospital จัดการได้ทุกยศ'); return; }
@@ -1960,7 +1993,8 @@
             `&villageScope=${encodeURIComponent(villageScope)}` +
             `&originalUsername=${encodeURIComponent(originalUsername)}` +
             `&originalRole=${encodeURIComponent(originalRole)}` +
-            `&actorUsername=${encodeURIComponent(currentAdminUsername)}`;
+            `&actorUsername=${encodeURIComponent(currentAdminUsername)}` +
+            `&authToken=${encodeURIComponent(currentAdminAuthToken)}`;
         fetch(url)
             .then(res => { if (!res.ok) throw new Error('HTTP Status ' + res.status); return res.json(); })
             .then(res => {
@@ -1977,7 +2011,7 @@
         if (!confirm(`🚨 ต้องการลบบัญชี ${getRoleLabel(r)} Username: "${username}" ใช่หรือไม่?`)) return;
         const loading = document.getElementById('loadingText');
         loading.style.display = 'block';
-        fetch(`${GOOGLE_SCRIPT_URL}?action=deleteStaff&username=${encodeURIComponent(username)}&role=${encodeURIComponent(r)}&actorUsername=${encodeURIComponent(currentAdminUsername)}`)
+        fetch(`${GOOGLE_SCRIPT_URL}?action=deleteStaff&username=${encodeURIComponent(username)}&role=${encodeURIComponent(r)}&actorUsername=${encodeURIComponent(currentAdminUsername)}&authToken=${encodeURIComponent(currentAdminAuthToken)}`)
             .then(res => { if (!res.ok) throw new Error('HTTP Status ' + res.status); return res.json(); })
             .then(res => {
                 loading.style.display = 'none';
@@ -1995,9 +2029,11 @@
         document.getElementById('staffOriginalRole').value = role;
         document.getElementById('staffUsernameInput').value = staff.username || '';
         document.getElementById('staffUsernameInput').disabled = true;
-        document.getElementById('staffPasswordInput').value = staff.password || '';
+        document.getElementById('staffPasswordInput').value = '';
+        document.getElementById('staffPasswordInput').placeholder = 'เว้นว่างถ้าไม่ต้องการเปลี่ยน Password';
         document.getElementById('staffNameInput').value = staff.name || '';
-        document.getElementById('staffSecretKeyInput').value = staff.secretKey || '';
+        document.getElementById('staffSecretKeyInput').value = '';
+        document.getElementById('staffSecretKeyInput').placeholder = 'เว้นว่างถ้าไม่ต้องการเปลี่ยนรหัสลับ';
         document.getElementById('staffRoleInput').value = role;
         updateStaffAreaFields();
         document.getElementById('staffTambonInput').value = staff.subdistrict || '';
@@ -2016,8 +2052,10 @@
         document.getElementById('staffUsernameInput').value = '';
         document.getElementById('staffUsernameInput').disabled = false;
         document.getElementById('staffPasswordInput').value = '';
+        document.getElementById('staffPasswordInput').placeholder = 'Password เข้าใช้งาน (ตอนแก้ไข: เว้นว่างถ้าไม่เปลี่ยน)';
         document.getElementById('staffNameInput').value = '';
         document.getElementById('staffSecretKeyInput').value = '';
+        document.getElementById('staffSecretKeyInput').placeholder = 'รหัสลับส่วนตัว (ตอนแก้ไข: เว้นว่างถ้าไม่เปลี่ยน)';
         document.getElementById('staffRoleInput').value = '';
         document.getElementById('staffTambonInput').value = '';
         document.getElementById('staffFacilityInput').value = '';
