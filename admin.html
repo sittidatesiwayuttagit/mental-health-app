@@ -122,6 +122,11 @@
         .detail-subsection { display:none; }
         .detail-subsection.active { display:block; }
         .explain-box { background:#f0f9ff; border:1px solid #bae6fd; color:#0f172a; border-radius:12px; padding:12px; margin-bottom:12px; font-size:13px; line-height:1.55; }
+        .feature-box { background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:12px; margin-top:12px; }
+        .feature-box h4 { margin:0 0 8px 0; color:#334155; }
+        .sla-overdue { color:#b91c1c; font-weight:800; }
+        .sla-due { color:#92400e; font-weight:800; }
+        .sla-ok { color:#166534; font-weight:800; }
         .overview-note { color:#64748b; font-size:13px; line-height:1.55; margin-top:8px; }
 
         .chart-dashboard { display:none; background:#ffffff; border:1px solid #cbd5e1; border-radius:16px; padding:16px; margin-top:16px; }
@@ -240,6 +245,7 @@
                         </select>
                         <button class="btn-search" onclick="processData()">🔍 ค้นหา</button>
                         <button class="btn-refresh" onclick="fetchPatientData()">🔄 รีเฟรช</button>
+                        <button class="btn-search" onclick="fetchPatientPageFromWeb()">⚡ ค้นหาแบบ backend 50 รายการ</button>
                     </div>
                 </div>
                 <div id="patientListView"></div>
@@ -442,6 +448,11 @@
                     <button class="btn-refresh" onclick="runFollowupReminderNow()">🔔 ทดสอบแจ้งเตือน Follow-up วันนี้</button>
                     <button class="btn-search" onclick="createBackupNowFromWeb()">💾 สำรองข้อมูล Google Sheet ตอนนี้</button>
                     <button class="btn-refresh" onclick="setupBackupTriggerFromWeb()">⏰ ตั้งสำรองข้อมูลอัตโนมัติรายสัปดาห์</button>
+                    <button class="btn-search" onclick="exportMonthlyReportFromWeb()">📤 Export รายงาน PDF/Excel รายเดือน</button>
+                    <button class="btn-refresh" onclick="createStagingCopyFromWeb()">🧪 สร้าง Staging/Test Copy</button>
+                    <button class="btn-refresh" onclick="showEnvironmentInfoFromWeb()">🌐 ดู Environment ปัจจุบัน</button>
+                    <button class="btn-refresh" onclick="switchEnvironmentFromWeb('staging')">🧪 ใช้ Staging</button>
+                    <button class="btn-refresh" onclick="switchEnvironmentFromWeb('production')">🏥 ใช้ Production</button>
                     <button class="btn-action delete" onclick="archiveClosedCasesFromWeb()">🗄️ ย้ายเคสปิดงานเกิน 1 ปีเข้าคลัง</button>
                 </div>
                 <div class="case-status-muted" style="margin-top:8px;">ปุ่มย้ายคลังใช้ได้เฉพาะบัญชี Hospital และจะย้ายเฉพาะเคสที่ Follow-up Status = ปิดเคสแล้ว และ Closed At เกิน 1 ปี ส่วนปุ่มสำรองข้อมูลจะสร้างไฟล์ copy ใน Google Drive โฟลเดอร์ Mental Health App Backups</div>
@@ -460,6 +471,7 @@
     let currentSelectedPatientName = "";
     let currentSelectedPatientGender = "";
     let currentSelectedPatientVillage = "";
+    let currentSelectedPatientId = "";
     let currentAdminRole = "admin";
     let currentAdminUsername = "";
     let currentAdminAuthToken = "";
@@ -579,7 +591,7 @@
         return `${String(y).padStart(4,'0')}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
     }
     function getPatientGroupKeyFromItem(item) {
-        return `${safeText(item.patientName).trim()}|${safeText(item.patientGender).trim()}|${safeText(item.villageNo).trim()}`;
+        return safeText(item.patientId).trim() || `${safeText(item.patientName).trim()}|${safeText(item.patientGender).trim()}|${safeText(item.villageNo).trim()}`;
     }
 
     function getLatestPatientRecords(records) {
@@ -1263,10 +1275,11 @@
             const patientName = safeText(item.patientName).trim();
             const patientGender = safeText(item.patientGender).trim();
             const villageNo = safeText(item.villageNo).trim();
-            const compoundKey = `${patientName}|${patientGender}|${villageNo}`;
+            const patientId = safeText(item.patientId).trim();
+            const compoundKey = patientId || `${patientName}|${patientGender}|${villageNo}`;
             if (!groupMap.has(compoundKey)) {
                 orderedKeys.push(compoundKey);
-                groupMap.set(compoundKey, { name: patientName || '-', gender: patientGender || '-', village: villageNo || '-', day: item.birthDay, month: item.birthMonth, year: item.birthYear, records: [] });
+                groupMap.set(compoundKey, { id: patientId, name: patientName || '-', gender: patientGender || '-', village: villageNo || '-', day: item.birthDay, month: item.birthMonth, year: item.birthYear, records: [] });
             }
             const group = groupMap.get(compoundKey);
             group.records.push(item);
@@ -1287,12 +1300,12 @@
             const bookingSummaryText = renderBookingTimeText(summary);
             const rowCard = document.createElement('div');
             rowCard.className = 'patient-row-card';
-            rowCard.addEventListener('click', () => showPatientDetail(p.name, p.gender, p.village));
+            rowCard.addEventListener('click', () => showPatientDetail(p.name, p.gender, p.village, p.id));
             rowCard.innerHTML = `
                 <div class="patient-row-main">
                     <div>
                         <span class="patient-row-name">👤 ${escapeHTML(p.name)}</span>
-                        <span class="patient-row-age" style="margin-left: 8px;">หมู่บ้าน: ${escapeHTML(p.village)} | เพศ: ${escapeHTML(p.gender)}</span>
+                        <span class="patient-row-age" style="margin-left: 8px;">Patient ID: ${escapeHTML(p.id || '-')} | หมู่บ้าน: ${escapeHTML(p.village)} | เพศ: ${escapeHTML(p.gender)}</span>
                         <span class="patient-row-age">อายุคำนวณ: ${ageText !== "-" ? escapeHTML(ageText) : "ยังไม่ระบุวันเกิด"}</span>
                     </div>
                     <div class="case-status-summary">
@@ -1312,10 +1325,11 @@
         });
     }
 
-    function showPatientDetail(patientName, gender, village) {
+    function showPatientDetail(patientName, gender, village, patientId = "") {
         currentSelectedPatientName = patientName;
         currentSelectedPatientGender = gender;
         currentSelectedPatientVillage = village;
+        currentSelectedPatientId = patientId || "";
         const detailFilter = document.getElementById('detailDateFilter');
         if (detailFilter) detailFilter.value = "";
         currentPatientDetailSubTab = 'assessment';
@@ -1332,7 +1346,8 @@
         const trajectory = renderTrajectoryPill(getTrajectoryInfo(records || []));
         const el = document.getElementById('patientDetailMiniHeader');
         if (!el) return;
-        el.innerHTML = `<h3>👤 ${escapeHTML(p.patientName || currentSelectedPatientName || '-')}</h3><div class="mini-profile-row"><span class="mini-profile-pill">เพศ: ${escapeHTML(p.patientGender || '-')}</span><span class="mini-profile-pill">อายุ: ${escapeHTML(ageText)}</span><span class="mini-profile-pill">หมู่ที่: ${escapeHTML(p.villageNo || '-')}</span>${booking}${risk}${trajectory}</div>`;
+        const sla = latest && latest.rowId ? `<span class="mini-profile-pill">SLA: ${escapeHTML(latest.slaStatus || '-')} / กำหนด ${escapeHTML(latest.slaDueAt || '-')}</span>` : '';
+        el.innerHTML = `<h3>👤 ${escapeHTML(p.patientName || currentSelectedPatientName || '-')}</h3><div class="mini-profile-row"><span class="mini-profile-pill">Patient ID: ${escapeHTML(p.patientId || currentSelectedPatientId || '-')}</span><span class="mini-profile-pill">เพศ: ${escapeHTML(p.patientGender || '-')}</span><span class="mini-profile-pill">อายุ: ${escapeHTML(ageText)}</span><span class="mini-profile-pill">หมู่ที่: ${escapeHTML(p.villageNo || '-')}</span>${booking}${risk}${sla}${trajectory}</div>`;
     }
 
     function switchPatientDetailSubTab(tabName) {
@@ -1349,7 +1364,10 @@
 
     function getPatientGroupRecords() {
         return allData
-            .filter(item => item.patientName === currentSelectedPatientName && item.patientGender === currentSelectedPatientGender && item.villageNo === currentSelectedPatientVillage)
+            .filter(item => {
+                if (currentSelectedPatientId) return safeText(item.patientId) === currentSelectedPatientId;
+                return item.patientName === currentSelectedPatientName && item.patientGender === currentSelectedPatientGender && item.villageNo === currentSelectedPatientVillage;
+            })
             .sort((a, b) => parseTimestamp(b.timestamp) - parseTimestamp(a.timestamp));
     }
 
@@ -1399,7 +1417,8 @@
             chronicDiseases: safeText(latest.chronicDiseases),
             patientPhotoDataUrl: safeText(latest.patientPhotoDataUrl),
             profileUpdatedAt: safeText(latest.profileUpdatedAt),
-            profileUpdatedBy: safeText(latest.profileUpdatedBy)
+            profileUpdatedBy: safeText(latest.profileUpdatedBy),
+            patientId: safeText(latest.patientId)
         };
     }
 
@@ -1414,6 +1433,7 @@
             <div class="patient-profile-top">
                 <div class="patient-photo-box">${photoHtml}</div>
                 <div class="profile-info-grid">
+                    <div class="profile-info-item"><b>Patient ID ถาวร</b>${escapeHTML(p.patientId || currentSelectedPatientId || '-')}</div>
                     <div class="profile-info-item"><b>ชื่อ-นามสกุล</b>${escapeHTML(p.patientName || '-')}</div>
                     <div class="profile-info-item"><b>เพศ</b>${escapeHTML(p.patientGender || '-')}</div>
                     <div class="profile-info-item"><b>อายุคำนวณ</b>${escapeHTML(ageText)}</div>
@@ -1424,7 +1444,8 @@
                     <div class="profile-info-item"><b>ที่อยู่ปัจจุบัน</b>${escapeHTML(p.currentAddress || 'ยังไม่ระบุ')}</div>
                     <div class="profile-info-item" style="grid-column:1/-1;"><b>โรคประจำตัว</b>${escapeHTML(p.chronicDiseases || 'ยังไม่ระบุ')}</div>
                 </div>
-            </div>${updatedText}`;
+            </div>${updatedText}<div id="patientMergePanel"></div>`;
+        renderPatientMergePanel();
     }
 
     function enablePatientProfileEdit() {
@@ -1505,6 +1526,7 @@
             oldPatientName: currentSelectedPatientName,
             oldPatientGender: currentSelectedPatientGender,
             oldVillageNo: currentSelectedPatientVillage,
+            patientId: currentSelectedPatientId,
             patientName: nameCheck.name,
             patientGender: gender,
             villageNo: village,
@@ -1625,7 +1647,9 @@
                 <div class="booking-alert">${escapeHTML(bookingText)}</div>
                 <div class="case-status-buttons"></div>
             </div>
-            <div class="clinical-box"><b>Risk:</b> <span class="risk-pill ${getRiskClass(deriveRiskLevel(item))}">${escapeHTML(deriveRiskLevel(item))}</span><br><b>ST-5:</b> ${formatST5Display(item)}<br><b>Psych:</b> ${escapeHTML(formatOptionalClinicalText(item.psychComorbidities))}<br><b>Medical:</b> ${escapeHTML(formatOptionalClinicalText(item.medicalComorbidities))}<br><b>10X:</b> ${formatSubstance10XDisplay(item)}</div>
+            <div class="clinical-box"><b>Risk:</b> <span class="risk-pill ${getRiskClass(deriveRiskLevel(item))}">${escapeHTML(deriveRiskLevel(item))}</span><br><b>Patient ID:</b> ${escapeHTML(item.patientId || '-')}<br><b>SLA:</b> ${renderSlaText(item)}<br><b>Outcome Stage:</b> ${escapeHTML(item.outcomeStage || '-')}<br><b>LINE Delivery:</b> ${escapeHTML(item.lastAlertDeliverySummary || '-')}<br><b>Emergency Checklist:</b> ${escapeHTML(item.emergencyChecklistStatus || '-')} ${item.emergencyChecklistUpdatedAt ? '(' + escapeHTML(item.emergencyChecklistUpdatedAt) + ')' : ''}<br><b>ST-5:</b> ${formatST5Display(item)}<br><b>Psych:</b> ${escapeHTML(formatOptionalClinicalText(item.psychComorbidities))}<br><b>Medical:</b> ${escapeHTML(formatOptionalClinicalText(item.medicalComorbidities))}<br><b>10X:</b> ${formatSubstance10XDisplay(item)}</div>
+            <div class="feature-box"><h4>✏️ แก้ไขคะแนนประเมินพร้อมประวัติ</h4><p class="case-status-muted">ใช้เมื่อบันทึกคะแนนผิดเท่านั้น ระบบจะบันทึก old/new value และเหตุผลลงชีทประวัติ</p><button class="small-btn" onclick='openAssessmentEditPromptFromButton(this)' data-rowid="${escapeHTML(item.rowId)}">✏️ แก้ไขคะแนนรายการนี้</button></div>
+            ${renderEmergencyChecklistBox(item)}
             <div class="info-row"><span>ผู้คัดกรองลงพื้นที่ (อสม.):</span> <span><b>${escapeHTML(item.vhmName || '-')}</b></span></div>
             <div class="info-row"><span>ผลคัดกรองด่วน 2Q:</span> <span class="${q2Result.includes('เสี่ยง') ? 'danger' : ''}">${escapeHTML(q2Result || '-')}</span></div>
             <div class="info-row"><span>คะแนนคอลัมน์ 9Q:</span> <span>${escapeHTML(item.q9Score || '-(ไม่ได้ประเมิน)-')}</span></div>
@@ -1698,19 +1722,25 @@
         const rowId = safeText(item.rowId);
         const referralStatus = safeText(item.referralStatus || 'ยังไม่ระบุ');
         const followupStatus = safeText(item.followupStatus || 'ยังไม่ระบุ');
+        const outcomeStage = safeText(item.outcomeStage || 'รอดำเนินการ');
         container.innerHTML = `
             <div class="explain-box"><b>ส่วนนี้ใช้ทำอะไร?</b><br>ใช้บันทึกการส่งต่อและการติดตามหลังพบเคสเสี่ยงหรือหลังจองคิว เช่น ส่งต่อ รพ.ชุมชน/รพ.ศูนย์ หรือให้ รพ.สต. ติดตามเอง ระบุผลการรักษาเบื้องต้น วันนัดติดตามครั้งถัดไป และสถานะว่าติดตามแล้ว/หลุดติดตาม/ปิดเคสแล้ว เพื่อไม่ให้เคสหลุดจากระบบ</div>
             <div class="inputs-row">
                 <select class="referral-status">
-                    ${['ยังไม่ระบุ','ยังไม่ส่งต่อ','ส่งต่อ รพ.ชุมชน','ส่งต่อ รพ.ศูนย์','พบแพทย์แล้ว','ติดตามโดย รพ.สต.','ไม่ประสงค์ส่งต่อ'].map(v => `<option value="${escapeHTML(v)}" ${referralStatus === v ? 'selected' : ''}>${escapeHTML(v)}</option>`).join('')}
+                    ${['ยังไม่ระบุ','ยังไม่ส่งต่อ','นัดแล้ว','ส่งต่อ รพ.ชุมชน','ส่งต่อ รพ.ศูนย์','พบแพทย์แล้ว','ได้รับยา','ติดตามโดย รพ.สต.','ปฏิเสธการรักษา','ติดต่อไม่ได้','ไม่ประสงค์ส่งต่อ','ปิดเคส'].map(v => `<option value="${escapeHTML(v)}" ${referralStatus === v ? 'selected' : ''}>${escapeHTML(v)}</option>`).join('')}
                 </select>
                 <input type="text" class="referral-place" placeholder="สถานที่ส่งต่อ/หน่วยบริการ" value="${escapeHTML(item.referralPlace || '')}">
             </div>
             <textarea class="referral-outcome" rows="2" placeholder="ผลการรักษาเบื้องต้น/ผลการพิจารณา/คำแนะนำจากแพทย์">${escapeHTML(item.referralOutcome || '')}</textarea>
             <div class="inputs-row" style="margin-top:10px;">
+                <select class="outcome-stage">
+                    ${['รอดำเนินการ','นัดแล้ว','พบแพทย์แล้ว','ได้รับยา','ส่งต่อแล้ว','ติดตามแล้ว','ติดต่อไม่ได้/หลุดติดตาม','ปฏิเสธการรักษา','ปิดเคส'].map(v => `<option value="${escapeHTML(v)}" ${outcomeStage === v ? 'selected' : ''}>${escapeHTML(v)}</option>`).join('')}
+                </select>
+            </div>
+            <div class="inputs-row" style="margin-top:10px;">
                 <input type="date" class="next-followup-date" value="${toInputDateValue(item.nextFollowupDate)}">
                 <select class="followup-status">
-                    ${['ยังไม่ระบุ','ต้องติดตามครั้งถัดไป','ติดตามแล้ว','หลุดติดตาม','ปิดเคสแล้ว','ไม่ต้องติดตาม'].map(v => `<option value="${escapeHTML(v)}" ${followupStatus === v ? 'selected' : ''}>${escapeHTML(v)}</option>`).join('')}
+                    ${['ยังไม่ระบุ','ต้องติดตามครั้งถัดไป','ติดตามแล้ว','ติดต่อไม่ได้','หลุดติดตาม','ปิดเคสแล้ว','ไม่ต้องติดตาม'].map(v => `<option value="${escapeHTML(v)}" ${followupStatus === v ? 'selected' : ''}>${escapeHTML(v)}</option>`).join('')}
                 </select>
             </div>
             <textarea class="followup-note" rows="2" placeholder="หมายเหตุการติดตาม เช่น โทรไม่ติด/เยี่ยมบ้านแล้ว/อาการดีขึ้น" style="margin-top:10px;">${escapeHTML(item.followupNote || '')}</textarea>
@@ -1732,6 +1762,7 @@
             referralStatus: container.querySelector('.referral-status').value,
             referralPlace: container.querySelector('.referral-place').value.trim(),
             referralOutcome: container.querySelector('.referral-outcome').value.trim(),
+            outcomeStage: container.querySelector('.outcome-stage').value,
             nextFollowupDate: container.querySelector('.next-followup-date').value,
             followupStatus: container.querySelector('.followup-status').value,
             followupNote: container.querySelector('.followup-note').value.trim(),
@@ -1750,6 +1781,7 @@
                     referralStatus: container.querySelector('.referral-status').value,
                     referralPlace: container.querySelector('.referral-place').value.trim(),
                     referralOutcome: container.querySelector('.referral-outcome').value.trim(),
+                    outcomeStage: container.querySelector('.outcome-stage').value,
                     nextFollowupDate: container.querySelector('.next-followup-date').value,
                     followupStatus: container.querySelector('.followup-status').value,
                     followupNote: container.querySelector('.followup-note').value.trim()
@@ -2230,6 +2262,188 @@
                 container.innerHTML = `<p style="text-align:center; color:#ef4444; padding:20px;">❌ ข้อผิดพลาดระบบเครือข่าย: ${escapeHTML(err.message)}</p>`;
             });
     }
+
+    function renderSlaText(item) {
+        const status = safeText(item.slaStatus || '-');
+        const due = safeText(item.slaDueAt || '-');
+        const cls = status.includes('เกิน') ? 'sla-overdue' : status.includes('ใกล้') ? 'sla-due' : 'sla-ok';
+        return `<span class="${cls}">${escapeHTML(status)}</span> / กำหนด ${escapeHTML(due)}`;
+    }
+
+    function renderEmergencyChecklistBox(item) {
+        const risk = deriveRiskLevel(item);
+        if (!safeText(risk).includes('แดง')) return '';
+        const rowId = safeText(item.rowId);
+        return `<div class="feature-box red-case-checklist" data-rowid="${escapeHTML(rowId)}">
+            <h4>🚨 Checklist แผนช่วยเหลือฉุกเฉินสำหรับเคสแดง</h4>
+            <p class="case-status-muted">สถานะล่าสุด: ${escapeHTML(item.emergencyChecklistStatus || 'ยังไม่ทำ checklist')}</p>
+            <label><input type="checkbox" class="ck-contacted"> โทร/ประเมินซ้ำผู้ป่วยแล้ว</label><br>
+            <label><input type="checkbox" class="ck-responsible"> แจ้งผู้รับผิดชอบพื้นที่/รพ.สต. แล้ว</label><br>
+            <label><input type="checkbox" class="ck-appointment"> นัดพบแพทย์/ส่งต่อ/วางแผนช่วยเหลือแล้ว</label><br>
+            <label><input type="checkbox" class="ck-family"> ญาติ/ผู้ดูแลรับทราบแล้ว</label><br>
+            <label><input type="checkbox" class="ck-safety"> มีแผนความปลอดภัยเบื้องต้นแล้ว</label>
+            <textarea class="ck-note" rows="2" placeholder="หมายเหตุ checklist" style="margin-top:8px;"></textarea>
+            <div style="text-align:right; margin-top:8px;"><button class="small-btn green" onclick="saveEmergencyChecklistFromButton(this)">💾 บันทึก Checklist</button></div>
+        </div>`;
+    }
+
+    function openAssessmentEditPromptFromButton(btn) {
+        const rowId = btn.getAttribute('data-rowid');
+        const item = allData.find(x => String(x.rowId) === String(rowId));
+        if (!item) { alert('ไม่พบข้อมูลรายการนี้ กรุณารีเฟรช'); return; }
+        openAssessmentEditPrompt(item);
+    }
+
+    async function openAssessmentEditPrompt(item) {
+        if (!currentAdminUsername || !currentAdminAuthToken) { alert('session ไม่สมบูรณ์ กรุณา login ใหม่'); return; }
+        const q2 = prompt('แก้ไขผล 2Q', safeText(item.q2Result)); if (q2 === null) return;
+        const q9 = prompt('แก้ไขคะแนน 9Q', safeText(item.q9Score)); if (q9 === null) return;
+        const q8 = prompt('แก้ไขผล/คะแนน 8Q', safeText(item.q8Result)); if (q8 === null) return;
+        const st5Score = prompt('แก้ไขคะแนน ST-5 ถ้าไม่ได้ประเมินให้พิมพ์ ไม่ได้ประเมิน', safeText(item.st5Score)); if (st5Score === null) return;
+        const st5Level = prompt('แก้ไขระดับ ST-5', safeText(item.st5Level)); if (st5Level === null) return;
+        const comment = prompt('แก้ไขหมายเหตุ อสม.', safeText(item.comment)); if (comment === null) return;
+        const reason = prompt('กรุณาระบุเหตุผลในการแก้ไขคะแนน/ผลประเมิน *', 'แก้ไขข้อมูลที่บันทึกผิด');
+        if (!reason || !reason.trim()) { alert('ต้องระบุเหตุผลก่อนบันทึก'); return; }
+        const params = new URLSearchParams({ action:'updateAssessmentScores', rowId:safeText(item.rowId), actorUsername:currentAdminUsername, authToken:currentAdminAuthToken, q2Result:q2, q9Score:q9, q8Result:q8, st5Score:st5Score, st5Level:st5Level, st5Details:safeText(item.st5Details), comment:comment, reason:reason.trim() });
+        try {
+            const res = await fetch(GOOGLE_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'}, body:params });
+            const result = await res.json();
+            if (!result.success) { alert('❌ แก้ไขไม่สำเร็จ: ' + (result.message || '')); return; }
+            alert('✅ แก้ไขคะแนนและบันทึกประวัติสำเร็จ');
+            await fetchPatientData();
+            showPatientDetail(currentSelectedPatientName, currentSelectedPatientGender, currentSelectedPatientVillage, currentSelectedPatientId);
+        } catch (err) { alert('❌ เกิดข้อผิดพลาด: ' + err.message); }
+    }
+
+    async function saveEmergencyChecklistFromButton(btn) {
+        const box = btn.closest('.red-case-checklist');
+        const rowId = box?.getAttribute('data-rowid');
+        if (!rowId) { alert('ไม่พบ rowId'); return; }
+        const adminName = getCurrentAdminNameForCase();
+        const params = new URLSearchParams({
+            action:'saveEmergencyChecklist', rowId, actorUsername:currentAdminUsername, authToken:currentAdminAuthToken, updatedBy:adminName,
+            contactedPatient: box.querySelector('.ck-contacted').checked ? 'yes' : 'no',
+            responsibleNotified: box.querySelector('.ck-responsible').checked ? 'yes' : 'no',
+            appointmentOrReferral: box.querySelector('.ck-appointment').checked ? 'yes' : 'no',
+            familyInformed: box.querySelector('.ck-family').checked ? 'yes' : 'no',
+            safetyPlan: box.querySelector('.ck-safety').checked ? 'yes' : 'no',
+            note: box.querySelector('.ck-note').value.trim()
+        });
+        try {
+            btn.disabled = true; btn.innerText = '⏳ กำลังบันทึก...';
+            const res = await fetch(GOOGLE_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'}, body:params });
+            const result = await res.json();
+            if (!result.success) { alert('❌ บันทึก checklist ไม่สำเร็จ: ' + (result.message || '')); return; }
+            alert('✅ ' + result.message);
+            await fetchPatientData();
+            showPatientDetail(currentSelectedPatientName, currentSelectedPatientGender, currentSelectedPatientVillage, currentSelectedPatientId);
+        } catch (err) { alert('❌ เกิดข้อผิดพลาด: ' + err.message); }
+        finally { btn.disabled = false; btn.innerText = '💾 บันทึก Checklist'; }
+    }
+
+    function getUniquePatientTargetsForMerge() {
+        const map = new Map();
+        allData.forEach(item => {
+            const id = safeText(item.patientId);
+            if (!id || id === currentSelectedPatientId) return;
+            if (!map.has(id)) map.set(id, item);
+        });
+        return Array.from(map.values()).sort((a,b)=>safeText(a.patientName).localeCompare(safeText(b.patientName),'th'));
+    }
+
+    function renderPatientMergePanel() {
+        const box = document.getElementById('patientMergePanel');
+        if (!box) return;
+        const targets = getUniquePatientTargetsForMerge();
+        const options = targets.slice(0, 300).map(x => `<option value="${escapeHTML(x.patientId)}">${escapeHTML(x.patientId || '-')} | ${escapeHTML(x.patientName || '-')} | ${escapeHTML(x.patientGender || '-')} | ${escapeHTML(x.patientSubdistrict || '')} ${escapeHTML(x.villageNo || '')}</option>`).join('');
+        box.innerHTML = `<div class="feature-box"><h4>🔗 รวมคนไข้ซ้ำ / Merge Patient</h4><p class="case-status-muted">เลือก Patient ID ปลายทางที่เป็นคนเดียวกัน ระบบจะย้ายประวัติของคนปัจจุบันไปรวมกับปลายทาง และบันทึกประวัติการ merge</p><div class="inputs-row"><select id="mergeTargetPatientId"><option value="">-- เลือก Patient ID ปลายทาง --</option>${options}</select><input id="mergeReasonInput" placeholder="เหตุผล เช่น ชื่อสะกดผิด/คนเดียวกัน"></div><button class="small-btn red" onclick="mergeCurrentPatientToTarget()">🔗 รวมคนไข้ปัจจุบันเข้ากับปลายทาง</button></div>`;
+    }
+
+    async function mergeCurrentPatientToTarget() {
+        const targetId = document.getElementById('mergeTargetPatientId')?.value || '';
+        const reason = document.getElementById('mergeReasonInput')?.value.trim() || '';
+        if (!currentSelectedPatientId) { alert('คนไข้ปัจจุบันยังไม่มี Patient ID กรุณารัน ensureSystemSheets แล้วรีเฟรช'); return; }
+        if (!targetId) { alert('กรุณาเลือก Patient ID ปลายทาง'); return; }
+        if (!reason) { alert('กรุณาระบุเหตุผลการ merge'); return; }
+        if (!confirm(`ยืนยันรวม Patient ID ${currentSelectedPatientId} เข้ากับ ${targetId} ใช่หรือไม่?`)) return;
+        const params = new URLSearchParams({ action:'mergePatientRecords', actorUsername:currentAdminUsername, authToken:currentAdminAuthToken, sourcePatientId:currentSelectedPatientId, targetPatientId:targetId, reason });
+        try {
+            const res = await fetch(GOOGLE_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'}, body:params });
+            const result = await res.json();
+            if (!result.success) { alert('❌ merge ไม่สำเร็จ: ' + (result.message || '')); return; }
+            alert('✅ ' + result.message);
+            await fetchPatientData();
+        } catch (err) { alert('❌ เกิดข้อผิดพลาด: ' + err.message); }
+    }
+
+    async function exportMonthlyReportFromWeb() {
+        const m = prompt('ต้องการ export เดือนใด? ใส่รูปแบบ YYYY-MM', new Date().toISOString().slice(0,7));
+        if (!m) return;
+        const loading = document.getElementById('loadingText');
+        try {
+            loading.style.display = 'block';
+            const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=exportMonthlyReport&month=${encodeURIComponent(m)}&actorUsername=${encodeURIComponent(currentAdminUsername)}&authToken=${encodeURIComponent(currentAdminAuthToken)}`);
+            const result = await res.json();
+            if (!result.success) { alert('❌ export ไม่สำเร็จ: ' + (result.message || '')); return; }
+            alert(`✅ สร้างรายงานสำเร็จ\nGoogle Sheet: ${result.sheetUrl || '-'}\nPDF: ${result.pdfUrl || '-'}\nExcel: ${result.excelUrl || '-'}`);
+        } catch (err) { alert('❌ export ไม่สำเร็จ: ' + err.message); }
+        finally { loading.style.display = 'none'; }
+    }
+
+    async function createStagingCopyFromWeb() {
+        if (normalizeAdminRole(currentAdminRole) !== 'hospital') { alert('เฉพาะ Hospital เท่านั้น'); return; }
+        if (!confirm('สร้างสำเนา Google Sheet เป็น Staging/Test ใช่หรือไม่?')) return;
+        const loading = document.getElementById('loadingText');
+        try {
+            loading.style.display = 'block';
+            const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=createStagingCopyNow&actorUsername=${encodeURIComponent(currentAdminUsername)}&authToken=${encodeURIComponent(currentAdminAuthToken)}`);
+            const result = await res.json();
+            alert((result.success ? '✅ ' : '❌ ') + (result.message || '') + (result.fileUrl ? '\n' + result.fileUrl : ''));
+        } catch (err) { alert('❌ สร้าง staging ไม่สำเร็จ: ' + err.message); }
+        finally { loading.style.display = 'none'; }
+    }
+
+    async function showEnvironmentInfoFromWeb() {
+        try {
+            const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=getEnvironmentInfo&actorUsername=${encodeURIComponent(currentAdminUsername)}&authToken=${encodeURIComponent(currentAdminAuthToken)}`);
+            const result = await res.json();
+            alert(`Environment: ${result.environment || '-'}\nSheet: ${result.spreadsheetName || '-'}\nURL: ${result.spreadsheetUrl || '-'}`);
+        } catch (err) { alert('ดู environment ไม่สำเร็จ: ' + err.message); }
+    }
+
+
+    async function switchEnvironmentFromWeb(env) {
+        if (normalizeAdminRole(currentAdminRole) !== 'hospital') { alert('เฉพาะ Hospital เท่านั้น'); return; }
+        const label = env === 'staging' ? 'Staging/Test' : 'Production';
+        if (!confirm(`ยืนยันสลับระบบไปใช้ ${label} ใช่หรือไม่?`)) return;
+        try {
+            const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=switchEnvironment&environment=${encodeURIComponent(env)}&actorUsername=${encodeURIComponent(currentAdminUsername)}&authToken=${encodeURIComponent(currentAdminAuthToken)}`);
+            const result = await res.json();
+            if (!result.success) { alert('❌ สลับ environment ไม่สำเร็จ: ' + (result.message || '')); return; }
+            alert(`✅ เปลี่ยนเป็น ${result.environment}\nSheet: ${result.spreadsheetName || '-'}`);
+            fetchPatientData();
+        } catch (err) { alert('❌ สลับ environment ไม่สำเร็จ: ' + err.message); }
+    }
+
+
+    async function fetchPatientPageFromWeb(page = 1) {
+        if (!currentAdminUsername || !currentAdminAuthToken) { alert('session ไม่สมบูรณ์ กรุณา login ใหม่'); return; }
+        const search = document.getElementById('searchInput')?.value.trim() || '';
+        const loading = document.getElementById('loadingText');
+        try {
+            loading.style.display = 'block';
+            const url = `${GOOGLE_SCRIPT_URL}?action=getPatientDataPage&page=${encodeURIComponent(page)}&pageSize=50&search=${encodeURIComponent(search)}&actorUsername=${encodeURIComponent(currentAdminUsername)}&authToken=${encodeURIComponent(currentAdminAuthToken)}`;
+            const res = await fetch(url);
+            const result = await res.json();
+            if (!result.success) { alert('❌ ค้นหา backend ไม่สำเร็จ: ' + (result.message || '')); return; }
+            allData = Array.isArray(result.records) ? result.records : [];
+            renderDashboardSummary(allData);
+            processData();
+            alert(`โหลดข้อมูลแบบ backend page ${result.page}/${result.totalPages || 1} จำนวน ${allData.length} รายการ จากทั้งหมด ${result.totalRecords} records\nถ้าต้องการกลับไปดูข้อมูลทั้งหมดให้กด รีเฟรช`);
+        } catch (err) { alert('❌ backend pagination ไม่สำเร็จ: ' + err.message); }
+        finally { loading.style.display = 'none'; }
+    }
+
 </script>
 </body>
 </html>
