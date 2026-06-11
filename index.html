@@ -178,6 +178,15 @@
                 <option value="">-- เลือกตำบลก่อน --</option>
             </select>
         </div>
+        <div class="form-group" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:12px; padding:12px;">
+            <label style="display:flex; gap:10px; align-items:flex-start; cursor:pointer; line-height:1.6;">
+                <input type="checkbox" id="privacyNoticeConfirmed" style="width:18px; height:18px; margin-top:4px;">
+                <span>
+                    <b>ยืนยันการแจ้งวัตถุประสงค์การใช้ข้อมูล *</b><br>
+                    ได้แจ้งผู้รับการประเมินแล้วว่า ข้อมูลนี้ใช้เพื่อคัดกรอง เฝ้าระวัง ส่งต่อ และติดตามสุขภาพจิตในพื้นที่ รพ.สต. และจะให้เจ้าหน้าที่ที่เกี่ยวข้องเข้าถึงเท่าที่จำเป็น
+                </span>
+            </label>
+        </div>
         <button class="btn-nav btn-next" onclick="goToStep2()">ถัดไป ➡️</button>
     </div>
 
@@ -373,6 +382,11 @@
     const OFFLINE_DRAFT_STORAGE_KEY = 'banthonglang_mh_screening_offline_drafts_v2';
 
     let currentVhmName = "";
+    let currentVhmUsername = "";
+    let currentUserRole = "vhm";
+    let currentAuthToken = "";
+    let currentVhmSubdistrict = "";
+    let currentVhmVillageScope = "";
     let localScreeningHistory = [];
     let selectedPatientKey = "";
 
@@ -399,10 +413,14 @@
     ];
 
     function getPatientTambonList() {
+        if (currentUserRole === 'vhm' && currentVhmSubdistrict) return [currentVhmSubdistrict];
         return Array.from(new Set(SERVICE_AREA_LIST.map(x => x.tambon))).sort((a, b) => a.localeCompare(b, 'th'));
     }
 
     function getVillagesByTambon(tambon) {
+        if (currentUserRole === 'vhm' && currentVhmSubdistrict && currentVhmVillageScope && tambon === currentVhmSubdistrict) {
+            return [currentVhmVillageScope];
+        }
         const seen = new Set();
         const list = [];
         SERVICE_AREA_LIST.filter(x => x.tambon === tambon).forEach(area => {
@@ -422,6 +440,12 @@
         const current = select.value;
         select.innerHTML = '<option value="">-- เลือกตำบล --</option>' + getPatientTambonList().map(t => `<option value="${t}">${t}</option>`).join('');
         if (current) select.value = current;
+        if (currentUserRole === 'vhm' && currentVhmSubdistrict) {
+            select.value = currentVhmSubdistrict;
+            select.disabled = true;
+        } else {
+            select.disabled = false;
+        }
         handlePatientSubdistrictChange(true);
     }
 
@@ -440,6 +464,10 @@
         villageSelect.innerHTML = '<option value="">-- เลือกหมู่ที่ --</option>' + villages.map(v => `<option value="${v}">${v}</option>`).join('');
         villageSelect.disabled = false;
         if (oldVillage && villages.includes(oldVillage)) villageSelect.value = oldVillage;
+        if (currentUserRole === 'vhm' && currentVhmVillageScope && villages.includes(currentVhmVillageScope)) {
+            villageSelect.value = currentVhmVillageScope;
+            villageSelect.disabled = true;
+        }
     }
 
     function setPatientArea(tambon, village) {
@@ -777,9 +805,7 @@
                 const res = await response.json();
                 if (res.success) {
                     setAuthChecking(true, `พบสิทธิ์ของ ${res.name || 'ผู้ใช้งาน'} กำลังเข้าสู่ระบบอัตโนมัติ...`);
-                    currentVhmName = res.name;
-                    document.getElementById('vhmDisplayName').innerText = `${currentVhmName} (${res.roleTitle || '-'})`;
-                    document.getElementById('vhmInfoHeader').style.display = "flex";
+                    applyLoginSession(res);
                     fetchPatientHistoryForAutocomplete();
                     changeStep(1);
                     setAuthChecking(false);
@@ -798,6 +824,19 @@
             showSystemNote('⚠️ ตรวจสอบสิทธิ์อัตโนมัติไม่สำเร็จ กรุณาลองเข้าสู่ระบบด้วย Username/Password หรือเช็กสัญญาณอินเทอร์เน็ต');
             changeStep(0);
         }
+    }
+
+    function applyLoginSession(res) {
+        currentVhmName = res.name || '';
+        currentVhmUsername = res.username || '';
+        currentUserRole = (res.role === 'admin' || res.role === 'hospital') ? 'admin' : 'vhm';
+        currentAuthToken = res.authToken || '';
+        currentVhmSubdistrict = res.subdistrict || '';
+        currentVhmVillageScope = res.villageScope || '';
+        const scopeText = currentUserRole === 'vhm' && currentVhmSubdistrict && currentVhmVillageScope ? ` | เขต: ${currentVhmSubdistrict} ${currentVhmVillageScope}` : '';
+        document.getElementById('vhmDisplayName').innerText = `${currentVhmName} (${res.roleTitle || '-'})${scopeText}`;
+        document.getElementById('vhmInfoHeader').style.display = "flex";
+        populatePatientSubdistrictOptions();
     }
 
     function changeStep(step) {
@@ -919,9 +958,7 @@
             const res = await response.json();
             
             if(res.success) {
-                currentVhmName = res.name;
-                document.getElementById('vhmDisplayName').innerText = `${currentVhmName} (${res.roleTitle || '-'})`;
-                document.getElementById('vhmInfoHeader').style.display = "flex";
+                applyLoginSession(res);
                 localStorage.removeItem("vhm_logout_flag");
                 fetchPatientHistoryForAutocomplete();
                 changeStep(1);
@@ -939,12 +976,19 @@
     function logout() {
         if (!confirm("🚨 แจ้งเตือนความปลอดภัย:\nคุณต้องการออกจากระบบใช่หรือไม่? ข้อมูลผู้ป่วยทั้งหมดที่กำลังพิมพ์ค้างอยู่ ณ ตอนนี้จะถูกล้างทิ้งครับ")) return;
         
+        const logoutAction = currentUserRole === 'admin' ? 'logoutAdmin' : 'logoutVhm';
+        if (currentVhmUsername) fetch(`${GOOGLE_SCRIPT_URL}?action=${logoutAction}&username=${encodeURIComponent(currentVhmUsername)}`).catch(()=>{});
         currentVhmName = "";
+        currentVhmUsername = "";
+        currentUserRole = "vhm";
+        currentAuthToken = "";
+        currentVhmSubdistrict = "";
+        currentVhmVillageScope = "";
         localScreeningHistory = [];
         localStorage.setItem("vhm_logout_flag", "true");
         
         document.getElementById('vhmInfoHeader').style.display = "none";
-        document.getElementById('patientName').value = ""; document.getElementById('patientGender').value = ""; document.getElementById('patientSubdistrict').value = ""; handlePatientSubdistrictChange(); document.getElementById('comment').value = "";
+        document.getElementById('patientName').value = ""; document.getElementById('patientGender').value = ""; document.getElementById('patientSubdistrict').value = ""; document.getElementById('patientSubdistrict').disabled = false; handlePatientSubdistrictChange(); document.getElementById('comment').value = ""; const privacyEl = document.getElementById('privacyNoticeConfirmed'); if (privacyEl) privacyEl.checked = false;
         document.getElementById('nameSuggestionsBox').style.display = 'none';
         
         document.querySelectorAll('input[name="q2q1"], input[name="q2q2"]').forEach(radio => radio.checked = false);
@@ -1127,7 +1171,7 @@ ${listText}
     }
 
     function resetScreeningFormAfterSuccess() {
-        document.getElementById('patientName').value = ""; document.getElementById('patientGender').value = ""; document.getElementById('patientSubdistrict').value = ""; handlePatientSubdistrictChange(); document.getElementById('comment').value = "";
+        document.getElementById('patientName').value = ""; document.getElementById('patientGender').value = ""; document.getElementById('patientSubdistrict').value = ""; document.getElementById('patientSubdistrict').disabled = false; handlePatientSubdistrictChange(); document.getElementById('comment').value = ""; const privacyEl = document.getElementById('privacyNoticeConfirmed'); if (privacyEl) privacyEl.checked = false;
         document.getElementById('nameSuggestionsBox').style.display = 'none';
         
         document.querySelectorAll('input[name="q2q1"], input[name="q2q2"]').forEach(radio => radio.checked = false);
@@ -1189,6 +1233,12 @@ ${listText}
         return {
             action: 'submitScreening',
             vhmName: currentVhmName,
+            vhmUsername: currentVhmUsername,
+            submitterUsername: currentVhmUsername,
+            submitterRole: currentUserRole,
+            vhmAuthToken: currentUserRole === 'vhm' ? currentAuthToken : '',
+            adminAuthToken: currentUserRole === 'admin' ? currentAuthToken : '',
+            privacyNoticeConfirmed: document.getElementById('privacyNoticeConfirmed')?.checked ? 'yes' : 'no',
             patientName: normalizePatientName(document.getElementById('patientName').value),
             patientAge: '',
             patientGender: document.getElementById('patientGender').value,
@@ -1230,6 +1280,10 @@ ${listText}
         const villageNo = document.getElementById('villageNo').value;
         if (!validation.valid || !patientGender || !patientSubdistrict || !villageNo) {
             alert('⚠️ ต้องมีชื่อ-นามสกุล เพศ ตำบล และหมู่บ้านก่อนบันทึกร่างครับ');
+            return;
+        }
+        if (!document.getElementById('privacyNoticeConfirmed')?.checked) {
+            alert('⚠️ กรุณาติ๊กยืนยันการแจ้งวัตถุประสงค์ก่อนบันทึกร่างครับ');
             return;
         }
         document.getElementById('patientName').value = validation.normalized;
@@ -1286,7 +1340,13 @@ ${listText}
         showSystemNote(`⏳ กำลัง Sync ร่างออฟไลน์ ${total} รายการ...`);
         for (const draft of drafts) {
             try {
-                const result = await postScreeningPayload(draft.payload || {});
+                const payloadToSend = { ...(draft.payload || {}) };
+                payloadToSend.vhmUsername = currentVhmUsername || payloadToSend.vhmUsername || payloadToSend.submitterUsername || '';
+                payloadToSend.submitterUsername = payloadToSend.vhmUsername;
+                payloadToSend.submitterRole = currentUserRole || payloadToSend.submitterRole || 'vhm';
+                payloadToSend.vhmAuthToken = payloadToSend.submitterRole === 'vhm' ? (currentAuthToken || payloadToSend.vhmAuthToken || '') : '';
+                payloadToSend.adminAuthToken = payloadToSend.submitterRole === 'admin' ? (currentAuthToken || payloadToSend.adminAuthToken || '') : '';
+                const result = await postScreeningPayload(payloadToSend);
                 if (result.success) successCount++;
                 else failed.push({ ...draft, lastError: result.message || 'backend_rejected' });
             } catch (err) {
@@ -1313,6 +1373,16 @@ ${listText}
             return;
         }
         document.getElementById('patientName').value = validation.normalized;
+        if (!currentVhmUsername || !currentAuthToken) {
+            alert('⚠️ session ผู้ประเมินไม่สมบูรณ์ กรุณา logout แล้ว login ใหม่');
+            changeStep(0);
+            return;
+        }
+        if (!document.getElementById('privacyNoticeConfirmed')?.checked) {
+            alert('⚠️ กรุณาติ๊กยืนยันว่าได้แจ้งวัตถุประสงค์การเก็บและใช้ข้อมูลแก่ผู้รับการประเมินแล้ว');
+            changeStep(1);
+            return;
+        }
         const st5Check = getST5Data();
         if (st5Check.assessed && !st5Check.completed) {
             alert('⚠️ แบบประเมิน ST-5 ยังตอบไม่ครบ ถ้าจะประเมินกรุณาตอบให้ครบทั้ง 5 ข้อ หรือถ้าไม่ได้ประเมินให้ปล่อยว่างทุกข้อครับ');
