@@ -329,6 +329,7 @@
 
         <div id="overviewTab" class="tab-content">
             <div id="overviewHomePage">
+                <h3 style="color:#1e293b; margin: 8px 0 12px 0;">👤 สรุปสีความเสี่ยงปัจจุบันของผู้ป่วย</h3>
                 <div id="dashboardSummaryPanel" class="summary-panel">
                     <div class="summary-card"><h4>ผู้ป่วยทั้งหมดปัจจุบัน</h4><div class="big-number" id="sumTotalCases">0</div><div class="case-status-muted">นับผู้ป่วยไม่ซ้ำจากผลล่าสุดของแต่ละคน</div></div>
                     <div class="summary-card"><h4>🟢 สีเขียวปัจจุบัน</h4><div class="big-number" id="sumGreenCases">0</div><div class="case-status-muted">ผู้ป่วยที่ผลล่าสุดยังไม่พบความเสี่ยงเด่น</div></div>
@@ -336,6 +337,15 @@
                     <div class="summary-card"><h4>🔴 สีแดงปัจจุบัน</h4><div class="big-number" id="sumRedCases">0</div><div class="case-status-muted">ผู้ป่วยที่ผลล่าสุดควรจัดการเร่งด่วน</div></div>
                 </div>
                 <div id="villageRiskSummary" class="search-container" style="background:#ffffff;"></div>
+
+                <h3 style="color:#1e293b; margin: 22px 0 12px 0;">📚 สรุปเคสรวมทั้งหมดจากทุกรายการคัดกรอง</h3>
+                <div id="dashboardTotalSummaryPanel" class="summary-panel">
+                    <div class="summary-card"><h4>รายการคัดกรองรวมทั้งหมด</h4><div class="big-number" id="sumAllRecords">0</div><div class="case-status-muted">นับทุกครั้งที่มีการคัดกรอง ไม่ตัดซ้ำผู้ป่วย</div></div>
+                    <div class="summary-card"><h4>🟢 เคสเขียวรวมทั้งหมด</h4><div class="big-number" id="sumAllGreenCases">0</div><div class="case-status-muted">จำนวนรายการประเมินที่อยู่ระดับเขียว</div></div>
+                    <div class="summary-card"><h4>🟡 เคสเหลืองรวมทั้งหมด</h4><div class="big-number" id="sumAllYellowCases">0</div><div class="case-status-muted">จำนวนรายการประเมินที่อยู่ระดับเหลือง</div></div>
+                    <div class="summary-card"><h4>🔴 เคสแดงรวมทั้งหมด</h4><div class="big-number" id="sumAllRedCases">0</div><div class="case-status-muted">จำนวนรายการประเมินที่อยู่ระดับแดง</div></div>
+                </div>
+                <div id="villageRiskSummaryAll" class="search-container" style="background:#ffffff;"></div>
                 <div class="search-container" style="background:#ffffff; border:1px solid #cbd5e1;">
                     <h4 style="margin-top:0; color:#334155;">📊 อัปเดตข้อมูลสรุปรายเดือน / Heatmap</h4>
                     <p class="overview-note">กดปุ่มนี้เพื่อให้ระบบคำนวณแท็บ <b>Monthly Summary</b> และ <b>Heatmap Data</b> ใหม่ และเปิดหน้าแสดงกราฟในระบบนี้ทันที โดยไม่ต้องเปิด Looker Studio</p>
@@ -592,12 +602,9 @@
         return counts;
     }
 
-    function renderDashboardSummary(data) {
-        const rawRecords = Array.isArray(data) ? data : [];
-        const records = getLatestPatientRecords(rawRecords);
-        const riskCounts = getRiskCounts(records);
+    function buildVillageRiskMap(records) {
         const villages = {};
-        records.forEach(item => {
+        (Array.isArray(records) ? records : []).forEach(item => {
             const risk = deriveRiskLevel(item);
             const village = safeText(item.villageNo) || '-';
             if (!villages[village]) villages[village] = { green:0, yellow:0, red:0, total:0 };
@@ -606,26 +613,57 @@
             else if (risk.includes('เหลือง')) villages[village].yellow++;
             else villages[village].green++;
         });
+        return villages;
+    }
+
+    function renderVillageRiskBox(boxId, title, note, villages, suffixLabel) {
+        const box = document.getElementById(boxId);
+        if (!box) return;
+        const villageRows = Object.keys(villages).sort((a,b)=>a.localeCompare(b,'th')).map(v => {
+            const x = villages[v];
+            return `<div class="case-status-summary"><b>${escapeHTML(v)}</b> <span class="risk-pill risk-red">แดง${escapeHTML(suffixLabel)} ${x.red}</span><span class="risk-pill risk-yellow">เหลือง${escapeHTML(suffixLabel)} ${x.yellow}</span><span class="risk-pill risk-green">เขียว${escapeHTML(suffixLabel)} ${x.green}</span><span class="case-status-muted">รวม ${x.total}</span></div>`;
+        }).join('');
+        box.innerHTML = `<h4 style="margin-top:0; color:#334155;">${title}</h4><p class="case-status-muted" style="margin-top:0;">${note}</p>${villageRows || '<p class="case-status-muted">ยังไม่มีข้อมูล</p>'}`;
+    }
+
+    function renderDashboardSummary(data) {
+        const rawRecords = Array.isArray(data) ? data : [];
+        const currentRecords = getLatestPatientRecords(rawRecords);
+        const currentRiskCounts = getRiskCounts(currentRecords);
+        const allRiskCounts = getRiskCounts(rawRecords);
+        const currentVillages = buildVillageRiskMap(currentRecords);
+        const allVillages = buildVillageRiskMap(rawRecords);
+
         const totalEl = document.getElementById('sumTotalCases');
         const greenEl = document.getElementById('sumGreenCases');
         const yellowEl = document.getElementById('sumYellowCases');
         const redEl = document.getElementById('sumRedCases');
-        if (totalEl) totalEl.innerText = records.length;
-        if (greenEl) greenEl.innerText = riskCounts.green;
-        if (yellowEl) yellowEl.innerText = riskCounts.yellow;
-        if (redEl) redEl.innerText = riskCounts.red;
-        const box = document.getElementById('villageRiskSummary');
-        if (!box) return;
-        const villageRows = Object.keys(villages).sort((a,b)=>a.localeCompare(b,'th')).map(v => {
-            const x = villages[v];
-            return `<div class="case-status-summary"><b>${escapeHTML(v)}</b> <span class="risk-pill risk-red">แดงปัจจุบัน ${x.red}</span><span class="risk-pill risk-yellow">เหลืองปัจจุบัน ${x.yellow}</span><span class="risk-pill risk-green">เขียวปัจจุบัน ${x.green}</span><span class="case-status-muted">รวม ${x.total}</span></div>`;
-        }).join('');
-        box.innerHTML = `<h4 style="margin-top:0; color:#334155;">🗺️ สรุปความเสี่ยงปัจจุบันรายหมู่บ้าน</h4><p class="case-status-muted" style="margin-top:0;">นับจากผลประเมินล่าสุดของผู้ป่วยแต่ละคน ไม่ใช่จำนวนรายการประเมินทั้งหมด</p>${villageRows || '<p class="case-status-muted">ยังไม่มีข้อมูล</p>'}`;
+        if (totalEl) totalEl.innerText = currentRecords.length;
+        if (greenEl) greenEl.innerText = currentRiskCounts.green;
+        if (yellowEl) yellowEl.innerText = currentRiskCounts.yellow;
+        if (redEl) redEl.innerText = currentRiskCounts.red;
+
+        const allTotalEl = document.getElementById('sumAllRecords');
+        const allGreenEl = document.getElementById('sumAllGreenCases');
+        const allYellowEl = document.getElementById('sumAllYellowCases');
+        const allRedEl = document.getElementById('sumAllRedCases');
+        if (allTotalEl) allTotalEl.innerText = rawRecords.length;
+        if (allGreenEl) allGreenEl.innerText = allRiskCounts.green;
+        if (allYellowEl) allYellowEl.innerText = allRiskCounts.yellow;
+        if (allRedEl) allRedEl.innerText = allRiskCounts.red;
+
+        renderVillageRiskBox('villageRiskSummary', '🗺️ สรุปความเสี่ยงปัจจุบันรายหมู่บ้าน', 'นับจากผลประเมินล่าสุดของผู้ป่วยแต่ละคน ไม่ใช่จำนวนรายการประเมินทั้งหมด', currentVillages, 'ปัจจุบัน');
+        renderVillageRiskBox('villageRiskSummaryAll', '📚 สรุปเคสรวมทั้งหมดรายหมู่บ้าน', 'นับจากรายการคัดกรองทุกครั้งในระบบ เหมาะสำหรับดูปริมาณงานสะสมและจำนวนแบบประเมินทั้งหมด', allVillages, 'รวม');
     }
 
-    function getVillageChartData(records) {
+    function getChartSourceRecords(records, mode = 'current') {
+        const raw = Array.isArray(records) ? records : [];
+        return mode === 'all' ? raw : getLatestPatientRecords(raw);
+    }
+
+    function getVillageChartData(records, mode = 'current') {
         const map = {};
-        getLatestPatientRecords(records).forEach(item => {
+        getChartSourceRecords(records, mode).forEach(item => {
             const village = safeText(item.villageNo) || '-';
             if (!map[village]) map[village] = { village, green: 0, yellow: 0, red: 0, total: 0 };
             const risk = deriveRiskLevel(item);
@@ -637,9 +675,9 @@
         return Object.values(map).sort((a,b) => a.village.localeCompare(b.village, 'th'));
     }
 
-    function getMonthlyTrendData(records) {
+    function getMonthlyTrendData(records, mode = 'all') {
         const map = {};
-        (Array.isArray(records) ? records : []).forEach(item => {
+        getChartSourceRecords(records, mode).forEach(item => {
             const d = parseTimestamp(item.timestamp);
             if (!d || isNaN(d.getTime()) || d.getTime() === 0) return;
             const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -675,11 +713,22 @@
             container.innerHTML = '<div class="chart-empty chart-wide">ยังไม่มีข้อมูลสำหรับแสดงกราฟ กรุณากดรีเฟรชข้อมูลผู้ป่วยก่อน</div>';
             return;
         }
-        container.innerHTML = renderVillageBarChart(records) + renderRiskPieChart(records) + renderMonthlyLineChart(records);
+        const currentHeader = '<div class="chart-card chart-wide" style="background:#eff6ff;"><h4 style="margin:0;color:#1d4ed8;">👤 กราฟจากสถานะปัจจุบันของผู้ป่วย</h4><p class="chart-help" style="margin:6px 0 0 0;">นับผู้ป่วยแต่ละคนครั้งเดียว โดยใช้ผลประเมินล่าสุดของคนนั้น</p></div>';
+        const allHeader = '<div class="chart-card chart-wide" style="background:#fff7ed;"><h4 style="margin:0;color:#9a3412;">📚 กราฟจากเคสรวมทั้งหมด</h4><p class="chart-help" style="margin:6px 0 0 0;">นับทุกครั้งที่มีการคัดกรอง เหมาะสำหรับดูปริมาณงานและจำนวนรายการประเมินสะสม</p></div>';
+        container.innerHTML =
+            currentHeader +
+            renderVillageBarChart(records, 'current') +
+            renderRiskPieChart(records, 'current') +
+            renderMonthlyLineChart(records, 'current') +
+            allHeader +
+            renderVillageBarChart(records, 'all') +
+            renderRiskPieChart(records, 'all') +
+            renderMonthlyLineChart(records, 'all');
     }
 
-    function renderVillageBarChart(records) {
-        const data = getVillageChartData(records);
+    function renderVillageBarChart(records, mode = 'current') {
+        const data = getVillageChartData(records, mode);
+        const isAll = mode === 'all';
         if (data.length === 0) return '<div class="chart-card chart-wide"><div class="chart-empty">ยังไม่มีข้อมูลรายหมู่บ้าน</div></div>';
         const maxTotal = Math.max(...data.map(d => d.total), 1);
         const width = 760;
@@ -701,22 +750,31 @@
             const green = `<rect x="${x}" y="${y}" width="${greenW}" height="${barHeight}" rx="6" fill="#22c55e"></rect>`;
             return `<text x="12" y="${y + 16}" font-size="13" fill="#334155" font-weight="700">${escapeHTML(d.village)}</text><rect x="${left}" y="${y}" width="${plotWidth}" height="${barHeight}" rx="6" fill="#e2e8f0"></rect>${red}${yellow}${green}<text x="${left + plotWidth + 8}" y="${y + 16}" font-size="12" fill="#475569">${d.total}</text>`;
         }).join('');
-        return `<div class="chart-card chart-wide"><h4>📊 กราฟแท่งรายหมู่บ้าน</h4><p class="chart-help">แสดงจำนวนผู้ป่วยปัจจุบันในแต่ละหมู่บ้าน โดยใช้ผลประเมินล่าสุดของแต่ละคน แบ่งสีแดง/เหลือง/เขียว</p><svg class="chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="กราฟแท่งรายหมู่บ้าน">${rows}<text x="${left}" y="${height - 8}" font-size="12" fill="#64748b">จำนวนผู้ป่วยปัจจุบัน</text><text x="${width - 190}" y="${height - 8}" font-size="12" fill="#64748b">แดง / เหลือง / เขียว</text></svg></div>`;
+        const title = isAll ? '📊 กราฟแท่งรายหมู่บ้าน: เคสรวมทั้งหมด' : '📊 กราฟแท่งรายหมู่บ้าน: ผู้ป่วยปัจจุบัน';
+        const help = isAll ? 'แสดงจำนวนรายการคัดกรองทั้งหมดในแต่ละหมู่บ้าน แบ่งสีแดง/เหลือง/เขียว' : 'แสดงจำนวนผู้ป่วยปัจจุบันในแต่ละหมู่บ้าน โดยใช้ผลประเมินล่าสุดของแต่ละคน แบ่งสีแดง/เหลือง/เขียว';
+        const axisLabel = isAll ? 'จำนวนรายการคัดกรองทั้งหมด' : 'จำนวนผู้ป่วยปัจจุบัน';
+        return `<div class="chart-card chart-wide"><h4>${title}</h4><p class="chart-help">${help}</p><svg class="chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${title}">${rows}<text x="${left}" y="${height - 8}" font-size="12" fill="#64748b">${axisLabel}</text><text x="${width - 190}" y="${height - 8}" font-size="12" fill="#64748b">แดง / เหลือง / เขียว</text></svg></div>`;
     }
 
-    function renderRiskPieChart(records) {
-        const c = getRiskCounts(getLatestPatientRecords(records));
+    function renderRiskPieChart(records, mode = 'current') {
+        const isAll = mode === 'all';
+        const c = getRiskCounts(getChartSourceRecords(records, mode));
         if (!c.total) return '<div class="chart-card"><div class="chart-empty">ยังไม่มีข้อมูลความเสี่ยง</div></div>';
         const redDeg = 360 * c.red / c.total;
         const yellowDeg = 360 * c.yellow / c.total;
         const redEnd = redDeg;
         const yellowEnd = redDeg + yellowDeg;
         const bg = `conic-gradient(#ef4444 0deg ${redEnd}deg, #facc15 ${redEnd}deg ${yellowEnd}deg, #22c55e ${yellowEnd}deg 360deg)`;
-        return `<div class="chart-card"><h4>🥧 กราฟวงกลม เขียว/เหลือง/แดงปัจจุบัน</h4><p class="chart-help">สัดส่วนระดับความเสี่ยงจากผลประเมินล่าสุดของผู้ป่วยแต่ละคน</p><div class="pie-wrap"><div class="pie-chart" style="background:${bg};"></div><div class="pie-legend"><div class="legend-row"><span class="legend-dot dot-red"></span>แดงปัจจุบัน ${c.red} คน (${Math.round(c.red*100/c.total)}%)</div><div class="legend-row"><span class="legend-dot dot-yellow"></span>เหลืองปัจจุบัน ${c.yellow} คน (${Math.round(c.yellow*100/c.total)}%)</div><div class="legend-row"><span class="legend-dot dot-green"></span>เขียวปัจจุบัน ${c.green} คน (${Math.round(c.green*100/c.total)}%)</div><div class="case-status-muted">รวม ${c.total} คน</div></div></div></div>`;
+        const title = isAll ? '🥧 กราฟวงกลม เขียว/เหลือง/แดงรวมทั้งหมด' : '🥧 กราฟวงกลม เขียว/เหลือง/แดงปัจจุบัน';
+        const help = isAll ? 'สัดส่วนระดับความเสี่ยงจากรายการคัดกรองทั้งหมด' : 'สัดส่วนระดับความเสี่ยงจากผลประเมินล่าสุดของผู้ป่วยแต่ละคน';
+        const unit = isAll ? 'รายการ' : 'คน';
+        const suffix = isAll ? 'รวม' : 'ปัจจุบัน';
+        return `<div class="chart-card"><h4>${title}</h4><p class="chart-help">${help}</p><div class="pie-wrap"><div class="pie-chart" style="background:${bg};"></div><div class="pie-legend"><div class="legend-row"><span class="legend-dot dot-red"></span>แดง${suffix} ${c.red} ${unit} (${Math.round(c.red*100/c.total)}%)</div><div class="legend-row"><span class="legend-dot dot-yellow"></span>เหลือง${suffix} ${c.yellow} ${unit} (${Math.round(c.yellow*100/c.total)}%)</div><div class="legend-row"><span class="legend-dot dot-green"></span>เขียว${suffix} ${c.green} ${unit} (${Math.round(c.green*100/c.total)}%)</div><div class="case-status-muted">รวม ${c.total} ${unit}</div></div></div></div>`;
     }
 
-    function renderMonthlyLineChart(records) {
-        const data = getMonthlyTrendData(records);
+    function renderMonthlyLineChart(records, mode = 'all') {
+        const isAll = mode === 'all';
+        const data = getMonthlyTrendData(records, mode);
         if (data.length === 0) return '<div class="chart-card"><div class="chart-empty">ยังไม่มีข้อมูลรายเดือน</div></div>';
         const width = 760, height = 300, left = 48, right = 26, top = 28, bottom = 58;
         const plotW = width - left - right, plotH = height - top - bottom;
@@ -729,7 +787,10 @@
         const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
         const circles = points.map(p => `<circle cx="${p.x}" cy="${p.y}" r="5" fill="#3b82f6"></circle><text x="${p.x}" y="${p.y - 10}" text-anchor="middle" font-size="12" fill="#334155" font-weight="700">${p.total}</text><text x="${p.x}" y="${height - 24}" text-anchor="middle" font-size="11" fill="#64748b">${escapeHTML(p.label)}</text>`).join('');
         const grid = [0, .25, .5, .75, 1].map(t => { const y = top + plotH - t * plotH; const val = Math.round(t * max); return `<line x1="${left}" y1="${y}" x2="${left+plotW}" y2="${y}" stroke="#e2e8f0"></line><text x="${left-10}" y="${y+4}" text-anchor="end" font-size="11" fill="#64748b">${val}</text>`; }).join('');
-        return `<div class="chart-card chart-wide"><h4>📈 กราฟเส้นรายเดือน</h4><p class="chart-help">แนวโน้มจำนวนรายการคัดกรองรายเดือน แสดงย้อนหลังสูงสุด 12 เดือนล่าสุด</p><svg class="chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="กราฟเส้นรายเดือน"><line x1="${left}" y1="${top}" x2="${left}" y2="${top+plotH}" stroke="#cbd5e1"></line><line x1="${left}" y1="${top+plotH}" x2="${left+plotW}" y2="${top+plotH}" stroke="#cbd5e1"></line>${grid}<path d="${path}" fill="none" stroke="#3b82f6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>${circles}<text x="${left}" y="18" font-size="12" fill="#64748b">จำนวนรายการ</text></svg></div>`;
+        const title = isAll ? '📈 กราฟเส้นรายเดือน: เคสรวมทั้งหมด' : '📈 กราฟเส้นรายเดือน: ผู้ป่วยปัจจุบัน';
+        const help = isAll ? 'แนวโน้มจำนวนรายการคัดกรองรายเดือน แสดงย้อนหลังสูงสุด 12 เดือนล่าสุด' : 'แนวโน้มเดือนที่มีผลประเมินล่าสุดของผู้ป่วยปัจจุบัน แสดงย้อนหลังสูงสุด 12 เดือนล่าสุด';
+        const axisLabel = isAll ? 'จำนวนรายการ' : 'จำนวนผู้ป่วย';
+        return `<div class="chart-card chart-wide"><h4>${title}</h4><p class="chart-help">${help}</p><svg class="chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${title}"><line x1="${left}" y1="${top}" x2="${left}" y2="${top+plotH}" stroke="#cbd5e1"></line><line x1="${left}" y1="${top+plotH}" x2="${left+plotW}" y2="${top+plotH}" stroke="#cbd5e1"></line>${grid}<path d="${path}" fill="none" stroke="#3b82f6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>${circles}<text x="${left}" y="18" font-size="12" fill="#64748b">${axisLabel}</text></svg></div>`;
     }
 
     function logAuditEvent(action, patientName = '', gender = '', village = '', rowId = '', detail = '') {
