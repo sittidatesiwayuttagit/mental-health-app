@@ -51,9 +51,25 @@
         .optional-toggle.off { border-color:#cbd5e1; background:#ffffff; color:#475569; }
         .optional-panel { display: none; margin-top: 12px; }
         .optional-panel.active { display: block; }
+
+        .auth-check-overlay { position: fixed; inset: 0; background: rgba(241,245,249,0.96); z-index: 99999; display: none; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+        .auth-check-card { width: 100%; max-width: 430px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 20px; padding: 24px; text-align: center; box-shadow: 0 20px 45px rgba(15,23,42,0.12); }
+        .auth-spinner { width: 44px; height: 44px; margin: 0 auto 14px auto; border: 5px solid #dbeafe; border-top-color: #3b82f6; border-radius: 50%; animation: spinAuth 0.9s linear infinite; }
+        .auth-check-title { font-size: 20px; font-weight: bold; color: #1e293b; margin-bottom: 8px; }
+        .auth-check-message { font-size: 14px; color: #64748b; line-height: 1.6; }
+        @keyframes spinAuth { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
+
+
+<div id="authCheckOverlay" class="auth-check-overlay" aria-live="polite" aria-busy="true">
+    <div class="auth-check-card">
+        <div class="auth-spinner"></div>
+        <div class="auth-check-title">🔎 กำลังตรวจสอบสิทธิ์เข้าใช้งาน</div>
+        <div id="authCheckMessage" class="auth-check-message">ระบบกำลังเชื่อมต่อ LINE และตรวจสอบว่า LINE ID นี้เคยผูกกับบัญชีใน Google Sheet หรือไม่ กรุณารอสักครู่...</div>
+    </div>
+</div>
 
 <div class="container">
     <div id="systemNote" class="system-note"></div>
@@ -368,6 +384,14 @@
     }
 
 
+    function setAuthChecking(isChecking, message) {
+        const overlay = document.getElementById('authCheckOverlay');
+        const messageEl = document.getElementById('authCheckMessage');
+        if (messageEl && message) messageEl.innerText = message;
+        if (overlay) overlay.style.display = isChecking ? 'flex' : 'none';
+    }
+
+
 
     function setOptionalPanelState(panelId, btnId, active, activeText, inactiveText) {
         const panel = document.getElementById(panelId);
@@ -612,10 +636,12 @@
     async function initLiffAndAuth() {
         try {
             showSystemNote('');
+            setAuthChecking(true, 'กำลังเริ่มต้น LINE LIFF และเตรียมตรวจสอบสิทธิ์ กรุณารอสักครู่...');
             await liff.init({ liffId: LIFF_ID });
             console.log('LIFF Ready', liff.getOS && liff.getOS());
 
             if (!liff.isLoggedIn()) {
+                setAuthChecking(true, 'ยังไม่ได้เข้าสู่ระบบ LINE ระบบกำลังพาไปหน้า LINE Login...');
                 liff.login({ redirectUri: getLoginRedirectUri() });
                 return;
             }
@@ -623,6 +649,7 @@
             await checkAutoLogin();
         } catch (err) {
             console.error('LIFF Init Error:', err);
+            setAuthChecking(false);
             showSystemNote('⚠️ เปิดหน้าได้ แต่ระบบ LINE LIFF เริ่มต้นไม่สำเร็จ กรุณาตรวจว่า LIFF Endpoint URL และ Callback URL ใน LINE Developers ตรงกับ index.html แล้วลองใหม่');
             changeStep(0);
         }
@@ -642,32 +669,45 @@
 
     async function checkAutoLogin() {
         try {
+            setAuthChecking(true, 'กำลังตรวจสอบว่า LINE ID นี้เคยผูกกับบัญชีใน Google Sheet หรือไม่ กรุณารอสักครู่...');
+
             if (localStorage.getItem("vhm_logout_flag") === "true") {
+                setAuthChecking(false);
                 changeStep(0);
                 return;
             }
 
             if (liff.isLoggedIn()) {
+                setAuthChecking(true, 'กำลังอ่านข้อมูลโปรไฟล์ LINE เพื่อใช้ตรวจสอบสิทธิ์...');
                 const profile = await liff.getProfile();
                 const currentLineId = profile.userId;
+
+                setAuthChecking(true, 'กำลังค้นหา LINE ID นี้ในตารางผู้ใช้งาน รอสักครู่...');
                 const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=checkLineAutoLogin&lineId=${encodeURIComponent(currentLineId)}`);
                 if (!response.ok) throw new Error("HTTP Status " + response.status);
 
                 const res = await response.json();
                 if (res.success) {
+                    setAuthChecking(true, `พบสิทธิ์ของ ${res.name || 'ผู้ใช้งาน'} กำลังเข้าสู่ระบบอัตโนมัติ...`);
                     currentVhmName = res.name;
                     document.getElementById('vhmDisplayName').innerText = `${currentVhmName} (${res.roleTitle || '-'})`;
                     document.getElementById('vhmInfoHeader').style.display = "flex";
                     fetchPatientHistoryForAutocomplete();
                     changeStep(1);
+                    setAuthChecking(false);
                 } else {
+                    setAuthChecking(false);
+                    showSystemNote('ℹ️ ยังไม่พบ LINE ID นี้ในระบบ กรุณาเข้าสู่ระบบด้วย Username/Password ครั้งแรกเพื่อผูกบัญชี LINE');
                     changeStep(0);
                 }
             } else {
+                setAuthChecking(false);
                 changeStep(0);
             }
         } catch (err) {
             console.error("AutoLogin System Error:", err);
+            setAuthChecking(false);
+            showSystemNote('⚠️ ตรวจสอบสิทธิ์อัตโนมัติไม่สำเร็จ กรุณาลองเข้าสู่ระบบด้วย Username/Password หรือเช็กสัญญาณอินเทอร์เน็ต');
             changeStep(0);
         }
     }
