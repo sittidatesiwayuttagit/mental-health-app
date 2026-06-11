@@ -93,6 +93,7 @@
         .profile-info-item b { display:block; color:#64748b; margin-bottom:4px; }
         .profile-edit-form { display:none; margin-top:14px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:14px; }
         .profile-edit-form.active { display:block; }
+        .profile-display-hidden { display:none !important; }
         .profile-actions { display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; margin-top:12px; }
         .small-btn { padding:9px 12px; border:none; border-radius:10px; font-weight:bold; cursor:pointer; color:white; background:#3b82f6; }
         .small-btn.gray { background:#64748b; }
@@ -271,7 +272,7 @@
                     <div id="patientProfileCard" class="patient-profile-card">
                         <div class="history-summary-line" style="margin-bottom:12px;">
                             <h3 style="margin:0; color:#1d4ed8;">👤 ข้อมูลทั่วไปผู้ป่วย</h3>
-                            <button type="button" class="small-btn" onclick="enablePatientProfileEdit()">✏️ แก้ไขข้อมูลทั่วไป</button>
+                            <button type="button" id="btnEditPatientProfile" class="small-btn" onclick="enablePatientProfileEdit()">✏️ แก้ไขข้อมูลทั่วไป</button>
                         </div>
                         <div id="patientProfileDisplay"></div>
                         <div id="patientProfileEditForm" class="profile-edit-form">
@@ -329,10 +330,10 @@
         <div id="overviewTab" class="tab-content">
             <div id="overviewHomePage">
                 <div id="dashboardSummaryPanel" class="summary-panel">
-                    <div class="summary-card"><h4>เคสทั้งหมด</h4><div class="big-number" id="sumTotalCases">0</div><div class="case-status-muted">จำนวนรายการคัดกรองทั้งหมด</div></div>
-                    <div class="summary-card"><h4>🟢 เขียว</h4><div class="big-number" id="sumGreenCases">0</div><div class="case-status-muted">ยังไม่พบความเสี่ยงเด่น</div></div>
-                    <div class="summary-card"><h4>🟡 เหลือง</h4><div class="big-number" id="sumYellowCases">0</div><div class="case-status-muted">ควรติดตาม/ซักเพิ่ม</div></div>
-                    <div class="summary-card"><h4>🔴 แดง</h4><div class="big-number" id="sumRedCases">0</div><div class="case-status-muted">ควรจัดการเร่งด่วน</div></div>
+                    <div class="summary-card"><h4>ผู้ป่วยทั้งหมดปัจจุบัน</h4><div class="big-number" id="sumTotalCases">0</div><div class="case-status-muted">นับผู้ป่วยไม่ซ้ำจากผลล่าสุดของแต่ละคน</div></div>
+                    <div class="summary-card"><h4>🟢 สีเขียวปัจจุบัน</h4><div class="big-number" id="sumGreenCases">0</div><div class="case-status-muted">ผู้ป่วยที่ผลล่าสุดยังไม่พบความเสี่ยงเด่น</div></div>
+                    <div class="summary-card"><h4>🟡 สีเหลืองปัจจุบัน</h4><div class="big-number" id="sumYellowCases">0</div><div class="case-status-muted">ผู้ป่วยที่ผลล่าสุดควรติดตาม/ซักเพิ่ม</div></div>
+                    <div class="summary-card"><h4>🔴 สีแดงปัจจุบัน</h4><div class="big-number" id="sumRedCases">0</div><div class="case-status-muted">ผู้ป่วยที่ผลล่าสุดควรจัดการเร่งด่วน</div></div>
                 </div>
                 <div id="villageRiskSummary" class="search-container" style="background:#ffffff;"></div>
                 <div class="search-container" style="background:#ffffff; border:1px solid #cbd5e1;">
@@ -375,11 +376,20 @@
                     <input type="text" id="staffSecretKeyInput" placeholder="รหัสลับส่วนตัว (สำหรับกู้คืนรหัสผ่าน)">
                 </div>
                 <div class="inputs-row">
-                    <select id="staffRoleInput">
+                    <select id="staffRoleInput" onchange="updateStaffAreaFields()">
                         <option value="vhv">VHV - อสม. ใช้หน้าคัดกรอง</option>
                         <option value="admin">Admin - ดูข้อมูลและจัดการระบบ แต่จองคิวไม่ได้</option>
                         <option value="hospital">Hospital - ดูข้อมูล จัดการระบบ และรับจองคิวได้</option>
                     </select>
+                </div>
+                <div id="staffAreaFields" class="search-container" style="display:none; background:#ffffff; margin-top:10px; margin-bottom:12px;">
+                    <h4 id="staffAreaTitle" style="margin-top:0; color:#334155;">📍 พื้นที่รับผิดชอบ</h4>
+                    <p id="staffAreaHelp" class="case-status-muted" style="margin-top:0; line-height:1.5;"></p>
+                    <div class="inputs-row">
+                        <select id="staffTambonInput" onchange="updateStaffDependentAreaFields()"><option value="">-- เลือกตำบล --</option></select>
+                        <select id="staffFacilityInput" style="display:none;"><option value="">-- เลือก รพ.สต. --</option></select>
+                        <select id="staffVillageScopeInput" style="display:none;"><option value="">-- เลือกหมู่ที่รับผิดชอบ --</option></select>
+                    </div>
                 </div>
                 <div style="text-align: right;">
                     <button id="btnCancelStaffEdit" class="btn-refresh" style="display:none; margin-right:5px;" onclick="cancelStaffEditMode()">ยกเลิก</button>
@@ -494,6 +504,14 @@
         return `${escapeHTML(score)} คะแนน (${escapeHTML(level || '-')}) | ${escapeHTML(details || '-')}`;
     }
 
+    function formatST5Display(item) {
+        const score = safeText(item.st5Score).trim();
+        const level = safeText(item.st5Level).trim();
+        const details = safeText(item.st5Details).trim();
+        if (!score || score === '-' || score === 'ไม่ได้ประเมิน' || level === 'ไม่ได้ประเมิน') return 'ไม่ได้ประเมิน';
+        return `${escapeHTML(score)} คะแนน (${escapeHTML(level || '-')}) | ${escapeHTML(details || '-')}`;
+    }
+
     function extract9QScore(item) {
         const raw = safeText(item && item.q9Score);
         const match = raw.match(/\d+/);
@@ -546,6 +564,22 @@
         if (y > 2400) y -= 543;
         return `${String(y).padStart(4,'0')}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
     }
+    function getPatientGroupKeyFromItem(item) {
+        return `${safeText(item.patientName).trim()}|${safeText(item.patientGender).trim()}|${safeText(item.villageNo).trim()}`;
+    }
+
+    function getLatestPatientRecords(records) {
+        const map = new Map();
+        (Array.isArray(records) ? records : []).forEach(item => {
+            const name = safeText(item.patientName).trim();
+            if (!name) return;
+            const key = getPatientGroupKeyFromItem(item);
+            const existing = map.get(key);
+            if (!existing || parseTimestamp(item.timestamp) > parseTimestamp(existing.timestamp)) map.set(key, item);
+        });
+        return Array.from(map.values()).sort((a, b) => parseTimestamp(b.timestamp) - parseTimestamp(a.timestamp));
+    }
+
     function getRiskCounts(records) {
         const counts = { green: 0, yellow: 0, red: 0, total: 0 };
         (Array.isArray(records) ? records : []).forEach(item => {
@@ -559,7 +593,8 @@
     }
 
     function renderDashboardSummary(data) {
-        const records = Array.isArray(data) ? data : [];
+        const rawRecords = Array.isArray(data) ? data : [];
+        const records = getLatestPatientRecords(rawRecords);
         const riskCounts = getRiskCounts(records);
         const villages = {};
         records.forEach(item => {
@@ -583,14 +618,14 @@
         if (!box) return;
         const villageRows = Object.keys(villages).sort((a,b)=>a.localeCompare(b,'th')).map(v => {
             const x = villages[v];
-            return `<div class="case-status-summary"><b>${escapeHTML(v)}</b> <span class="risk-pill risk-red">แดง ${x.red}</span><span class="risk-pill risk-yellow">เหลือง ${x.yellow}</span><span class="risk-pill risk-green">เขียว ${x.green}</span><span class="case-status-muted">รวม ${x.total}</span></div>`;
+            return `<div class="case-status-summary"><b>${escapeHTML(v)}</b> <span class="risk-pill risk-red">แดงปัจจุบัน ${x.red}</span><span class="risk-pill risk-yellow">เหลืองปัจจุบัน ${x.yellow}</span><span class="risk-pill risk-green">เขียวปัจจุบัน ${x.green}</span><span class="case-status-muted">รวม ${x.total}</span></div>`;
         }).join('');
-        box.innerHTML = `<h4 style="margin-top:0; color:#334155;">🗺️ สรุปความเสี่ยงรายหมู่บ้าน</h4>${villageRows || '<p class="case-status-muted">ยังไม่มีข้อมูล</p>'}`;
+        box.innerHTML = `<h4 style="margin-top:0; color:#334155;">🗺️ สรุปความเสี่ยงปัจจุบันรายหมู่บ้าน</h4><p class="case-status-muted" style="margin-top:0;">นับจากผลประเมินล่าสุดของผู้ป่วยแต่ละคน ไม่ใช่จำนวนรายการประเมินทั้งหมด</p>${villageRows || '<p class="case-status-muted">ยังไม่มีข้อมูล</p>'}`;
     }
 
     function getVillageChartData(records) {
         const map = {};
-        (Array.isArray(records) ? records : []).forEach(item => {
+        getLatestPatientRecords(records).forEach(item => {
             const village = safeText(item.villageNo) || '-';
             if (!map[village]) map[village] = { village, green: 0, yellow: 0, red: 0, total: 0 };
             const risk = deriveRiskLevel(item);
@@ -666,19 +701,18 @@
             const green = `<rect x="${x}" y="${y}" width="${greenW}" height="${barHeight}" rx="6" fill="#22c55e"></rect>`;
             return `<text x="12" y="${y + 16}" font-size="13" fill="#334155" font-weight="700">${escapeHTML(d.village)}</text><rect x="${left}" y="${y}" width="${plotWidth}" height="${barHeight}" rx="6" fill="#e2e8f0"></rect>${red}${yellow}${green}<text x="${left + plotWidth + 8}" y="${y + 16}" font-size="12" fill="#475569">${d.total}</text>`;
         }).join('');
-        return `<div class="chart-card chart-wide"><h4>📊 กราฟแท่งรายหมู่บ้าน</h4><p class="chart-help">แสดงจำนวนรายการคัดกรองในแต่ละหมู่บ้าน แบ่งสีตามระดับความเสี่ยง แดง/เหลือง/เขียว</p><svg class="chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="กราฟแท่งรายหมู่บ้าน">${rows}<text x="${left}" y="${height - 8}" font-size="12" fill="#64748b">จำนวนรายการคัดกรอง</text><text x="${width - 190}" y="${height - 8}" font-size="12" fill="#64748b">แดง / เหลือง / เขียว</text></svg></div>`;
+        return `<div class="chart-card chart-wide"><h4>📊 กราฟแท่งรายหมู่บ้าน</h4><p class="chart-help">แสดงจำนวนผู้ป่วยปัจจุบันในแต่ละหมู่บ้าน โดยใช้ผลประเมินล่าสุดของแต่ละคน แบ่งสีแดง/เหลือง/เขียว</p><svg class="chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="กราฟแท่งรายหมู่บ้าน">${rows}<text x="${left}" y="${height - 8}" font-size="12" fill="#64748b">จำนวนผู้ป่วยปัจจุบัน</text><text x="${width - 190}" y="${height - 8}" font-size="12" fill="#64748b">แดง / เหลือง / เขียว</text></svg></div>`;
     }
 
     function renderRiskPieChart(records) {
-        const c = getRiskCounts(records);
+        const c = getRiskCounts(getLatestPatientRecords(records));
         if (!c.total) return '<div class="chart-card"><div class="chart-empty">ยังไม่มีข้อมูลความเสี่ยง</div></div>';
         const redDeg = 360 * c.red / c.total;
         const yellowDeg = 360 * c.yellow / c.total;
-        const greenDeg = 360 - redDeg - yellowDeg;
         const redEnd = redDeg;
         const yellowEnd = redDeg + yellowDeg;
         const bg = `conic-gradient(#ef4444 0deg ${redEnd}deg, #facc15 ${redEnd}deg ${yellowEnd}deg, #22c55e ${yellowEnd}deg 360deg)`;
-        return `<div class="chart-card"><h4>🥧 กราฟวงกลม เขียว/เหลือง/แดง</h4><p class="chart-help">สัดส่วนระดับความเสี่ยงจากรายการคัดกรองทั้งหมด</p><div class="pie-wrap"><div class="pie-chart" style="background:${bg};"></div><div class="pie-legend"><div class="legend-row"><span class="legend-dot dot-red"></span>แดง ${c.red} รายการ (${Math.round(c.red*100/c.total)}%)</div><div class="legend-row"><span class="legend-dot dot-yellow"></span>เหลือง ${c.yellow} รายการ (${Math.round(c.yellow*100/c.total)}%)</div><div class="legend-row"><span class="legend-dot dot-green"></span>เขียว ${c.green} รายการ (${Math.round(c.green*100/c.total)}%)</div><div class="case-status-muted">รวม ${c.total} รายการ</div></div></div></div>`;
+        return `<div class="chart-card"><h4>🥧 กราฟวงกลม เขียว/เหลือง/แดงปัจจุบัน</h4><p class="chart-help">สัดส่วนระดับความเสี่ยงจากผลประเมินล่าสุดของผู้ป่วยแต่ละคน</p><div class="pie-wrap"><div class="pie-chart" style="background:${bg};"></div><div class="pie-legend"><div class="legend-row"><span class="legend-dot dot-red"></span>แดงปัจจุบัน ${c.red} คน (${Math.round(c.red*100/c.total)}%)</div><div class="legend-row"><span class="legend-dot dot-yellow"></span>เหลืองปัจจุบัน ${c.yellow} คน (${Math.round(c.yellow*100/c.total)}%)</div><div class="legend-row"><span class="legend-dot dot-green"></span>เขียวปัจจุบัน ${c.green} คน (${Math.round(c.green*100/c.total)}%)</div><div class="case-status-muted">รวม ${c.total} คน</div></div></div></div>`;
     }
 
     function renderMonthlyLineChart(records) {
@@ -726,6 +760,78 @@
         return 3;
     }
 
+
+    const SERVICE_AREA_LIST = [
+        { facility: 'รพ.สต.บ้านบางอ้อ', tambon: 'บางอ้อ', villages: ['หมู่ 1','หมู่ 2','หมู่ 3','หมู่ 4','หมู่ 5','หมู่ 6','หมู่ 7','หมู่ 8','หมู่ 9','หมู่ 10','หมู่ 11','หมู่ 12','หมู่ 13','หมู่ 14'] },
+        { facility: 'รพ.สต.บ้านแหลมไม้ย้อย', tambon: 'พิกุลออก', villages: ['หมู่ 1','หมู่ 2','หมู่ 3','หมู่ 4','หมู่ 5','หมู่ 6','หมู่ 7','หมู่ 8','หมู่ 9','หมู่ 10','หมู่ 11','หมู่ 12'] },
+        { facility: 'รพ.สต.บ้านกว่างประตูวัง', tambon: 'ป่าขะ', villages: ['หมู่ 1','หมู่ 2','หมู่ 3','หมู่ 4','หมู่ 5','หมู่ 6','หมู่ 7','หมู่ 8','หมู่ 9','หมู่ 10','หมู่ 11','หมู่ 12','หมู่ 13'] },
+        { facility: 'รพ.สต.บ้านไผ่ขวาง', tambon: 'อาษา', villages: ['หมู่ 1','หมู่ 2','หมู่ 3','หมู่ 4','หมู่ 5','หมู่ 6','หมู่ 7','หมู่ 8'] },
+        { facility: 'รพ.สต.บ้านละว้า', tambon: 'ศรีกะอาง', villages: ['หมู่ 1','หมู่ 2','หมู่ 3','หมู่ 4','หมู่ 5','หมู่ 6','หมู่ 7','หมู่ 8','หมู่ 9'] },
+        { facility: 'รพ.สต.บ้านหนองรี', tambon: 'บ้านพร้าว', villages: ['หมู่ 1','หมู่ 3','หมู่ 4','หมู่ 6','หมู่ 7','หมู่ 9'] },
+        { facility: 'รพ.สต.บ้านทางกระบือ', tambon: 'บ้านพร้าว', villages: ['หมู่ 2','หมู่ 5','หมู่ 8','หมู่ 10','หมู่ 11','หมู่ 12'] },
+        { facility: 'รพ.สต.บ้านเขาเพิ่ม', tambon: 'เขาเพิ่ม', villages: ['หมู่ 1','หมู่ 3','หมู่ 4','หมู่ 11','หมู่ 14','หมู่ 16'] },
+        { facility: 'รพ.สต.บ้านเขาน้อย', tambon: 'เขาเพิ่ม', villages: ['หมู่ 2','หมู่ 5','หมู่ 6','หมู่ 7','หมู่ 15'] },
+        { facility: 'รพ.สต.บ้านกะเหรี่ยง', tambon: 'เขาเพิ่ม', villages: ['หมู่ 8','หมู่ 9','หมู่ 10','หมู่ 12','หมู่ 13'] },
+        { facility: 'รพ.สต.บ้านคลอง30', tambon: 'ทองหลาง', villages: ['หมู่ 3','หมู่ 4','หมู่ 6','หมู่ 7'] },
+        { facility: 'รพ.สต.บ้านทองหลาง', tambon: 'ทองหลาง', villages: ['หมู่ 1','หมู่ 2','หมู่ 5','หมู่ 8'] },
+        { facility: 'รพ.สต.บ้านพริก', tambon: 'บ้านพริก', villages: ['หมู่ 3','หมู่ 5','หมู่ 7','หมู่ 8','หมู่ 9','หมู่ 10'] },
+        { facility: 'รพ.สต.บ้านหนองคันคาม', tambon: 'บ้านพริก', villages: ['หมู่ 1','หมู่ 2','หมู่ 4','หมู่ 6','หมู่ 11','หมู่ 12'] },
+        { facility: 'รพ.บ้านนา', tambon: 'บ้านนา', villages: ['หมู่ 1','หมู่ 2','หมู่ 3','หมู่ 4','หมู่ 5','หมู่ 6','หมู่ 7','หมู่ 8','หมู่ 9','หมู่ 10','หมู่ 11'] }
+    ];
+
+    function getTambonList() {
+        return Array.from(new Set(SERVICE_AREA_LIST.map(x => x.tambon))).sort((a, b) => a.localeCompare(b, 'th'));
+    }
+
+    function populateStaffTambonOptions() {
+        const sel = document.getElementById('staffTambonInput');
+        if (!sel) return;
+        const current = sel.value;
+        sel.innerHTML = '<option value="">-- เลือกตำบล --</option>' + getTambonList().map(t => `<option value="${escapeHTML(t)}">${escapeHTML(t)}</option>`).join('');
+        if (current) sel.value = current;
+    }
+
+    function updateStaffAreaFields() {
+        populateStaffTambonOptions();
+        const role = normalizeAdminRole(document.getElementById('staffRoleInput')?.value);
+        const areaBox = document.getElementById('staffAreaFields');
+        const facility = document.getElementById('staffFacilityInput');
+        const village = document.getElementById('staffVillageScopeInput');
+        const help = document.getElementById('staffAreaHelp');
+        if (!areaBox || !facility || !village || !help) return;
+        if (role === 'hospital') {
+            areaBox.style.display = 'none';
+            document.getElementById('staffTambonInput').value = '';
+            facility.value = ''; village.value = '';
+            return;
+        }
+        areaBox.style.display = 'block';
+        facility.style.display = role === 'admin' ? 'block' : 'none';
+        village.style.display = role === 'vhv' ? 'block' : 'none';
+        help.innerText = role === 'admin'
+            ? 'บัญชี Admin ต้องเลือกตำบล แล้วเลือก รพ.สต. ที่สังกัด เพื่อให้ระบบรู้หน่วยงานรับผิดชอบ'
+            : 'บัญชี VHV/อสม. ต้องเลือกตำบล แล้วเลือกหมู่ที่รับผิดชอบ เพื่อบันทึกเขตลงแท็บ อสม.';
+        updateStaffDependentAreaFields();
+    }
+
+    function updateStaffDependentAreaFields() {
+        const role = normalizeAdminRole(document.getElementById('staffRoleInput')?.value);
+        const tambon = document.getElementById('staffTambonInput')?.value || '';
+        const facility = document.getElementById('staffFacilityInput');
+        const village = document.getElementById('staffVillageScopeInput');
+        if (!facility || !village) return;
+        const rows = SERVICE_AREA_LIST.filter(x => x.tambon === tambon);
+        const currentFacility = facility.value;
+        const currentVillage = village.value;
+        facility.innerHTML = '<option value="">-- เลือก รพ.สต. --</option>' + rows.map(x => `<option value="${escapeHTML(x.facility)}">${escapeHTML(x.facility)}</option>`).join('');
+        const villages = Array.from(new Set(rows.flatMap(x => x.villages))).sort((a, b) => parseInt(a.replace(/\D/g,''),10) - parseInt(b.replace(/\D/g,''),10));
+        village.innerHTML = '<option value="">-- เลือกหมู่ที่รับผิดชอบ --</option>' + villages.map(v => `<option value="${escapeHTML(v)}">${escapeHTML(v)}</option>`).join('');
+        if (currentFacility && rows.some(x => x.facility === currentFacility)) facility.value = currentFacility;
+        if (currentVillage && villages.includes(currentVillage)) village.value = currentVillage;
+        if (role === 'admin') village.value = '';
+        if (role === 'vhv') facility.value = '';
+    }
+
     function updateRoleDisplay() {
         const roleEl = document.getElementById('adminRoleDisplay');
         if (!roleEl) return;
@@ -767,6 +873,8 @@
                 daySelect.appendChild(opt);
             }
         });
+        populateStaffTambonOptions();
+        updateStaffAreaFields();
         try {
             await liff.init({ liffId: LIFF_ID });
             if (!liff.isLoggedIn()) liff.login({ redirectUri: ADMIN_LOGIN_REDIRECT_URI });
@@ -1249,12 +1357,18 @@
         document.getElementById('profAllergies').value = p.allergies || '';
         document.getElementById('profChronicDiseases').value = p.chronicDiseases || '';
         currentPatientPhotoDataUrl = p.patientPhotoDataUrl || '';
+        document.getElementById('patientProfileDisplay').classList.add('profile-display-hidden');
+        const btn = document.getElementById('btnEditPatientProfile');
+        if (btn) btn.style.display = 'none';
         document.getElementById('patientProfileEditForm').classList.add('active');
         window.scrollTo(0, document.getElementById('patientProfileCard').offsetTop - 10);
     }
 
     function cancelPatientProfileEdit() {
         document.getElementById('patientProfileEditForm').classList.remove('active');
+        document.getElementById('patientProfileDisplay').classList.remove('profile-display-hidden');
+        const btn = document.getElementById('btnEditPatientProfile');
+        if (btn) btn.style.display = 'inline-block';
     }
 
     function handlePatientPhotoSelected(event) {
@@ -1358,6 +1472,7 @@
         const type = safeText(item.assessmentType);
         if (type.includes('9Q') || safeText(item.q9Score).includes('คะแนน')) tools.push('9Q');
         if (type.includes('8Q') || safeText(item.q8Result).includes('คะแนน')) tools.push('8Q');
+        if (formatST5Display(item) !== 'ไม่ได้ประเมิน') tools.push('ST-5');
         if (formatOptionalClinicalText(item.psychComorbidities) !== 'ไม่ได้ประเมิน' || formatOptionalClinicalText(item.medicalComorbidities) !== 'ไม่ได้ประเมิน') tools.push('ปัจจัยร่วม');
         if (formatSubstance10XDisplay(item) !== 'ไม่ได้ประเมิน') tools.push('10X');
         return tools;
@@ -1414,11 +1529,12 @@
                 <div class="booking-alert">${escapeHTML(bookingText)}</div>
                 <div class="case-status-buttons"></div>
             </div>
-            <div class="clinical-box"><b>Risk:</b> <span class="risk-pill ${getRiskClass(deriveRiskLevel(item))}">${escapeHTML(deriveRiskLevel(item))}</span><br><b>Psych:</b> ${escapeHTML(formatOptionalClinicalText(item.psychComorbidities))}<br><b>Medical:</b> ${escapeHTML(formatOptionalClinicalText(item.medicalComorbidities))}<br><b>10X:</b> ${formatSubstance10XDisplay(item)}</div>
+            <div class="clinical-box"><b>Risk:</b> <span class="risk-pill ${getRiskClass(deriveRiskLevel(item))}">${escapeHTML(deriveRiskLevel(item))}</span><br><b>ST-5:</b> ${formatST5Display(item)}<br><b>Psych:</b> ${escapeHTML(formatOptionalClinicalText(item.psychComorbidities))}<br><b>Medical:</b> ${escapeHTML(formatOptionalClinicalText(item.medicalComorbidities))}<br><b>10X:</b> ${formatSubstance10XDisplay(item)}</div>
             <div class="info-row"><span>ผู้คัดกรองลงพื้นที่ (อสม.):</span> <span><b>${escapeHTML(item.vhmName || '-')}</b></span></div>
             <div class="info-row"><span>ผลคัดกรองด่วน 2Q:</span> <span class="${q2Result.includes('เสี่ยง') ? 'danger' : ''}">${escapeHTML(q2Result || '-')}</span></div>
             <div class="info-row"><span>คะแนนคอลัมน์ 9Q:</span> <span>${escapeHTML(item.q9Score || '-(ไม่ได้ประเมิน)-')}</span></div>
             <div class="info-row"><span>ผลประเมินคอลัมน์ 8Q:</span> <span>${escapeHTML(item.q8Result || '-(ไม่ได้ประเมิน)-')}</span></div>
+            <div class="info-row"><span>ผลประเมิน ST-5:</span> <span>${formatST5Display(item)}</span></div>
             <div class="info-row"><span>หมายเหตุ อสม. เพิ่มเติม:</span> <span>${escapeHTML(item.comment || '-(ว่าง)-')}</span></div>
             <div class="referral-box"><h4 style="margin:0 0 10px 0; color:#334155;">🏥 Referral & Outcome / Follow-up</h4><div class="referral-edit-box"></div></div>`;
     }
@@ -1661,7 +1777,10 @@
         if (filterRole !== 'all') rows = rows.filter(x => normalizeAdminRole(x.role) === filterRole);
         if (search) rows = rows.filter(x =>
             safeText(x.name).toLowerCase().includes(search) ||
-            safeText(x.username).toLowerCase().includes(search)
+            safeText(x.username).toLowerCase().includes(search) ||
+            safeText(x.subdistrict).toLowerCase().includes(search) ||
+            safeText(x.facility).toLowerCase().includes(search) ||
+            safeText(x.villageScope).toLowerCase().includes(search)
         );
         rows.sort((a, b) => {
             const r = getRoleRank(a.role) - getRoleRank(b.role);
@@ -1680,8 +1799,14 @@
             const card = document.createElement('div');
             card.className = 'vhm-table-row';
             card.style.borderLeft = role === 'hospital' ? '4px solid #10b981' : role === 'admin' ? '4px solid #3b82f6' : '4px solid #f59e0b';
+            const areaRows = role === 'hospital'
+                ? ''
+                : role === 'admin'
+                    ? `<div class="info-row"><span>ตำบลที่สังกัด:</span> <span>${escapeHTML(staff.subdistrict || '-')}</span></div><div class="info-row"><span>รพ.สต.ที่สังกัด:</span> <span>${escapeHTML(staff.facility || '-')}</span></div>`
+                    : `<div class="info-row"><span>ตำบลที่รับผิดชอบ:</span> <span>${escapeHTML(staff.subdistrict || '-')}</span></div><div class="info-row"><span>หมู่ที่รับผิดชอบ:</span> <span>${escapeHTML(staff.villageScope || '-')}</span></div>`;
             card.innerHTML = `
                 <div class="vhm-row-header"><span>ชื่อเจ้าหน้าที่: <b>${escapeHTML(staff.name || '-')}</b> <span class="role-pill ${role}">${escapeHTML(roleLabel)}</span></span><span>Username: ${escapeHTML(staff.username || '-')}</span></div>
+                ${areaRows}
                 <div class="info-row"><span>รหัสเข้าใช้งาน (Password):</span> <span>${escapeHTML(staff.password || '-')}</span></div>
                 <div class="info-row"><span>รหัสลับกู้บัญชี:</span> <span>${escapeHTML(staff.secretKey || '-')}</span></div>
                 <div class="info-row"><span>LINE User ID:</span> <span>${staff.lineId ? 'ผูกแล้ว' : 'ยังไม่ผูก'}</span></div>
@@ -1719,7 +1844,12 @@
         const name = document.getElementById('staffNameInput').value.trim();
         const secretKey = document.getElementById('staffSecretKeyInput').value.trim();
         const role = normalizeAdminRole(document.getElementById('staffRoleInput').value);
+        const subdistrict = document.getElementById('staffTambonInput')?.value || '';
+        const facility = role === 'admin' ? (document.getElementById('staffFacilityInput')?.value || '') : '';
+        const villageScope = role === 'vhv' ? (document.getElementById('staffVillageScopeInput')?.value || '') : '';
         if (!username || !password || !name || !secretKey) { alert('⚠️ กรุณากรอกข้อมูลเจ้าหน้าที่ให้ครบทุกช่อง'); return; }
+        if (role === 'admin' && (!subdistrict || !facility)) { alert('⚠️ กรุณาเลือกตำบลและ รพ.สต.ที่สังกัดสำหรับบัญชี Admin'); return; }
+        if (role === 'vhv' && (!subdistrict || !villageScope)) { alert('⚠️ กรุณาเลือกตำบลและหมู่ที่รับผิดชอบสำหรับบัญชี VHV/อสม.'); return; }
         if (!canCurrentUserManageRole(role)) { alert('🔒 สิทธิ์ไม่เพียงพอ: Admin จัดการได้เฉพาะ Admin และ VHV ส่วน Hospital จัดการได้ทุกยศ'); return; }
         const loading = document.getElementById('loadingText');
         loading.style.display = 'block';
@@ -1730,6 +1860,9 @@
             `&name=${encodeURIComponent(name)}` +
             `&secretKey=${encodeURIComponent(secretKey)}` +
             `&role=${encodeURIComponent(role)}` +
+            `&subdistrict=${encodeURIComponent(subdistrict)}` +
+            `&facility=${encodeURIComponent(facility)}` +
+            `&villageScope=${encodeURIComponent(villageScope)}` +
             `&originalUsername=${encodeURIComponent(originalUsername)}` +
             `&originalRole=${encodeURIComponent(originalRole)}` +
             `&actorUsername=${encodeURIComponent(currentAdminUsername)}`;
@@ -1771,6 +1904,11 @@
         document.getElementById('staffNameInput').value = staff.name || '';
         document.getElementById('staffSecretKeyInput').value = staff.secretKey || '';
         document.getElementById('staffRoleInput').value = role;
+        updateStaffAreaFields();
+        document.getElementById('staffTambonInput').value = staff.subdistrict || '';
+        updateStaffDependentAreaFields();
+        document.getElementById('staffFacilityInput').value = staff.facility || '';
+        document.getElementById('staffVillageScopeInput').value = staff.villageScope || '';
         document.getElementById('btnCancelStaffEdit').style.display = 'inline-block';
         window.scrollTo(0, 0);
     }
@@ -1786,6 +1924,10 @@
         document.getElementById('staffNameInput').value = '';
         document.getElementById('staffSecretKeyInput').value = '';
         document.getElementById('staffRoleInput').value = 'vhv';
+        document.getElementById('staffTambonInput').value = '';
+        document.getElementById('staffFacilityInput').value = '';
+        document.getElementById('staffVillageScopeInput').value = '';
+        updateStaffAreaFields();
         document.getElementById('btnCancelStaffEdit').style.display = 'none';
     }
 
