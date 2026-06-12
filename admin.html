@@ -543,7 +543,7 @@
         <div id="consultTab" class="tab-content">
             <div style="background:#f8fafc; border:1px solid #e2e8f0; padding:20px; border-radius:12px; margin-bottom:20px;">
                 <h3 style="margin-top:0; color:#0f766e;">🧭 คำปรึกษา / ขอความช่วยเหลือจากชาวบ้าน</h3>
-                <p style="margin:0; color:#64748b; line-height:1.6; font-size:14px;">แสดงคำขอปรึกษาและคำขอช่วยเหลือเร่งด่วนที่ชาวบ้านส่งผ่านหน้า consult.html หรือ urgent.html เจ้าหน้าที่สามารถรับเรื่อง บันทึกการติดต่อ นัดหมาย ส่งต่อ หรือปิดเรื่องได้ โดยคำขอที่เร่งด่วนจะถูกแจ้งเตือน LINE ไปยัง Hospital และ Admin ของพื้นที่รับผิดชอบ</p>
+                <p style="margin:0; color:#64748b; line-height:1.6; font-size:14px;">แสดงคำขอปรึกษา คำขอช่วยเหลือเร่งด่วน และคำขอให้ติดต่อกลับจากการเช็กสุขภาพใจตนเอง ที่ชาวบ้านส่งผ่านหน้า consult.html, selfcheck.html หรือ urgent.html เจ้าหน้าที่สามารถรับเรื่อง บันทึกการติดต่อ นัดหมาย ส่งต่อ หรือปิดเรื่องได้ โดยคำขอที่เร่งด่วนจะถูกแจ้งเตือน LINE ไปยัง Hospital และ Admin ของพื้นที่รับผิดชอบ</p>
             </div>
             <div class="search-container">
                 <h4 style="margin-top:0; color:#334155;">🔍 ค้นหา/กรองคำขอปรึกษา</h4>
@@ -2543,7 +2543,8 @@
             const requester = safeText(item.isAnonymous) === 'yes' ? 'ไม่ประสงค์ระบุตัวตน' : (safeText(item.requesterName) || '-');
             const contact = safeText(item.isAnonymous) === 'yes' ? 'ไม่ระบุ' : `${safeText(item.contactMethod) || '-'}: ${safeText(item.contactDetail) || '-'}`;
             const closed = safeText(item.status) === 'ปิดเรื่อง';
-            const sourceLabel = safeText(item.source) === 'urgent.html' ? '🚨 ช่องทางช่วยเหลือเร่งด่วน' : '💬 ช่องทางปรึกษาสุขภาพใจ';
+            const sourceText = safeText(item.source);
+            const sourceLabel = sourceText === 'urgent.html' ? '🚨 ช่องทางช่วยเหลือเร่งด่วน' : (sourceText === 'selfcheck.html' ? '🧭 เช็กสุขภาพใจตนเองเบื้องต้น' : '💬 ช่องทางปรึกษาสุขภาพใจ');
             return `<div class="consult-card ${urgencyClass}">
                 <div class="consult-header">
                     <div>
