@@ -855,12 +855,34 @@
     }
 
     function fetchPatientHistoryForAutocomplete() {
-        fetch(GOOGLE_SCRIPT_URL)
+        if (!currentVhmUsername || !currentAuthToken) {
+            localScreeningHistory = [];
+            return;
+        }
+        const params = new URLSearchParams({
+            action: 'getPatientAutocomplete',
+            submitterUsername: currentVhmUsername,
+            vhmUsername: currentVhmUsername,
+            actorUsername: currentVhmUsername,
+            submitterRole: currentUserRole === 'admin' ? 'admin' : 'vhm',
+            role: currentUserRole === 'admin' ? 'admin' : 'vhm',
+            vhmAuthToken: currentAuthToken,
+            authToken: currentAuthToken,
+            sessionToken: currentAuthToken
+        });
+        fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`)
             .then(res => {
                 if (!res.ok) throw new Error("HTTP Status " + res.status);
                 return res.json();
             })
-            .then(data => { localScreeningHistory = Array.isArray(data) ? data : []; })
+            .then(data => {
+                if (Array.isArray(data)) localScreeningHistory = data;
+                else if (data && Array.isArray(data.records)) localScreeningHistory = data.records;
+                else {
+                    localScreeningHistory = [];
+                    if (data && data.message) console.warn("โหลดรายชื่อผู้ป่วยสำหรับ autocomplete ไม่สำเร็จ:", data.message);
+                }
+            })
             .catch(err => console.error("ดาวน์โหลดข้อมูลล้มเหลว:", err));
     }
 
