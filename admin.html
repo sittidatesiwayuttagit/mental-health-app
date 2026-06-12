@@ -403,7 +403,7 @@
                         <p class="case-status-muted" style="margin-top:0;">เลือกหัวข้อที่ต้องการเทียบ ระบบจะแสดงครั้งละ 5 รายการ เรียงจากล่าสุดไปเก่าสุด</p>
                         <div class="controls-row">
                             <select id="compareTopic" onchange="comparisonPageOffset=0; renderAssessmentComparison();">
-                                <option value="2Q">เปรียบเทียบ 2Q</option>
+                                <option value="2Q">เปรียบเทียบ 2Q+</option>
                                 <option value="9Q">เปรียบเทียบ 9Q</option>
                                 <option value="8Q">เปรียบเทียบ 8Q</option>
                                 <option value="ST5">เปรียบเทียบ ST-5</option>
@@ -1668,7 +1668,7 @@
     }
 
     function getAssessmentTools(item) {
-        const tools = ['2Q'];
+        const tools = ['2Q+'];
         const type = safeText(item.assessmentType);
         if (type.includes('9Q') || safeText(item.q9Score).includes('คะแนน')) tools.push('9Q');
         if (type.includes('8Q') || safeText(item.q8Result).includes('คะแนน')) tools.push('8Q');
@@ -1695,11 +1695,12 @@
 
     function getComparisonTopicLabel(topic) {
         if (topic === 'ST5') return 'ST-5';
+        if (topic === '2Q') return '2Q+';
         return topic;
     }
 
     function getComparisonResultText(topic, item) {
-        if (topic === '2Q') return safeText(item.q2Result) || '-';
+        if (topic === '2Q') return [safeText(item.q2Result) || '-', safeText(item.q2PlusDetails) ? ('รายละเอียด: ' + safeText(item.q2PlusDetails)) : ''].filter(Boolean).join(' | ');
         if (topic === '9Q') return safeText(item.q9Score) || '-';
         if (topic === '8Q') return safeText(item.q8Result) || '-';
         if (topic === 'ST5') return formatST5Display(item);
@@ -1745,7 +1746,8 @@
             <div class="feature-box"><h4>✏️ แก้ไขคะแนนประเมินพร้อมประวัติ</h4><p class="case-status-muted">ใช้เมื่อบันทึกคะแนนผิดเท่านั้น ระบบจะบันทึก old/new value และเหตุผลลงชีทประวัติ</p><button class="small-btn" onclick='openAssessmentEditPromptFromButton(this)' data-rowid="${escapeHTML(item.rowId)}">✏️ แก้ไขคะแนนรายการนี้</button></div>
             ${renderEmergencyChecklistBox(item)}
             <div class="info-row"><span>ผู้คัดกรองลงพื้นที่ (อสม.):</span> <span><b>${escapeHTML(item.vhmName || '-')}</b></span></div>
-            <div class="info-row"><span>ผลคัดกรองด่วน 2Q:</span> <span class="${q2Result.includes('เสี่ยง') ? 'danger' : ''}">${escapeHTML(q2Result || '-')}</span></div>
+            <div class="info-row"><span>ผลคัดกรองด่วน 2Q+:</span> <span class="${q2Result.includes('เสี่ยง') ? 'danger' : ''}">${escapeHTML(q2Result || '-')}</span></div>
+            <div class="info-row"><span>รายละเอียดคำตอบ 2Q+:</span> <span>${escapeHTML(item.q2PlusDetails || '-')}</span></div>
             <div class="info-row"><span>คะแนนคอลัมน์ 9Q:</span> <span>${escapeHTML(item.q9Score || '-(ไม่ได้ประเมิน)-')}</span></div>
             <div class="info-row"><span>ผลประเมินคอลัมน์ 8Q:</span> <span>${escapeHTML(item.q8Result || '-(ไม่ได้ประเมิน)-')}</span></div>
             <div class="info-row"><span>ผลประเมิน ST-5:</span> <span>${formatST5Display(item)}</span></div>
@@ -2481,7 +2483,8 @@
 
     async function openAssessmentEditPrompt(item) {
         if (!currentAdminUsername || !currentAdminAuthToken) { alert('session ไม่สมบูรณ์ กรุณา login ใหม่'); return; }
-        const q2 = prompt('แก้ไขผล 2Q', safeText(item.q2Result)); if (q2 === null) return;
+        const q2 = prompt('แก้ไขผล 2Q+', safeText(item.q2Result)); if (q2 === null) return;
+        const q2PlusDetails = prompt('แก้ไขรายละเอียดคำตอบ 2Q+', safeText(item.q2PlusDetails)); if (q2PlusDetails === null) return;
         const q9 = prompt('แก้ไขคะแนน 9Q', safeText(item.q9Score)); if (q9 === null) return;
         const q8 = prompt('แก้ไขผล/คะแนน 8Q', safeText(item.q8Result)); if (q8 === null) return;
         const st5Score = prompt('แก้ไขคะแนน ST-5 ถ้าไม่ได้ประเมินให้พิมพ์ ไม่ได้ประเมิน', safeText(item.st5Score)); if (st5Score === null) return;
@@ -2489,7 +2492,7 @@
         const comment = prompt('แก้ไขหมายเหตุ อสม.', safeText(item.comment)); if (comment === null) return;
         const reason = prompt('กรุณาระบุเหตุผลในการแก้ไขคะแนน/ผลประเมิน *', 'แก้ไขข้อมูลที่บันทึกผิด');
         if (!reason || !reason.trim()) { alert('ต้องระบุเหตุผลก่อนบันทึก'); return; }
-        const params = new URLSearchParams({ action:'updateAssessmentScores', rowId:safeText(item.rowId), actorUsername:currentAdminUsername, authToken:currentAdminAuthToken, q2Result:q2, q9Score:q9, q8Result:q8, st5Score:st5Score, st5Level:st5Level, st5Details:safeText(item.st5Details), comment:comment, reason:reason.trim() });
+        const params = new URLSearchParams({ action:'updateAssessmentScores', rowId:safeText(item.rowId), actorUsername:currentAdminUsername, authToken:currentAdminAuthToken, q2Result:q2, q2PlusDetails:q2PlusDetails, q9Score:q9, q8Result:q8, st5Score:st5Score, st5Level:st5Level, st5Details:safeText(item.st5Details), comment:comment, reason:reason.trim() });
         try {
             const res = await fetch(GOOGLE_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'}, body:params });
             const result = await res.json();
