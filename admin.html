@@ -2609,7 +2609,7 @@
             const contact = safeText(item.isAnonymous) === 'yes' ? 'ไม่ระบุ' : `${safeText(item.contactMethod) || '-'}: ${safeText(item.contactDetail) || '-'}`;
             const closed = safeText(item.status) === 'ปิดเรื่อง';
             const sourceText = safeText(item.source);
-            const sourceLabel = sourceText === 'urgent.html' ? '🚨 ช่องทางช่วยเหลือเร่งด่วน' : (sourceText === 'selfcheck.html' ? '🧭 เช็กสุขภาพใจตนเองเบื้องต้น' : '💬 ช่องทางปรึกษาสุขภาพใจ');
+            const sourceLabel = sourceText === 'urgent.html' ? '🚨 ช่องทางช่วยเหลือเร่งด่วน' : (sourceText === 'selfcheck.html' ? '🧭 เช็กสุขภาพใจตนเองเบื้องต้น' : (sourceText === 'aichat.html' ? '🤖 คุยกับ AI ระบายใจเบื้องต้น' : '💬 ช่องทางปรึกษาสุขภาพใจ'));
             return `<div class="consult-card ${urgencyClass}">
                 <div class="consult-header">
                     <div>
