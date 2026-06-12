@@ -150,6 +150,28 @@
         .btn-search.wrap, .btn-refresh.wrap { white-space:normal; line-height:1.35; }
 
 
+        .system-controls-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 10px;
+            align-items: stretch;
+            width: 100%;
+        }
+        .system-controls-row button {
+            width: 100%;
+            min-height: 48px;
+            white-space: normal;
+            line-height: 1.35;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        @media (max-width: 600px) {
+            .system-controls-row { grid-template-columns: 1fr; }
+        }
+
+
         @media (max-width: 600px) { .profile-info-grid { grid-template-columns:1fr !important; } .patient-photo-box { width:96px; height:96px; min-width:96px; } }
         .mini-section-title { font-weight:bold; color:#1e293b; border-left:4px solid #3b82f6; padding-left:8px; margin:14px 0 8px 0; }
         textarea { width:100%; padding:12px; border:2px solid #cbd5e1; border-radius:10px; box-sizing:border-box; font-size:15px; }
@@ -516,7 +538,7 @@
             <div class="search-container" style="background:#f8fafc; border:1px solid #cbd5e1;">
                 <h3 style="margin-top:0; color:#334155;">🧮 งานระบบ</h3>
                 <p class="overview-note">หน้านี้รวมปุ่มสำหรับดูแลระบบหลังบ้านและงานติดตาม ไม่ใช่หน้าข้อมูลผู้ป่วยรายบุคคล</p>
-                <div class="controls-row">
+                <div class="system-controls-row">
                     <button class="btn-refresh" onclick="runFollowupReminderNow()">🔔 ทดสอบแจ้งเตือน Follow-up วันนี้</button>
                     <button class="btn-search" onclick="createBackupNowFromWeb()">💾 สำรองข้อมูล Google Sheet ตอนนี้</button>
                     <button class="btn-refresh" onclick="setupBackupTriggerFromWeb()">⏰ ตั้งสำรองข้อมูลอัตโนมัติรายสัปดาห์</button>
