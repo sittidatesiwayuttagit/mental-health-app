@@ -493,19 +493,28 @@
                     </div>
                 </div>
                 <div class="inputs-row">
-                    <input type="text" id="staffNameInput" placeholder="ชื่อ-นามสกุล/ตำแหน่ง เจ้าหน้าที่">
+                    <input type="text" id="staffFirstNameInput" placeholder="ชื่อ (ไม่ต้องใส่คำนำหน้า)">
+                    <input type="text" id="staffLastNameInput" placeholder="นามสกุล">
+                </div>
+                <div class="inputs-row">
                     <div class="credential-input-wrap">
                         <input type="password" id="staffSecretKeyInput" placeholder="รหัสลับส่วนตัว (ตอนแก้ไข: เว้นว่างถ้าไม่เปลี่ยน)">
                         <button type="button" id="staffSecretKeyEyeBtn" class="credential-eye-btn" onclick="toggleStaffCredentialVisibility('staffSecretKeyInput','staffSecretKeyEyeBtn')" aria-label="แสดงหรือซ่อนรหัสลับ">👁️</button>
                     </div>
-                </div>
-                <div class="inputs-row">
                     <select id="staffRoleInput" onchange="updateStaffAreaFields()">
                         <option value="">-- เลือกระดับเจ้าหน้าที่ --</option>
                         <option value="vhv">VHV - อสม. ใช้หน้าคัดกรอง</option>
                         <option value="admin">Admin - ดูข้อมูลและจัดการระบบ แต่จองคิวไม่ได้</option>
                         <option value="hospital">Hospital - ดูข้อมูล จัดการระบบ และรับจองคิวได้</option>
                     </select>
+                </div>
+                <div id="staffPositionFields" class="search-container" style="display:none; background:#ffffff; margin-top:10px; margin-bottom:12px;">
+                    <h4 style="margin-top:0; color:#334155;">🪪 ตำแหน่งของเจ้าหน้าที่</h4>
+                    <p class="case-status-muted" style="margin-top:0; line-height:1.5;">ใช้เฉพาะบัญชี Admin/Hospital ไม่ใช่ยศในระบบ</p>
+                    <div class="inputs-row">
+                        <select id="staffPositionInput" onchange="updateStaffPositionOtherField()"><option value="">-- เลือกตำแหน่ง --</option></select>
+                        <input type="text" id="staffPositionOtherInput" placeholder="กรอกตำแหน่งอื่น ๆ" style="display:none;">
+                    </div>
                 </div>
                 <div id="staffAreaFields" class="search-container" style="display:none; background:#ffffff; margin-top:10px; margin-bottom:12px;">
                     <h4 id="staffAreaTitle" style="margin-top:0; color:#334155;">📍 พื้นที่รับผิดชอบ</h4>
@@ -525,7 +534,7 @@
             <div class="search-container">
                 <h4 style="margin-top:0; color:#334155;">🔍 ค้นหา/กรองเจ้าหน้าที่</h4>
                 <div class="inputs-row">
-                    <input type="text" id="staffSearchInput" oninput="scheduleStaffSearch()" placeholder="พิมพ์ค้นหาชื่อ / Username / ตำบล / รพ.สต. / หมู่...">
+                    <input type="text" id="staffSearchInput" oninput="scheduleStaffSearch()" placeholder="พิมพ์ค้นหาชื่อ / นามสกุล / Username / ตำแหน่ง / ตำบล / รพ.สต. / หมู่...">
                     <select id="staffRoleFilter" onchange="resetStaffPageAndFetch()">
                         <option value="all">ทุกยศ</option>
                         <option value="hospital">เฉพาะ Hospital</option>
@@ -1005,6 +1014,46 @@
         return Array.from(new Set(SERVICE_AREA_LIST.map(x => x.tambon))).sort((a, b) => a.localeCompare(b, 'th'));
     }
 
+
+    const STAFF_POSITION_OPTIONS = [
+        'เจ้าพนักงานทันตสาธารณสุขชำนาญงาน',
+        'เจ้าพนักงานทันตสาธารณสุขปฏิบัติงาน',
+        'เจ้าพนักงานสาธารณสุขชำนาญงาน',
+        'เจ้าพนักงานสาธารณสุขปฎิบัติงาน',
+        'เจ้าพนักงานสาธารณสุขอาวุโส',
+        'นักวิชาการสาธารณสุขชำนาญการ',
+        'นักวิชาการสาธารณสุขชำนาญการพิเศษ',
+        'นักวิชาการสาธารณสุขปฏิบัติการ',
+        'พยาบาลวิชาชีพชำนาญการ',
+        'พยาบาลวิชาชีพชำนาญการพิเศษ',
+        'พยาบาลวิชาชีพปฏิบัติการ',
+        'อื่นๆ'
+    ];
+
+    function populateStaffPositionOptions() {
+        const sel = document.getElementById('staffPositionInput');
+        if (!sel) return;
+        const current = sel.value;
+        sel.innerHTML = '<option value="">-- เลือกตำแหน่ง --</option>' + STAFF_POSITION_OPTIONS.map(pos => `<option value="${escapeHTML(pos)}">${escapeHTML(pos)}</option>`).join('');
+        if (current) sel.value = current;
+    }
+
+    function isStandardStaffPosition(value) {
+        return STAFF_POSITION_OPTIONS.includes(safeText(value));
+    }
+
+    function updateStaffPositionOtherField() {
+        const sel = document.getElementById('staffPositionInput');
+        const other = document.getElementById('staffPositionOtherInput');
+        if (!sel || !other) return;
+        if (sel.value === 'อื่นๆ') {
+            other.style.display = '';
+        } else {
+            other.style.display = 'none';
+            other.value = '';
+        }
+    }
+
     function populateStaffTambonOptions() {
         const sel = document.getElementById('staffTambonInput');
         if (!sel) return;
@@ -1018,11 +1067,19 @@
         const rawRole = safeText(document.getElementById('staffRoleInput')?.value).trim();
         const role = rawRole ? normalizeAdminRole(rawRole) : '';
         const areaBox = document.getElementById('staffAreaFields');
+        const positionBox = document.getElementById('staffPositionFields');
+        const positionSelect = document.getElementById('staffPositionInput');
+        const positionOther = document.getElementById('staffPositionOtherInput');
         const tambon = document.getElementById('staffTambonInput');
         const facility = document.getElementById('staffFacilityInput');
         const village = document.getElementById('staffVillageScopeInput');
         const help = document.getElementById('staffAreaHelp');
         if (!areaBox || !tambon || !facility || !village || !help) return;
+        if (positionBox) positionBox.style.display = (role === 'admin' || role === 'hospital') ? 'block' : 'none';
+        if (role !== 'admin' && role !== 'hospital') {
+            if (positionSelect) positionSelect.value = '';
+            if (positionOther) { positionOther.value = ''; positionOther.style.display = 'none'; }
+        }
 
         if (!role) {
             areaBox.style.display = 'none';
@@ -1114,6 +1171,7 @@
             }
         });
         populateStaffTambonOptions();
+        populateStaffPositionOptions();
         updateStaffAreaFields();
         try {
             await liff.init({ liffId: LIFF_ID });
@@ -2088,7 +2146,11 @@
         document.getElementById('staffPasswordInput').placeholder = 'Password เข้าใช้งาน (ตอนแก้ไข: เว้นว่างถ้าไม่เปลี่ยน)';
         const passwordEye = document.getElementById('staffPasswordEyeBtn');
         if (passwordEye) passwordEye.textContent = '👁️';
-        document.getElementById('staffNameInput').value = '';
+        document.getElementById('staffFirstNameInput').value = '';
+        document.getElementById('staffLastNameInput').value = '';
+        document.getElementById('staffPositionInput').value = '';
+        document.getElementById('staffPositionOtherInput').value = '';
+        document.getElementById('staffPositionOtherInput').style.display = 'none';
         document.getElementById('staffSecretKeyInput').value = '';
         document.getElementById('staffSecretKeyInput').type = 'password';
         document.getElementById('staffSecretKeyInput').placeholder = 'รหัสลับส่วนตัว (ตอนแก้ไข: เว้นว่างถ้าไม่เปลี่ยน)';
@@ -2269,13 +2331,17 @@
             const secretDisplay = staff.secretKeySet
                 ? `<span id="${secretTargetId}" data-visible="0">••••••••</span><button type="button" class="tiny-eye-btn" onclick="toggleSavedStaffCredential('${encodedUsername}','${role}','secretKey','${secretTargetId}', this)" aria-label="แสดงหรือซ่อนรหัสลับ">👁️</button><span class="case-status-muted"> (กดตาเพื่อแสดง)</span>`
                 : `<span class="case-status-muted">ยังไม่ได้ตั้งค่า</span>`;
+            const positionRow = (role === 'admin' || role === 'hospital')
+                ? `<div class="info-row"><span>ตำแหน่ง:</span> <span>${escapeHTML(staff.position || '-')}</span></div>`
+                : '';
             const areaRows = role === 'hospital'
                 ? ''
                 : role === 'admin'
                     ? `<div class="info-row"><span>ตำบลที่สังกัด:</span> <span>${escapeHTML(staff.subdistrict || '-')}</span></div><div class="info-row"><span>รพ.สต.ที่สังกัด:</span> <span>${escapeHTML(staff.facility || '-')}</span></div>`
                     : `<div class="info-row"><span>ตำบลที่รับผิดชอบ:</span> <span>${escapeHTML(staff.subdistrict || '-')}</span></div><div class="info-row"><span>หมู่ที่รับผิดชอบ:</span> <span>${escapeHTML(staff.villageScope || '-')}</span></div>`;
             card.innerHTML = `
-                <div class="vhm-row-header"><span>ชื่อเจ้าหน้าที่: <b>${escapeHTML(staff.name || '-')}</b> <span class="role-pill ${role}">${escapeHTML(roleLabel)}</span></span><span>Username: ${escapeHTML(staff.username || '-')}</span></div>
+                <div class="vhm-row-header"><span>ชื่อ-นามสกุล: <b>${escapeHTML(staff.name || '-')}</b> <span class="role-pill ${role}">${escapeHTML(roleLabel)}</span></span><span>Username: ${escapeHTML(staff.username || '-')}</span></div>
+                ${positionRow}
                 ${areaRows}
                 <div class="info-row"><span>รหัสเข้าใช้งาน (Password):</span> <span>${passwordDisplay}</span></div>
                 <div class="info-row"><span>รหัสลับกู้บัญชี:</span> <span>${secretDisplay}</span></div>
@@ -2312,16 +2378,21 @@
         const originalRole = document.getElementById('staffOriginalRole').value.trim();
         const username = document.getElementById('staffUsernameInput').value.trim();
         const password = document.getElementById('staffPasswordInput').value.trim();
-        const name = document.getElementById('staffNameInput').value.trim();
+        const firstName = document.getElementById('staffFirstNameInput').value.trim();
+        const lastName = document.getElementById('staffLastNameInput').value.trim();
         const secretKey = document.getElementById('staffSecretKeyInput').value.trim();
         const rawRole = safeText(document.getElementById('staffRoleInput').value).trim();
         if (!rawRole) { alert('⚠️ กรุณาเลือกระดับเจ้าหน้าที่ก่อนบันทึก'); return; }
         const role = normalizeAdminRole(rawRole);
+        const position = (role === 'admin' || role === 'hospital') ? (document.getElementById('staffPositionInput')?.value || '') : '';
+        const positionOther = (role === 'admin' || role === 'hospital') ? (document.getElementById('staffPositionOtherInput')?.value || '').trim() : '';
         const subdistrict = document.getElementById('staffTambonInput')?.value || '';
         const facility = role === 'admin' ? (document.getElementById('staffFacilityInput')?.value || '') : '';
         const villageScope = role === 'vhv' ? (document.getElementById('staffVillageScopeInput')?.value || '') : '';
-        if (!username || !name) { alert('⚠️ กรุณากรอก Username และชื่อเจ้าหน้าที่ให้ครบ'); return; }
+        if (!username || !firstName || !lastName) { alert('⚠️ กรุณากรอก Username ชื่อ และนามสกุลเจ้าหน้าที่ให้ครบ'); return; }
         if (mode !== 'edit' && (!password || !secretKey)) { alert('⚠️ บัญชีใหม่ต้องระบุ Password และรหัสลับกู้บัญชีให้ครบ'); return; }
+        if ((role === 'admin' || role === 'hospital') && !position) { alert('⚠️ กรุณาเลือกตำแหน่งของเจ้าหน้าที่'); return; }
+        if ((role === 'admin' || role === 'hospital') && position === 'อื่นๆ' && !positionOther) { alert('⚠️ กรุณากรอกตำแหน่งในช่องอื่น ๆ'); return; }
         if (role === 'admin' && (!subdistrict || !facility)) { alert('⚠️ กรุณาเลือกตำบลและ รพ.สต.ที่สังกัดสำหรับบัญชี Admin'); return; }
         if (role === 'vhv' && (!subdistrict || !villageScope)) { alert('⚠️ กรุณาเลือกตำบลและหมู่ที่รับผิดชอบสำหรับบัญชี VHV/อสม.'); return; }
         if (!canCurrentUserManageRole(role)) { alert('🔒 สิทธิ์ไม่เพียงพอ: Admin จัดการได้เฉพาะ Admin และ VHV ส่วน Hospital จัดการได้ทุกยศ'); return; }
@@ -2331,7 +2402,10 @@
             `&mode=${encodeURIComponent(mode)}` +
             `&username=${encodeURIComponent(username)}` +
             `&password=${encodeURIComponent(password)}` +
-            `&name=${encodeURIComponent(name)}` +
+            `&firstName=${encodeURIComponent(firstName)}` +
+            `&lastName=${encodeURIComponent(lastName)}` +
+            `&position=${encodeURIComponent(position)}` +
+            `&positionOther=${encodeURIComponent(positionOther)}` +
             `&secretKey=${encodeURIComponent(secretKey)}` +
             `&role=${encodeURIComponent(role)}` +
             `&subdistrict=${encodeURIComponent(subdistrict)}` +
@@ -2380,13 +2454,25 @@
         document.getElementById('staffPasswordInput').type = 'password';
         document.getElementById('staffPasswordEyeBtn').textContent = '👁️';
         document.getElementById('staffPasswordInput').placeholder = 'เว้นว่างถ้าไม่ต้องการเปลี่ยน Password';
-        document.getElementById('staffNameInput').value = staff.name || '';
+        document.getElementById('staffFirstNameInput').value = staff.firstName || (staff.name || '').split(' ')[0] || '';
+        document.getElementById('staffLastNameInput').value = staff.lastName || (staff.name || '').split(' ').slice(1).join(' ') || '';
         document.getElementById('staffSecretKeyInput').value = '';
         document.getElementById('staffSecretKeyInput').type = 'password';
         document.getElementById('staffSecretKeyEyeBtn').textContent = '👁️';
         document.getElementById('staffSecretKeyInput').placeholder = 'เว้นว่างถ้าไม่ต้องการเปลี่ยนรหัสลับ';
         document.getElementById('staffRoleInput').value = role;
         updateStaffAreaFields();
+        if (role === 'admin' || role === 'hospital') {
+            const pos = staff.position || '';
+            if (pos && isStandardStaffPosition(pos)) {
+                document.getElementById('staffPositionInput').value = pos;
+                document.getElementById('staffPositionOtherInput').value = '';
+            } else if (pos) {
+                document.getElementById('staffPositionInput').value = 'อื่นๆ';
+                document.getElementById('staffPositionOtherInput').value = pos;
+            }
+            updateStaffPositionOtherField();
+        }
         document.getElementById('staffTambonInput').value = staff.subdistrict || '';
         updateStaffDependentAreaFields();
         document.getElementById('staffFacilityInput').value = staff.facility || '';
