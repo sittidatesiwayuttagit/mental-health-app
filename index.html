@@ -193,18 +193,18 @@
     <div id="step2" class="step">
         <div class="header">
             <h2>🧠 เลือกแบบประเมินสุขภาพจิต</h2>
-            <p>ระบบควบคุมการประเมินตามเกณฑ์สากล (2Q ➡️ 9Q ➡️ 8Q)</p>
+            <p>ระบบควบคุมการประเมินตามเกณฑ์สากล (2Q+ ➡️ 9Q ➡️ 8Q)</p>
         </div>
 
         <select id="assessmentTypeSelect" onchange="switchAssessment()">
-            <option value="2Q">แบบคัดกรองโรคซึมเศร้า 2Q</option>
+            <option value="2Q">แบบคัดกรองโรคซึมเศร้า 2Q+</option>
             <option value="9Q">แบบประเมินโรคซึมเศร้า 9Q</option>
             <option value="8Q">แบบประเมินความเสี่ยงการฆ่าตัวตาย 8Q</option>
         </select>
         <div id="indicationText" class="indication"></div>
 
         <div id="panel2Q" class="sub-questions">
-            <h4>📋 ส่วนที่ 1: ข้อคำถามคัดกรองซึมเศร้า 2Q (บังคับกรอก)</h4>
+            <h4>📋 ส่วนที่ 1: ข้อคำถามคัดกรองซึมเศร้า 2Q+ (บังคับกรอก)</h4>
             <div class="form-group">
                 <label>1. ใน 2 สัปดาห์ที่ผ่านมา รวมทั้งวันนี้ ท่านมีอาการหดหู่ เศร้า หรือท้อแท้สิ้นหวังหรือไม่?</label>
                 <div class="radio-group">
@@ -217,6 +217,13 @@
                 <div class="radio-group">
                     <input type="radio" id="q2q2_no" name="q2q2" value="ไม่มี"><label for="q2q2_no" class="radio-label">ไม่มี</label>
                     <input type="radio" id="q2q2_yes" name="q2q2" value="มี"><label for="q2q2_yes" class="radio-label">มี</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>3. ใน 2 สัปดาห์ที่ผ่านมา รวมทั้งวันนี้ ท่านรู้สึกเครียด กังวลใจ หรือไม่สบายใจจนกระทบการใช้ชีวิตประจำวันหรือไม่?</label>
+                <div class="radio-group">
+                    <input type="radio" id="q2q3_no" name="q2q3" value="ไม่มี"><label for="q2q3_no" class="radio-label">ไม่มี</label>
+                    <input type="radio" id="q2q3_yes" name="q2q3" value="มี"><label for="q2q3_yes" class="radio-label">มี</label>
                 </div>
             </div>
         </div>
@@ -356,7 +363,8 @@
         <div class="summary-box">
             <h4>📊 ผลการคัดกรองแยกหัวข้อ</h4>
             <div class="summary-item"><span>เครื่องมือส่งข้อมูลหลัก:</span> <span id="smType">-</span></div>
-            <div class="summary-item"><span>ผลประเมินด่วน 2Q:</span> <span id="smQ2Result">-</span></div>
+            <div class="summary-item"><span>ผลประเมินด่วน 2Q+:</span> <span id="smQ2Result">-</span></div>
+            <div class="summary-item"><span>รายละเอียดคำตอบ 2Q+:</span> <span id="smQ2PlusDetails">-</span></div>
             <div class="summary-item"><span>คะแนนสรุป 9Q:</span> <span id="smQ9Score">-(ไม่ได้ประเมิน)-</span></div>
             <div class="summary-item"><span>คะแนนสรุป 8Q:</span> <span id="smQ8Result">-(ไม่ได้ประเมิน)-</span></div>
             <div class="summary-item"><span>ผลประเมิน ST-5:</span> <span id="smST5Result">ไม่ได้ประเมิน</span></div>
@@ -991,7 +999,7 @@
         document.getElementById('patientName').value = ""; document.getElementById('patientGender').value = ""; document.getElementById('patientSubdistrict').value = ""; document.getElementById('patientSubdistrict').disabled = false; handlePatientSubdistrictChange(); document.getElementById('comment').value = ""; const privacyEl = document.getElementById('privacyNoticeConfirmed'); if (privacyEl) privacyEl.checked = false;
         document.getElementById('nameSuggestionsBox').style.display = 'none';
         
-        document.querySelectorAll('input[name="q2q1"], input[name="q2q2"]').forEach(radio => radio.checked = false);
+        document.querySelectorAll('input[name="q2q1"], input[name="q2q2"], input[name="q2q3"]').forEach(radio => radio.checked = false);
         for (let i = 1; i <= 9; i++) { const el = document.getElementById('q9q' + i); if (el) el.value = ""; }
         for (let i = 1; i <= 8; i++) { const el = document.getElementById('q8q' + i); if (el) el.value = ""; }
         for (let i = 1; i <= 5; i++) { const el = document.getElementById('st5q' + i); if (el) el.value = ''; }
@@ -1084,26 +1092,32 @@ ${listText}
         const inText = document.getElementById('indicationText');
         if (type === '2Q') {
             document.getElementById('panel9Q').style.display = 'none'; document.getElementById('panel8Q').style.display = 'none';
-            inText.innerText = '💡 ใช้คัดกรองความเสี่ยงซึมเศร้าเบื้องต้น';
+            inText.innerText = '💡 ใช้คัดกรองความเสี่ยงซึมเศร้าเบื้องต้นด้วย 2Q+';
         } else if (type === '9Q') {
             document.getElementById('panel9Q').style.display = 'block'; document.getElementById('panel8Q').style.display = 'none';
-            inText.innerText = '💡 ใช้ประเมินระดับโรคซึมเศร้าเมื่อพบความเสี่ยงจาก 2Q';
+            inText.innerText = '💡 ใช้ประเมินระดับโรคซึมเศร้าเมื่อพบความเสี่ยงจาก 2Q+';
         } else if (type === '8Q') {
             document.getElementById('panel9Q').style.display = 'block'; document.getElementById('panel8Q').style.display = 'block';
-            inText.innerText = '⚠️ บังคับกรอกข้อมูลข้ามขั้นเพื่อหาความเสี่ยงในการฆ่าตัวตายเชิงลึก (2Q + 9Q + 8Q)';
+            inText.innerText = '⚠️ บังคับกรอกข้อมูลข้ามขั้นเพื่อหาความเสี่ยงในการฆ่าตัวตายเชิงลึก (2Q+ + 9Q + 8Q)';
         }
+    }
+
+    function getQ2PlusDetailsText(q1Value, q2Value, q3Value) {
+        return `ข้อ1 เศร้า/ท้อแท้=${q1Value || '-'} | ข้อ2 เบื่อ/ไม่เพลิดเพลิน=${q2Value || '-'} | ข้อ3 เครียด/กังวลกระทบชีวิต=${q3Value || '-'}`;
     }
 
     function goToStep3() {
         const q2q1 = document.querySelector('input[name="q2q1"]:checked');
         const q2q2 = document.querySelector('input[name="q2q2"]:checked');
-        if(!q2q1 || !q2q2) { alert("⚠️ กรุณาทำแบบคัดกรอง 2Q ให้ครบถ้วน"); return; }
+        const q2q3 = document.querySelector('input[name="q2q3"]:checked');
+        if(!q2q1 || !q2q2 || !q2q3) { alert("⚠️ กรุณาทำแบบคัดกรอง 2Q+ ให้ครบถ้วน"); return; }
         
         const type = document.getElementById('assessmentTypeSelect').value;
-        const q2Res = (q2q1.value === "มี" || q2q2.value === "มี") ? "🚨 มีความเสี่ยง" : "🟢 ปกติ";
+        const q2PlusDetails = getQ2PlusDetailsText(q2q1.value, q2q2.value, q2q3.value);
+        const q2Res = (q2q1.value === "มี" || q2q2.value === "มี" || q2q3.value === "มี") ? "🚨 มีความเสี่ยงจาก 2Q+" : "🟢 ปกติจาก 2Q+";
 
         if (q2Res === "🚨 มีความเสี่ยง" && type === "2Q") {
-            alert("🚨 ผู้ที่ได้รับการประเมินมีความเสี่ยงจากผล 2Q! ระบบบังคับให้ทำแบบประเมิน 9Q ต่อเพื่อตรวจสอบความรุนแรง กรุณากรอกแบบสอบถามหัวข้อ 9Q ด้านล่างครับ");
+            alert("🚨 ผู้ที่ได้รับการประเมินมีความเสี่ยงจากผล 2Q+! ระบบบังคับให้ทำแบบประเมิน 9Q ต่อเพื่อตรวจสอบความรุนแรง กรุณากรอกแบบสอบถามหัวข้อ 9Q ด้านล่างครับ");
             document.getElementById('assessmentTypeSelect').value = "9Q"; switchAssessment(); return;
         }
 
@@ -1147,8 +1161,10 @@ ${listText}
         document.getElementById('smGender').innerText = document.getElementById('patientGender').value;
         document.getElementById('smSubdistrict').innerText = document.getElementById('patientSubdistrict').value;
         document.getElementById('smVillage').innerText = document.getElementById('villageNo').value;
-        document.getElementById('smType').innerText = "แบบประเมินผสมระดับ " + type;
+        const displayType = (type === '2Q') ? '2Q+' : (type === '9Q' ? '2Q+ + 9Q' : '2Q+ + 9Q + 8Q');
+        document.getElementById('smType').innerText = "แบบประเมินผสมระดับ " + displayType;
         document.getElementById('smQ2Result').innerText = q2Res;
+        document.getElementById('smQ2PlusDetails').innerText = q2PlusDetails;
 
         if (type === '9Q' || type === '8Q') {
             let severity9Q = (score9Q >= 19) ? "รุนแรงมาก" : (score9Q >= 14) ? "รุนแรงปานกลาง" : (score9Q >= 7) ? "น้อย" : "ปกติ";
@@ -1174,7 +1190,7 @@ ${listText}
         document.getElementById('patientName').value = ""; document.getElementById('patientGender').value = ""; document.getElementById('patientSubdistrict').value = ""; document.getElementById('patientSubdistrict').disabled = false; handlePatientSubdistrictChange(); document.getElementById('comment').value = ""; const privacyEl = document.getElementById('privacyNoticeConfirmed'); if (privacyEl) privacyEl.checked = false;
         document.getElementById('nameSuggestionsBox').style.display = 'none';
         
-        document.querySelectorAll('input[name="q2q1"], input[name="q2q2"]').forEach(radio => radio.checked = false);
+        document.querySelectorAll('input[name="q2q1"], input[name="q2q2"], input[name="q2q3"]').forEach(radio => radio.checked = false);
         for (let i = 1; i <= 9; i++) { const el = document.getElementById('q9q' + i); if (el) el.value = ""; }
         for (let i = 1; i <= 8; i++) { const el = document.getElementById('q8q' + i); if (el) el.value = ""; }
         for (let i = 1; i <= 5; i++) { const el = document.getElementById('st5q' + i); if (el) el.value = ''; }
@@ -1244,8 +1260,9 @@ ${listText}
             patientGender: document.getElementById('patientGender').value,
             patientSubdistrict: document.getElementById('patientSubdistrict').value,
             villageNo: document.getElementById('villageNo').value,
-            assessmentType: type,
+            assessmentType: type === '2Q' ? '2Q+' : (type === '9Q' ? '2Q+ + 9Q' : '2Q+ + 9Q + 8Q'),
             q2Result: document.getElementById('smQ2Result').innerText,
+            q2PlusDetails: document.getElementById('smQ2PlusDetails') ? document.getElementById('smQ2PlusDetails').innerText : '',
             q9Score: (type === '9Q' || type === '8Q') ? document.getElementById('smQ9Score').innerText : '',
             q8Result: (type === '8Q') ? document.getElementById('smQ8Result').innerText : '',
             st5Score: st5Data.assessed ? String(st5Data.score) : 'ไม่ได้ประเมิน',
