@@ -525,18 +525,21 @@
             <div class="search-container">
                 <h4 style="margin-top:0; color:#334155;">🔍 ค้นหา/กรองเจ้าหน้าที่</h4>
                 <div class="inputs-row">
-                    <input type="text" id="staffSearchInput" oninput="renderStaffList()" placeholder="พิมพ์ค้นหาชื่อหรือ Username...">
-                    <select id="staffRoleFilter" onchange="renderStaffList()">
+                    <input type="text" id="staffSearchInput" oninput="scheduleStaffSearch()" placeholder="พิมพ์ค้นหาชื่อ / Username / ตำบล / รพ.สต. / หมู่...">
+                    <select id="staffRoleFilter" onchange="resetStaffPageAndFetch()">
                         <option value="all">ทุกยศ</option>
                         <option value="hospital">เฉพาะ Hospital</option>
                         <option value="admin">เฉพาะ Admin</option>
                         <option value="vhv">เฉพาะ VHV / อสม.</option>
                     </select>
-                    <button class="btn-refresh" onclick="fetchStaffData()">🔄 รีเฟรช</button>
+                    <button class="btn-refresh" onclick="fetchStaffData(1)">🔄 รีเฟรช</button>
                 </div>
-                <p class="case-status-muted" style="margin-bottom:0;">เรียงอัตโนมัติจาก Hospital → Admin → VHV และสามารถกรองตามยศหรือค้นหาชื่อได้</p>
+                <p class="case-status-muted" style="margin-bottom:0;">โหลดรายชื่อจาก backend แบบแบ่งหน้า เพื่อรองรับเจ้าหน้าที่จำนวนมาก โดยแสดงครั้งละ 50 คน</p>
             </div>
+            <div id="staffPageSummary" class="case-status-muted" style="margin:8px 0 10px 0; text-align:center;"></div>
+            <div id="staffPaginationTop" style="display:none; text-align:center; margin-bottom:12px;"></div>
             <div id="staffList"></div>
+            <div id="staffPaginationBottom" style="display:none; text-align:center; margin-top:12px;"></div>
         </div>
 
 
@@ -607,6 +610,8 @@
 
     let allData = [];
     let allStaffData = [];
+    let staffPageState = { page: 1, pageSize: 50, totalCount: 0, totalPages: 1, startIndex: 0, endIndex: 0, keyword: '', roleFilter: 'all' };
+    let staffSearchTimer = null;
     let allConsultData = [];
     let currentSelectedPatientName = "";
     let currentSelectedPatientGender = "";
@@ -2147,45 +2152,103 @@
         return false;
     }
 
-    function fetchStaffData() {
+    function getStaffFiltersFromUI() {
+        return {
+            keyword: safeText(document.getElementById('staffSearchInput')?.value).trim(),
+            roleFilter: document.getElementById('staffRoleFilter')?.value || 'all'
+        };
+    }
+
+    function scheduleStaffSearch() {
+        if (staffSearchTimer) clearTimeout(staffSearchTimer);
+        staffSearchTimer = setTimeout(() => fetchStaffData(1), 500);
+    }
+
+    function resetStaffPageAndFetch() {
+        fetchStaffData(1);
+    }
+
+    function fetchStaffData(page = 1) {
         const loading = document.getElementById('loadingText');
         const listDiv = document.getElementById('staffList');
-        loading.style.display = 'block';
-        if (listDiv) listDiv.innerHTML = '';
-        fetch(`${GOOGLE_SCRIPT_URL}?action=getStaffList&actorUsername=${encodeURIComponent(currentAdminUsername)}&authToken=${encodeURIComponent(currentAdminAuthToken)}`)
+        const summaryDiv = document.getElementById('staffPageSummary');
+        const filters = getStaffFiltersFromUI();
+        const pageSize = staffPageState.pageSize || 50;
+        staffPageState.keyword = filters.keyword;
+        staffPageState.roleFilter = filters.roleFilter;
+        staffPageState.page = Math.max(1, parseInt(page, 10) || 1);
+        if (loading) loading.style.display = 'block';
+        if (listDiv) listDiv.innerHTML = '<p style="text-align:center; color:#64748b; padding:20px;">⏳ กำลังโหลดรายชื่อเจ้าหน้าที่...</p>';
+        if (summaryDiv) summaryDiv.textContent = '';
+        updateStaffPaginationUI(false);
+        const url = `${GOOGLE_SCRIPT_URL}?action=getStaffListPage` +
+            `&actorUsername=${encodeURIComponent(currentAdminUsername)}` +
+            `&authToken=${encodeURIComponent(currentAdminAuthToken)}` +
+            `&page=${encodeURIComponent(staffPageState.page)}` +
+            `&pageSize=${encodeURIComponent(pageSize)}` +
+            `&keyword=${encodeURIComponent(filters.keyword)}` +
+            `&roleFilter=${encodeURIComponent(filters.roleFilter)}`;
+        fetch(url)
             .then(res => { if (!res.ok) throw new Error("HTTP Status " + res.status); return res.json(); })
             .then(data => {
-                loading.style.display = 'none';
-                allStaffData = Array.isArray(data) ? data : [];
+                if (loading) loading.style.display = 'none';
+                if (!data || data.success === false) throw new Error((data && data.message) || 'ไม่สามารถดึงข้อมูลเจ้าหน้าที่ได้');
+                const rows = Array.isArray(data.staffList) ? data.staffList : Array.isArray(data.rows) ? data.rows : Array.isArray(data) ? data : [];
+                allStaffData = rows;
+                staffPageState.page = Number(data.page || staffPageState.page || 1);
+                staffPageState.pageSize = Number(data.pageSize || pageSize || 50);
+                staffPageState.totalCount = Number(data.totalCount || rows.length || 0);
+                staffPageState.totalPages = Math.max(1, Number(data.totalPages || Math.ceil(staffPageState.totalCount / staffPageState.pageSize) || 1));
+                staffPageState.startIndex = Number(data.startIndex || (staffPageState.totalCount ? ((staffPageState.page - 1) * staffPageState.pageSize + 1) : 0));
+                staffPageState.endIndex = Number(data.endIndex || Math.min(staffPageState.page * staffPageState.pageSize, staffPageState.totalCount));
                 renderStaffList();
             })
             .catch(err => {
-                loading.style.display = 'none';
-                if (listDiv) listDiv.innerHTML = `<p style="text-align:center; color:#ef4444;">❌ ดึงข้อมูลเจ้าหน้าที่ไม่ได้: ${escapeHTML(err.message)}</p>`;
+                if (loading) loading.style.display = 'none';
+                allStaffData = [];
+                staffPageState.totalCount = 0;
+                staffPageState.totalPages = 1;
+                if (listDiv) listDiv.innerHTML = `<p style="text-align:center; color:#ef4444; padding:20px;">❌ ดึงข้อมูลเจ้าหน้าที่ไม่ได้: ${escapeHTML(err.message)}</p>`;
+                updateStaffPaginationUI(false);
             });
+    }
+
+    function updateStaffPaginationUI(show = true) {
+        const top = document.getElementById('staffPaginationTop');
+        const bottom = document.getElementById('staffPaginationBottom');
+        const summary = document.getElementById('staffPageSummary');
+        if (!top || !bottom) return;
+        if (!show || staffPageState.totalCount <= 0) {
+            top.style.display = 'none';
+            bottom.style.display = 'none';
+            if (summary) summary.textContent = staffPageState.totalCount === 0 ? '' : summary.textContent;
+            return;
+        }
+        const disabledPrev = staffPageState.page <= 1 ? 'disabled' : '';
+        const disabledNext = staffPageState.page >= staffPageState.totalPages ? 'disabled' : '';
+        const info = `แสดง ${staffPageState.startIndex.toLocaleString()}–${staffPageState.endIndex.toLocaleString()} จาก ${staffPageState.totalCount.toLocaleString()} คน | หน้า ${staffPageState.page.toLocaleString()} / ${staffPageState.totalPages.toLocaleString()}`;
+        if (summary) summary.textContent = info;
+        const html = `
+            <button class="btn-refresh" ${disabledPrev} onclick="fetchStaffData(${staffPageState.page - 1})">⬅️ ก่อนหน้า</button>
+            <span class="case-status-muted" style="display:inline-block; margin:0 10px;">${escapeHTML(info)}</span>
+            <button class="btn-refresh" ${disabledNext} onclick="fetchStaffData(${staffPageState.page + 1})">ถัดไป ➡️</button>
+        `;
+        top.innerHTML = html;
+        bottom.innerHTML = html;
+        top.style.display = staffPageState.totalPages > 1 ? 'block' : 'none';
+        bottom.style.display = staffPageState.totalPages > 1 ? 'block' : 'none';
     }
 
     function renderStaffList() {
         const listDiv = document.getElementById('staffList');
         if (!listDiv) return;
-        const search = safeText(document.getElementById('staffSearchInput')?.value).trim().toLowerCase();
-        const filterRole = document.getElementById('staffRoleFilter')?.value || 'all';
-        let rows = Array.isArray(allStaffData) ? [...allStaffData] : [];
-        if (filterRole !== 'all') rows = rows.filter(x => normalizeAdminRole(x.role) === filterRole);
-        if (search) rows = rows.filter(x =>
-            safeText(x.name).toLowerCase().includes(search) ||
-            safeText(x.username).toLowerCase().includes(search) ||
-            safeText(x.subdistrict).toLowerCase().includes(search) ||
-            safeText(x.facility).toLowerCase().includes(search) ||
-            safeText(x.villageScope).toLowerCase().includes(search)
-        );
-        rows.sort((a, b) => {
-            const r = getRoleRank(a.role) - getRoleRank(b.role);
-            if (r !== 0) return r;
-            return safeText(a.name).localeCompare(safeText(b.name), 'th');
-        });
+        const rows = Array.isArray(allStaffData) ? [...allStaffData] : [];
         if (rows.length === 0) {
-            listDiv.innerHTML = '<p style="text-align:center; color:#64748b; padding:20px;">❌ ไม่พบเจ้าหน้าที่ตามเงื่อนไข</p>';
+            const keyword = staffPageState.keyword ? `คำค้น “${escapeHTML(staffPageState.keyword)}”` : 'เงื่อนไขที่เลือก';
+            listDiv.innerHTML = `<p style="text-align:center; color:#64748b; padding:20px;">❌ ไม่พบเจ้าหน้าที่ตาม${keyword}</p>`;
+            const summary = document.getElementById('staffPageSummary');
+            if (summary) summary.textContent = 'ไม่พบข้อมูลเจ้าหน้าที่ตามเงื่อนไข';
+            updateStaffPaginationUI(false);
             return;
         }
         listDiv.innerHTML = '';
@@ -2197,8 +2260,9 @@
             card.className = 'vhm-table-row';
             card.style.borderLeft = role === 'hospital' ? '4px solid #10b981' : role === 'admin' ? '4px solid #3b82f6' : '4px solid #f59e0b';
             const encodedUsername = encodeURIComponent(staff.username || '');
-            const passwordTargetId = `staffCredPassword_${idx}`;
-            const secretTargetId = `staffCredSecret_${idx}`;
+            const safeIdSuffix = `${staffPageState.page}_${idx}_${encodedUsername.replace(/[^a-zA-Z0-9]/g, '')}`;
+            const passwordTargetId = `staffCredPassword_${safeIdSuffix}`;
+            const secretTargetId = `staffCredSecret_${safeIdSuffix}`;
             const passwordDisplay = staff.passwordSet
                 ? `<span id="${passwordTargetId}" data-visible="0">••••••••</span><button type="button" class="tiny-eye-btn" onclick="toggleSavedStaffCredential('${encodedUsername}','${role}','password','${passwordTargetId}', this)" aria-label="แสดงหรือซ่อน Password">👁️</button><span class="case-status-muted"> (กดตาเพื่อแสดง)</span>`
                 : `<span class="case-status-muted">ยังไม่ได้ตั้งค่า</span>`;
@@ -2239,6 +2303,7 @@
             }
             listDiv.appendChild(card);
         });
+        updateStaffPaginationUI(true);
     }
 
     function saveStaffData() {
@@ -2280,7 +2345,7 @@
             .then(res => { if (!res.ok) throw new Error('HTTP Status ' + res.status); return res.json(); })
             .then(res => {
                 loading.style.display = 'none';
-                if (res.success) { alert('🎉 บันทึกข้อมูลเจ้าหน้าที่สำเร็จ'); cancelStaffEditMode(); fetchStaffData(); }
+                if (res.success) { alert('🎉 บันทึกข้อมูลเจ้าหน้าที่สำเร็จ'); cancelStaffEditMode(); fetchStaffData(staffPageState.page || 1); }
                 else alert('❌ ข้อผิดพลาด: ' + (res.message || 'ไม่ทราบสาเหตุ'));
             })
             .catch(err => { loading.style.display = 'none'; alert('❌ บันทึกข้อมูลเจ้าหน้าที่ไม่สำเร็จ: ' + err.message); });
@@ -2296,7 +2361,7 @@
             .then(res => { if (!res.ok) throw new Error('HTTP Status ' + res.status); return res.json(); })
             .then(res => {
                 loading.style.display = 'none';
-                if (res.success) { alert('🗑️ ลบข้อมูลเจ้าหน้าที่สำเร็จ'); fetchStaffData(); }
+                if (res.success) { alert('🗑️ ลบข้อมูลเจ้าหน้าที่สำเร็จ'); fetchStaffData(staffPageState.page || 1); }
                 else alert('❌ ไม่สามารถลบได้: ' + (res.message || 'ไม่ทราบสาเหตุ'));
             })
             .catch(err => { loading.style.display = 'none'; alert('❌ ลบข้อมูลเจ้าหน้าที่ไม่สำเร็จ: ' + err.message); });
