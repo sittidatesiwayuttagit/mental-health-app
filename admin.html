@@ -385,6 +385,18 @@
                                 <input type="text" id="profAllergies" placeholder="ประวัติแพ้ยา/แพ้อาหาร">
                                 <input type="text" id="profChronicDiseases" placeholder="โรคประจำตัว">
                             </div>
+                            <div class="inputs-row">
+                                <select id="profTreatmentRights">
+                                    <option value="">-- สิทธิการรักษา --</option>
+                                    <option value="บัตรทอง / หลักประกันสุขภาพถ้วนหน้า">บัตรทอง / หลักประกันสุขภาพถ้วนหน้า</option>
+                                    <option value="ประกันสังคม">ประกันสังคม</option>
+                                    <option value="ข้าราชการ / เบิกต้นสังกัด">ข้าราชการ / เบิกต้นสังกัด</option>
+                                    <option value="สิทธิองค์กรปกครองส่วนท้องถิ่น">สิทธิองค์กรปกครองส่วนท้องถิ่น</option>
+                                    <option value="รัฐวิสาหกิจ">รัฐวิสาหกิจ</option>
+                                    <option value="ชำระเงินเอง">ชำระเงินเอง</option>
+                                    <option value="อื่น ๆ / ไม่แน่ใจ">อื่น ๆ / ไม่แน่ใจ</option>
+                                </select>
+                            </div>
                             <div class="form-group">
                                 <label>รูปถ่ายผู้ป่วย (ถ้ามี)</label>
                                 <input type="file" id="profPhotoInput" accept="image/*" onchange="handlePatientPhotoSelected(event)">
@@ -1544,6 +1556,7 @@
             currentAddress: safeText(latest.currentAddress),
             allergies: safeText(latest.allergies),
             chronicDiseases: safeText(latest.chronicDiseases),
+            treatmentRights: safeText(latest.treatmentRights),
             patientPhotoDataUrl: safeText(latest.patientPhotoDataUrl),
             profileUpdatedAt: safeText(latest.profileUpdatedAt),
             profileUpdatedBy: safeText(latest.profileUpdatedBy),
@@ -1569,6 +1582,7 @@
                     <div class="profile-info-item"><b>หมู่ที่</b>${escapeHTML(p.villageNo || '-')}</div>
                     <div class="profile-info-item"><b>วันเดือนปีเกิด</b>${escapeHTML(birthText)}</div>
                     <div class="profile-info-item"><b>ประวัติแพ้ยา/อาหาร</b>${escapeHTML(p.allergies || 'ยังไม่ระบุ')}</div>
+                    <div class="profile-info-item"><b>สิทธิการรักษา</b>${escapeHTML(p.treatmentRights || 'ยังไม่ระบุ')}</div>
                     <div class="profile-info-item"><b>ที่อยู่ตามทะเบียนบ้าน</b>${escapeHTML(p.registeredAddress || 'ยังไม่ระบุ')}</div>
                     <div class="profile-info-item"><b>ที่อยู่ปัจจุบัน</b>${escapeHTML(p.currentAddress || 'ยังไม่ระบุ')}</div>
                     <div class="profile-info-item" style="grid-column:1/-1;"><b>โรคประจำตัว</b>${escapeHTML(p.chronicDiseases || 'ยังไม่ระบุ')}</div>
@@ -1590,6 +1604,7 @@
         document.getElementById('profCurrentAddress').value = p.currentAddress || '';
         document.getElementById('profAllergies').value = p.allergies || '';
         document.getElementById('profChronicDiseases').value = p.chronicDiseases || '';
+        document.getElementById('profTreatmentRights').value = p.treatmentRights || '';
         currentPatientPhotoDataUrl = p.patientPhotoDataUrl || '';
         document.getElementById('patientProfileDisplay').classList.add('profile-display-hidden');
         const btn = document.getElementById('btnEditPatientProfile');
@@ -1666,6 +1681,7 @@
             currentAddress: document.getElementById('profCurrentAddress').value.trim(),
             allergies: document.getElementById('profAllergies').value.trim(),
             chronicDiseases: document.getElementById('profChronicDiseases').value.trim(),
+            treatmentRights: document.getElementById('profTreatmentRights').value.trim(),
             patientPhotoDataUrl: currentPatientPhotoDataUrl || ''
         });
         try {
@@ -1686,6 +1702,7 @@
                         currentAddress: document.getElementById('profCurrentAddress').value.trim(),
                         allergies: document.getElementById('profAllergies').value.trim(),
                         chronicDiseases: document.getElementById('profChronicDiseases').value.trim(),
+                        treatmentRights: document.getElementById('profTreatmentRights').value.trim(),
                         patientPhotoDataUrl: currentPatientPhotoDataUrl || ''
                     };
                 }
