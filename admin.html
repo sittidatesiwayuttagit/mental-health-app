@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบแดชบอร์ดคนดูแล - รพ.สต.บ้านทองหลาง</title>
+    <title>ระบบแดชบอร์ดคนดูแล - โรงพยาบาลบ้านนา</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f1f5f9; color: #1e293b; margin: 0; padding: 20px; }
@@ -303,6 +303,7 @@
             <button id="tabPatientsBtn" class="tab-btn active" onclick="switchTab('patientsTab')">📋 ข้อมูลผู้ป่วย</button>
             <button id="tabOverviewBtn" class="tab-btn" onclick="switchTab('overviewTab')">📊 ข้อมูลภาพรวมเคส</button>
             <button id="tabStaffBtn" class="tab-btn" onclick="switchTab('staffTab')">👥 ข้อมูลเจ้าหน้าที่</button>
+            <button id="tabConsultBtn" class="tab-btn" onclick="switchTab('consultTab')">🧭 คำปรึกษา/ขอความช่วยเหลือ</button>
             <button id="tabFeedbackBtn" class="tab-btn" onclick="switchTab('feedbackTab')">💬 Feedback ข้อเสนอแนะ</button>
             <button id="tabSystemBtn" class="tab-btn" onclick="switchTab('systemTab')">🧮 งานระบบ</button>
         </div>
@@ -526,6 +527,38 @@
             <div id="staffList"></div>
         </div>
 
+
+        <div id="consultTab" class="tab-content">
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; padding:20px; border-radius:12px; margin-bottom:20px;">
+                <h3 style="margin-top:0; color:#0f766e;">🧭 คำปรึกษา / ขอความช่วยเหลือจากชาวบ้าน</h3>
+                <p style="margin:0; color:#64748b; line-height:1.6; font-size:14px;">แสดงคำขอปรึกษาที่ชาวบ้านส่งผ่านหน้า consult.html เจ้าหน้าที่สามารถรับเรื่อง บันทึกการติดต่อ นัดหมาย ส่งต่อ หรือปิดเรื่องได้ โดยคำขอที่เร่งด่วนจะถูกแจ้งเตือน LINE ไปยัง Hospital และ Admin ของพื้นที่รับผิดชอบ</p>
+            </div>
+            <div class="search-container">
+                <h4 style="margin-top:0; color:#334155;">🔍 ค้นหา/กรองคำขอปรึกษา</h4>
+                <div class="inputs-row">
+                    <input type="text" id="consultSearchInput" oninput="renderConsultRequests()" placeholder="ค้นหาชื่อ เรื่อง พื้นที่ หรือรายละเอียด...">
+                    <select id="consultStatusFilter" onchange="renderConsultRequests()">
+                        <option value="all">ทุกสถานะ</option>
+                        <option value="ใหม่">ใหม่</option>
+                        <option value="รับเรื่องแล้ว">รับเรื่องแล้ว</option>
+                        <option value="ติดต่อแล้ว">ติดต่อแล้ว</option>
+                        <option value="นัดหมายแล้ว">นัดหมายแล้ว</option>
+                        <option value="ส่งต่อ">ส่งต่อ</option>
+                        <option value="ปิดเรื่อง">ปิดเรื่อง</option>
+                    </select>
+                    <select id="consultUrgencyFilter" onchange="renderConsultRequests()">
+                        <option value="all">ทุกระดับความเร่งด่วน</option>
+                        <option value="เร่งด่วน">เร่งด่วน/ไม่ปลอดภัย</option>
+                        <option value="กังวล">ค่อนข้างกังวล</option>
+                        <option value="ไม่เร่งด่วน">ไม่เร่งด่วน</option>
+                    </select>
+                    <button class="btn-refresh" onclick="fetchConsultRequests()">🔄 รีเฟรช</button>
+                </div>
+            </div>
+            <div id="consultSummaryCards" class="summary-grid"></div>
+            <div id="consultList"></div>
+        </div>
+
         <div id="feedbackTab" class="tab-content">
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; margin-bottom: 25px;">
                 <h3 style="margin-top:0; color:#6366f1;">💬 กล่องข้อเสนอแนะจากผู้ใช้งานระบบ (Anonymous)</h3>
@@ -562,6 +595,7 @@
 
     let allData = [];
     let allStaffData = [];
+    let allConsultData = [];
     let currentSelectedPatientName = "";
     let currentSelectedPatientGender = "";
     let currentSelectedPatientVillage = "";
@@ -1105,6 +1139,7 @@
         if (tabId === 'patientsTab') { document.getElementById('tabPatientsBtn').classList.add('active'); fetchPatientData(); }
         else if (tabId === 'overviewTab') { document.getElementById('tabOverviewBtn').classList.add('active'); showOverviewHomePage(); if (!Array.isArray(allData) || allData.length === 0) fetchPatientData(); else renderDashboardSummary(allData); }
         else if (tabId === 'staffTab') { document.getElementById('tabStaffBtn').classList.add('active'); fetchStaffData(); }
+        else if (tabId === 'consultTab') { document.getElementById('tabConsultBtn').classList.add('active'); fetchConsultRequests(); }
         else if (tabId === 'feedbackTab') { document.getElementById('tabFeedbackBtn').classList.add('active'); fetchFeedbackData(); }
         else if (tabId === 'systemTab') { document.getElementById('tabSystemBtn').classList.add('active'); }
     }
@@ -2418,6 +2453,132 @@
         document.getElementById('adminPasswordInput').value = ""; document.getElementById('adminNameInput').value = ""; document.getElementById('adminSecretKeyInput').value = "";
         document.getElementById('adminRoleInput').value = "admin";
         document.getElementById('btnCancelAdminEdit').style.display = 'none';
+    }
+
+
+    function getConsultUrgencyClass(item) {
+        const u = safeText(item && item.urgency);
+        const joined = `${u} ${safeText(item && item.topic)} ${safeText(item && item.details)}`;
+        if (joined.includes('เร่งด่วน') || joined.includes('ไม่ปลอดภัย') || joined.includes('ทำร้ายตัวเอง') || joined.includes('ไม่อยากมีชีวิต') || joined.includes('ฆ่าตัวตาย')) return 'urgent';
+        if (joined.includes('กังวล') || joined.includes('เร็ว')) return 'medium';
+        return 'normal';
+    }
+    function getConsultStatusClass(status) {
+        const s = safeText(status);
+        if (s === 'ใหม่') return 'new';
+        if (s === 'ปิดเรื่อง') return 'closed';
+        return 'accepted';
+    }
+    function renderConsultSummary(records) {
+        const box = document.getElementById('consultSummaryCards');
+        if (!box) return;
+        const total = records.length;
+        const open = records.filter(x => safeText(x.status) !== 'ปิดเรื่อง').length;
+        const urgent = records.filter(x => getConsultUrgencyClass(x) === 'urgent').length;
+        const newCount = records.filter(x => safeText(x.status) === 'ใหม่').length;
+        box.innerHTML = `
+            <div class="summary-card"><h4>💬 คำขอทั้งหมด</h4><div class="big-number">${total}</div><div class="case-status-muted">จำนวนคำขอปรึกษาที่แสดงในระบบ</div></div>
+            <div class="summary-card"><h4>🆕 คำขอใหม่</h4><div class="big-number">${newCount}</div><div class="case-status-muted">ยังไม่มีผู้รับเรื่อง</div></div>
+            <div class="summary-card"><h4>🚨 เร่งด่วน</h4><div class="big-number">${urgent}</div><div class="case-status-muted">ควรประเมินความปลอดภัยโดยเร็ว</div></div>
+            <div class="summary-card"><h4>📌 ยังเปิดเรื่อง</h4><div class="big-number">${open}</div><div class="case-status-muted">ยังไม่ปิดเรื่อง</div></div>`;
+    }
+    async function fetchConsultRequests() {
+        const loading = document.getElementById('loadingText');
+        const list = document.getElementById('consultList');
+        if (!currentAdminUsername || !currentAdminAuthToken) { alert('session ไม่สมบูรณ์ กรุณา login ใหม่'); return; }
+        try {
+            if (loading) loading.style.display = 'block';
+            if (list) list.innerHTML = '<p style="text-align:center; color:#64748b; padding:20px;">กำลังโหลดคำขอปรึกษา...</p>';
+            const url = `${GOOGLE_SCRIPT_URL}?action=getConsultRequests&actorUsername=${encodeURIComponent(currentAdminUsername)}&authToken=${encodeURIComponent(currentAdminAuthToken)}`;
+            const res = await fetch(url);
+            const result = await res.json();
+            if (!result.success) throw new Error(result.message || 'ดึงข้อมูลคำขอปรึกษาไม่สำเร็จ');
+            allConsultData = Array.isArray(result.records) ? result.records : [];
+            renderConsultRequests();
+        } catch (err) {
+            if (list) list.innerHTML = `<p style="text-align:center; color:#ef4444; padding:20px;">❌ ${escapeHTML(err.message)}</p>`;
+        } finally {
+            if (loading) loading.style.display = 'none';
+        }
+    }
+    function renderConsultRequests() {
+        const list = document.getElementById('consultList');
+        if (!list) return;
+        const q = safeText(document.getElementById('consultSearchInput')?.value).toLowerCase().trim();
+        const statusFilter = safeText(document.getElementById('consultStatusFilter')?.value || 'all');
+        const urgencyFilter = safeText(document.getElementById('consultUrgencyFilter')?.value || 'all');
+        let records = [...(allConsultData || [])];
+        renderConsultSummary(records);
+        records = records.filter(item => {
+            const blob = `${item.requestId} ${item.requesterName} ${item.contactDetail} ${item.topic} ${item.urgency} ${item.details} ${item.subdistrict} ${item.villageNo} ${item.facility} ${item.status}`.toLowerCase();
+            const okSearch = !q || blob.includes(q);
+            const okStatus = statusFilter === 'all' || safeText(item.status) === statusFilter;
+            const okUrgency = urgencyFilter === 'all' || safeText(item.urgency).includes(urgencyFilter) || (urgencyFilter === 'เร่งด่วน' && getConsultUrgencyClass(item) === 'urgent') || (urgencyFilter === 'กังวล' && getConsultUrgencyClass(item) === 'medium');
+            return okSearch && okStatus && okUrgency;
+        });
+        if (records.length === 0) {
+            list.innerHTML = '<p style="text-align:center; color:#64748b; padding:40px 0;">📭 ยังไม่มีคำขอปรึกษาที่ตรงกับตัวกรอง</p>';
+            return;
+        }
+        list.innerHTML = records.map(item => {
+            const urgencyClass = getConsultUrgencyClass(item);
+            const statusClass = getConsultStatusClass(item.status);
+            const requester = safeText(item.isAnonymous) === 'yes' ? 'ไม่ประสงค์ระบุตัวตน' : (safeText(item.requesterName) || '-');
+            const contact = safeText(item.isAnonymous) === 'yes' ? 'ไม่ระบุ' : `${safeText(item.contactMethod) || '-'}: ${safeText(item.contactDetail) || '-'}`;
+            const closed = safeText(item.status) === 'ปิดเรื่อง';
+            return `<div class="consult-card ${urgencyClass}">
+                <div class="consult-header">
+                    <div>
+                        <div class="consult-title">${urgencyClass === 'urgent' ? '🚨' : urgencyClass === 'medium' ? '⚠️' : '💬'} ${escapeHTML(item.topic || '-')}</div>
+                        <div class="case-status-muted">เลขคำขอ: ${escapeHTML(item.requestId || '-')} | ส่งเมื่อ ${escapeHTML(item.timestamp || '-')}</div>
+                    </div>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
+                        <span class="consult-pill ${urgencyClass}">${escapeHTML(item.urgency || '-')}</span>
+                        <span class="consult-pill ${statusClass}">${escapeHTML(item.status || 'ใหม่')}</span>
+                    </div>
+                </div>
+                <div class="consult-meta-grid">
+                    <div class="consult-meta-item"><b>👤 ผู้ขอคำปรึกษา</b><br>${escapeHTML(requester)}</div>
+                    <div class="consult-meta-item"><b>📞 ช่องทางติดต่อ</b><br>${escapeHTML(contact)}</div>
+                    <div class="consult-meta-item"><b>🏡 พื้นที่</b><br>ตำบล${escapeHTML(item.subdistrict || '-')} ${escapeHTML(item.villageNo || '-')}<br>${escapeHTML(item.facility || '-')}</div>
+                    <div class="consult-meta-item"><b>📌 ผู้รับเรื่อง/อัปเดต</b><br>${escapeHTML(item.assignedTo || '-')}<br><span class="case-status-muted">อัปเดต: ${escapeHTML(item.updatedAt || '-')} โดย ${escapeHTML(item.updatedBy || '-')}</span></div>
+                </div>
+                <div class="consult-body">${escapeHTML(item.details || '-')}</div>
+                ${item.lastContactNote ? `<div class="consult-meta-item" style="margin-top:10px;"><b>📝 หมายเหตุการติดตามล่าสุด</b><br>${escapeHTML(item.lastContactNote)}${item.nextActionDate ? `<br>📅 นัดติดตาม/ดำเนินการต่อ: ${escapeHTML(item.nextActionDate)}` : ''}</div>` : ''}
+                <div class="consult-actions">
+                    ${closed ? '<span class="case-status-muted">ปิดเรื่องแล้ว</span>' : `
+                        <button class="small-btn" onclick="updateConsultRequestFromWeb('${item.rowId}','รับเรื่องแล้ว')">📌 รับเรื่อง</button>
+                        <button class="small-btn green" onclick="updateConsultRequestFromWeb('${item.rowId}','ติดต่อแล้ว')">☎️ บันทึกติดต่อแล้ว</button>
+                        <button class="small-btn green" onclick="updateConsultRequestFromWeb('${item.rowId}','นัดหมายแล้ว')">📅 นัดหมายแล้ว</button>
+                        <button class="small-btn" onclick="updateConsultRequestFromWeb('${item.rowId}','ส่งต่อ')">🏥 ส่งต่อ</button>
+                        <button class="small-btn gray" onclick="updateConsultRequestFromWeb('${item.rowId}','ปิดเรื่อง')">✅ ปิดเรื่อง</button>`}
+                </div>
+            </div>`;
+        }).join('');
+    }
+    async function updateConsultRequestFromWeb(rowId, status) {
+        if (!currentAdminUsername || !currentAdminAuthToken) { alert('session ไม่สมบูรณ์ กรุณา login ใหม่'); return; }
+        const item = (allConsultData || []).find(x => String(x.rowId) === String(rowId));
+        let note = prompt(`บันทึกหมายเหตุสำหรับสถานะ: ${status}\nเช่น ติดต่อกลับแล้ว/นัดหมาย/ส่งต่อ/เหตุผลปิดเรื่อง`, item?.lastContactNote || '');
+        if (note === null) return;
+        let nextActionDate = '';
+        if (status !== 'ปิดเรื่อง') {
+            nextActionDate = prompt('วันที่ติดตาม/ดำเนินการต่อ ถ้ามี ใส่รูปแบบ YYYY-MM-DD หรือเว้นว่าง', item?.nextActionDate || '') || '';
+        }
+        const loading = document.getElementById('loadingText');
+        try {
+            if (loading) loading.style.display = 'block';
+            const params = new URLSearchParams({
+                action:'updateConsultRequest', rowId:String(rowId), status, note, nextActionDate,
+                actorUsername:currentAdminUsername, actorName:getCurrentAdminNameForCase(), authToken:currentAdminAuthToken
+            });
+            const res = await fetch(GOOGLE_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'}, body:params });
+            const result = await res.json();
+            if (!result.success) throw new Error(result.message || 'อัปเดตไม่สำเร็จ');
+            alert('✅ ' + result.message);
+            await fetchConsultRequests();
+        } catch (err) { alert('❌ ' + err.message); }
+        finally { if (loading) loading.style.display = 'none'; }
     }
 
     function fetchFeedbackData() {
