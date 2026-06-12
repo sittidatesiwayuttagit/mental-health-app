@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ช่องทางปรึกษาสุขภาพใจ | โรงพยาบาลบ้านนา</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body { margin:0; font-family:'Sarabun', sans-serif; background:linear-gradient(135deg,#e0f2fe 0%,#f0fdf4 45%,#fff7ed 100%); color:#1e293b; min-height:100vh; padding:18px; }
+        .container { max-width: 780px; margin:0 auto; }
+        .hero { background:linear-gradient(135deg,#2563eb,#0d9488); color:#fff; border-radius:24px; padding:26px 22px; box-shadow:0 18px 40px rgba(37,99,235,0.22); margin-bottom:18px; }
+        .hero h1 { margin:0 0 8px; font-size:28px; line-height:1.25; }
+        .hero p { margin:0; opacity:.95; line-height:1.65; }
+        .card { background:#fff; border:1px solid #e2e8f0; border-radius:20px; padding:20px; box-shadow:0 8px 26px rgba(15,23,42,0.08); margin-bottom:16px; }
+        .notice { border-left:5px solid #0ea5e9; background:#f0f9ff; color:#0f172a; line-height:1.7; }
+        .emergency { display:none; border-left:5px solid #ef4444; background:#fff1f2; color:#7f1d1d; line-height:1.7; }
+        h2 { font-size:20px; margin:0 0 12px; color:#0f766e; }
+        label { display:block; font-weight:700; margin:14px 0 7px; color:#334155; }
+        input, select, textarea { width:100%; border:1px solid #cbd5e1; border-radius:12px; padding:12px 13px; font-family:inherit; font-size:16px; outline:none; background:#fff; }
+        input:focus, select:focus, textarea:focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,0.14); }
+        textarea { min-height:120px; resize:vertical; line-height:1.6; }
+        .grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
+        .radio-row, .check-row { display:flex; gap:10px; align-items:flex-start; padding:12px; border:1px solid #e2e8f0; border-radius:12px; background:#f8fafc; margin-top:10px; }
+        .radio-row input, .check-row input { width:auto; margin-top:4px; }
+        .muted { color:#64748b; font-size:14px; line-height:1.55; }
+        .actions { display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; margin-top:18px; }
+        button { border:none; border-radius:14px; padding:13px 18px; font-family:inherit; font-weight:800; font-size:16px; cursor:pointer; transition:.18s; }
+        .primary { background:#2563eb; color:#fff; box-shadow:0 8px 20px rgba(37,99,235,0.22); }
+        .primary:hover { background:#1d4ed8; transform:translateY(-1px); }
+        .secondary { background:#e2e8f0; color:#334155; }
+        .loading { display:none; text-align:center; color:#2563eb; font-weight:800; margin-top:14px; }
+        .success { display:none; background:#ecfdf5; border:1px solid #86efac; color:#166534; border-radius:16px; padding:18px; line-height:1.7; font-weight:700; }
+        .error { display:none; background:#fff1f2; border:1px solid #fecdd3; color:#991b1b; border-radius:16px; padding:14px; line-height:1.6; font-weight:700; }
+        .footer { text-align:center; color:#64748b; font-size:13px; padding:12px; }
+        @media (max-width:560px){ body{padding:12px;} .hero{padding:22px 18px;} .hero h1{font-size:24px;} .card{padding:16px;} .actions{display:block;} button{width:100%; margin-top:8px;} }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="hero">
+        <h1>💬 ช่องทางปรึกษาสุขภาพใจ</h1>
+        <p>สำหรับขอคำปรึกษาเบื้องต้นด้านสุขภาพใจ ปัญหาชีวิต ครอบครัว การนอน ความเครียด หรือขอให้เจ้าหน้าที่ในพื้นที่ติดต่อกลับ</p>
+    </div>
+
+    <div class="card notice">
+        <b>ข้อมูลส่วนตัวและความเป็นส่วนตัว</b><br>
+        ข้อมูลนี้จะถูกใช้เพื่อการติดต่อกลับ ดูแล ช่วยเหลือ และส่งต่อเท่าที่จำเป็น โดยเจ้าหน้าที่สาธารณสุขที่เกี่ยวข้องในพื้นที่เท่านั้น
+        <br><br>
+        <b>ช่องทางนี้ไม่ใช่ระบบตอบกลับฉุกเฉินทันทีตลอด 24 ชั่วโมง</b> หากท่านหรือคนใกล้ตัวกำลังไม่ปลอดภัย มีความคิดทำร้ายตนเอง/ผู้อื่น หรืออยู่ในภาวะฉุกเฉิน กรุณาติดต่อญาติ คนใกล้ตัว เจ้าหน้าที่ในพื้นที่ หรือหน่วยฉุกเฉินทันที
+    </div>
+
+    <div id="emergencyBox" class="card emergency">
+        <b>⚠️ ข้อความสำคัญ</b><br>
+        หากขณะนี้ท่านไม่ปลอดภัย หรือมีความคิดจะทำร้ายตนเอง/ผู้อื่น กรุณาอยู่ใกล้คนที่ไว้ใจ ติดต่อญาติหรือเจ้าหน้าที่ใกล้บ้านทันที ช่องทางนี้จะส่งเรื่องให้เจ้าหน้าที่ แต่ไม่ได้รับประกันการตอบกลับทันทีแบบฉุกเฉิน 24 ชั่วโมง
+    </div>
+
+    <form id="consultForm" class="card" onsubmit="submitConsult(event)">
+        <h2>📝 แบบฟอร์มขอคำปรึกษา</h2>
+
+        <label>ต้องการปรึกษาเรื่องอะไร <span style="color:#ef4444;">*</span></label>
+        <select id="topic" required onchange="updateEmergencyNotice()">
+            <option value="">-- เลือกเรื่องที่ต้องการปรึกษา --</option>
+            <option>เครียด / กังวล</option>
+            <option>นอนไม่หลับ</option>
+            <option>ซึมเศร้า / เบื่อ / หมดแรง</option>
+            <option>ปัญหาครอบครัว</option>
+            <option>ปัญหาการเงิน / หนี้สิน</option>
+            <option>สุรา / สารเสพติด</option>
+            <option>ความรุนแรงในครอบครัว</option>
+            <option>อยากทำร้ายตัวเอง / ไม่อยากมีชีวิตอยู่</option>
+            <option>อื่น ๆ</option>
+        </select>
+
+        <label>ระดับความเร่งด่วน <span style="color:#ef4444;">*</span></label>
+        <select id="urgency" required onchange="updateEmergencyNotice()">
+            <option value="">-- เลือกระดับความเร่งด่วน --</option>
+            <option>ไม่เร่งด่วน ปรึกษาได้ในเวลาทำการ</option>
+            <option>ค่อนข้างกังวล อยากให้ติดต่อกลับเร็ว</option>
+            <option>เร่งด่วนมาก / ไม่ปลอดภัย</option>
+        </select>
+
+        <label>รายละเอียดที่อยากบอกเจ้าหน้าที่ <span style="color:#ef4444;">*</span></label>
+        <textarea id="details" required placeholder="เล่าปัญหาหรือสิ่งที่อยากปรึกษาได้ตามสะดวก..."></textarea>
+
+        <div class="grid">
+            <div>
+                <label>ตำบล <span style="color:#ef4444;">*</span></label>
+                <select id="subdistrict" required onchange="updateVillageOptions()"><option value="">-- เลือกตำบล --</option></select>
+            </div>
+            <div>
+                <label>หมู่ <span style="color:#ef4444;">*</span></label>
+                <select id="villageNo" required><option value="">-- เลือกหมู่ --</option></select>
+            </div>
+        </div>
+
+        <label>รูปแบบการติดต่อ</label>
+        <div class="check-row">
+            <input type="checkbox" id="isAnonymous" onchange="toggleAnonymous()">
+            <div><b>ฝากข้อความแบบไม่ระบุตัวตน</b><br><span class="muted">ถ้าเลือกข้อนี้ เจ้าหน้าที่อาจไม่สามารถติดต่อกลับหรือช่วยเหลือเฉพาะรายได้</span></div>
+        </div>
+
+        <div id="contactFields">
+            <div class="grid">
+                <div>
+                    <label>ชื่อหรือชื่อเล่นที่สะดวกให้เรียก</label>
+                    <input type="text" id="requesterName" placeholder="เช่น คุณเอ / นายสมชาย">
+                </div>
+                <div>
+                    <label>อยากให้ติดต่อกลับทางไหน</label>
+                    <select id="contactMethod">
+                        <option value="โทรศัพท์">โทรศัพท์</option>
+                        <option value="LINE">LINE</option>
+                        <option value="ให้ อสม. ติดต่อ">ให้ อสม. ติดต่อ</option>
+                        <option value="นัดพบที่ รพ.สต.">นัดพบที่ รพ.สต.</option>
+                    </select>
+                </div>
+            </div>
+            <label>เบอร์โทร / LINE ID / ช่องทางติดต่อกลับ</label>
+            <input type="text" id="contactDetail" placeholder="ระบุช่องทางที่สะดวกให้เจ้าหน้าที่ติดต่อกลับ">
+        </div>
+
+        <div class="check-row">
+            <input type="checkbox" id="privacyNoticeConfirmed" required>
+            <div><b>ข้าพเจ้าอ่านและรับทราบวัตถุประสงค์การใช้ข้อมูลแล้ว</b><br><span class="muted">ข้อมูลจะถูกส่งให้เจ้าหน้าที่ที่เกี่ยวข้องเพื่อดูแล ช่วยเหลือ ติดตาม และส่งต่อเท่าที่จำเป็น</span></div>
+        </div>
+
+        <div id="errorBox" class="error"></div>
+        <div id="successBox" class="success"></div>
+        <div id="loadingBox" class="loading">กำลังส่งคำขอปรึกษา กรุณารอสักครู่...</div>
+
+        <div class="actions">
+            <button type="button" class="secondary" onclick="resetForm()">ล้างฟอร์ม</button>
+            <button type="submit" class="primary">ส่งคำขอปรึกษา</button>
+        </div>
+    </form>
+
+    <div class="footer">โรงพยาบาลบ้านนา | ระบบดูแลสุขภาพใจชุมชน</div>
+</div>
+
+<script>
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySImkthOaj1K3yK3QtFsc0qUNx7wFMF9gNaPjO_IL86H6JaywSU2ZnF4NPic_ypsW8ew/exec';
+const SERVICE_AREA_LIST = [
+  { facility: 'รพ.สต.บ้านบางอ้อ', tambon: 'บางอ้อ', villages: ['หมู่ 1','หมู่ 2','หมู่ 3','หมู่ 4','หมู่ 5','หมู่ 6','หมู่ 7','หมู่ 8','หมู่ 9','หมู่ 10','หมู่ 11','หมู่ 12','หมู่ 13','หมู่ 14'] },
+  { facility: 'รพ.สต.บ้านแหลมไม้ย้อย', tambon: 'พิกุลออก', villages: ['หมู่ 1','หมู่ 2','หมู่ 3','หมู่ 4','หมู่ 5','หมู่ 6','หมู่ 7','หมู่ 8','หมู่ 9','หมู่ 10','หมู่ 11','หมู่ 12'] },
+  { facility: 'รพ.สต.บ้านกร่างประตูวัง', tambon: 'ป่าขะ', villages: ['หมู่ 1','หมู่ 2','หมู่ 3','หมู่ 4','หมู่ 5','หมู่ 6','หมู่ 7','หมู่ 8','หมู่ 9','หมู่ 10','หมู่ 11','หมู่ 12','หมู่ 13'] },
+  { facility: 'รพ.สต.บ้านไผ่ขวาง', tambon: 'อาษา', villages: ['หมู่ 1','หมู่ 2','หมู่ 3','หมู่ 4','หมู่ 5','หมู่ 6','หมู่ 7','หมู่ 8'] },
+  { facility: 'รพ.สต.บ้านละว้า', tambon: 'ศรีกะอาง', villages: ['หมู่ 1','หมู่ 2','หมู่ 3','หมู่ 4','หมู่ 5','หมู่ 6','หมู่ 7','หมู่ 8','หมู่ 9'] },
+  { facility: 'รพ.สต.บ้านหนองรี', tambon: 'บ้านพร้าว', villages: ['หมู่ 1','หมู่ 3','หมู่ 4','หมู่ 6','หมู่ 7','หมู่ 9'] },
+  { facility: 'รพ.สต.บ้านทางกระบือ', tambon: 'บ้านพร้าว', villages: ['หมู่ 2','หมู่ 5','หมู่ 8','หมู่ 10','หมู่ 11','หมู่ 12'] },
+  { facility: 'รพ.สต.บ้านเขาเพิ่ม', tambon: 'เขาเพิ่ม', villages: ['หมู่ 1','หมู่ 3','หมู่ 4','หมู่ 11','หมู่ 14','หมู่ 16'] },
+  { facility: 'รพ.สต.บ้านเขาน้อย', tambon: 'เขาเพิ่ม', villages: ['หมู่ 2','หมู่ 5','หมู่ 6','หมู่ 7','หมู่ 15'] },
+  { facility: 'รพ.สต.บ้านกะเหรี่ยง', tambon: 'เขาเพิ่ม', villages: ['หมู่ 8','หมู่ 9','หมู่ 10','หมู่ 12','หมู่ 13'] },
+  { facility: 'รพ.สต.บ้านคลอง30', tambon: 'ทองหลาง', villages: ['หมู่ 3','หมู่ 4','หมู่ 6','หมู่ 7'] },
+  { facility: 'รพ.สต.บ้านทองหลาง', tambon: 'ทองหลาง', villages: ['หมู่ 1','หมู่ 2','หมู่ 5','หมู่ 8'] },
+  { facility: 'รพ.สต.บ้านพริก', tambon: 'บ้านพริก', villages: ['หมู่ 3','หมู่ 5','หมู่ 7','หมู่ 8','หมู่ 9','หมู่ 10'] },
+  { facility: 'รพ.สต.บ้านหนองคันคาม', tambon: 'บ้านพริก', villages: ['หมู่ 1','หมู่ 2','หมู่ 4','หมู่ 6','หมู่ 11','หมู่ 12'] },
+  { facility: 'รพ.บ้านนา', tambon: 'บ้านนา', villages: ['หมู่ 1','หมู่ 2','หมู่ 3','หมู่ 4','หมู่ 5','หมู่ 6','หมู่ 7','หมู่ 8','หมู่ 9','หมู่ 10','หมู่ 11'] }
+];
+function safeText(v){ return v === undefined || v === null ? '' : String(v); }
+function initAreaOptions(){
+    const select = document.getElementById('subdistrict');
+    const tambons = [...new Set(SERVICE_AREA_LIST.map(x => x.tambon))].sort((a,b)=>a.localeCompare(b,'th'));
+    select.innerHTML = '<option value="">-- เลือกตำบล --</option>' + tambons.map(t => `<option value="${t}">${t}</option>`).join('');
+}
+function updateVillageOptions(){
+    const tambon = document.getElementById('subdistrict').value;
+    const villageSelect = document.getElementById('villageNo');
+    const villages = [...new Set(SERVICE_AREA_LIST.filter(x=>x.tambon===tambon).flatMap(x=>x.villages))].sort((a,b)=>{
+        const na = parseInt(a.replace(/\D/g,''),10) || 0; const nb = parseInt(b.replace(/\D/g,''),10) || 0; return na-nb;
+    });
+    villageSelect.innerHTML = '<option value="">-- เลือกหมู่ --</option>' + villages.map(v => `<option value="${v}">${v}</option>`).join('');
+}
+function toggleAnonymous(){
+    const anon = document.getElementById('isAnonymous').checked;
+    document.getElementById('contactFields').style.display = anon ? 'none' : 'block';
+    document.getElementById('requesterName').required = !anon;
+    document.getElementById('contactDetail').required = !anon;
+}
+function updateEmergencyNotice(){
+    const topic = document.getElementById('topic').value;
+    const urgency = document.getElementById('urgency').value;
+    const text = `${topic} ${urgency}`;
+    const urgent = text.includes('เร่งด่วน') || text.includes('ไม่ปลอดภัย') || text.includes('ทำร้ายตัวเอง') || text.includes('ไม่อยากมีชีวิต');
+    document.getElementById('emergencyBox').style.display = urgent ? 'block' : 'none';
+}
+function showError(msg){ const b=document.getElementById('errorBox'); b.textContent=msg; b.style.display='block'; document.getElementById('successBox').style.display='none'; }
+function showSuccess(msg){ const b=document.getElementById('successBox'); b.innerHTML=msg; b.style.display='block'; document.getElementById('errorBox').style.display='none'; }
+function resetForm(){ document.getElementById('consultForm').reset(); updateVillageOptions(); toggleAnonymous(); updateEmergencyNotice(); document.getElementById('errorBox').style.display='none'; document.getElementById('successBox').style.display='none'; }
+async function submitConsult(event){
+    event.preventDefault();
+    const anon = document.getElementById('isAnonymous').checked;
+    const params = new URLSearchParams({
+        action:'submitConsultRequest', source:'consult.html',
+        topic:document.getElementById('topic').value,
+        urgency:document.getElementById('urgency').value,
+        details:document.getElementById('details').value.trim(),
+        subdistrict:document.getElementById('subdistrict').value,
+        villageNo:document.getElementById('villageNo').value,
+        isAnonymous:anon ? 'yes' : 'no',
+        requesterName:anon ? '' : document.getElementById('requesterName').value.trim(),
+        contactMethod:anon ? '' : document.getElementById('contactMethod').value,
+        contactDetail:anon ? '' : document.getElementById('contactDetail').value.trim(),
+        preferredContact:anon ? '' : document.getElementById('contactMethod').value,
+        privacyNoticeConfirmed:document.getElementById('privacyNoticeConfirmed').checked ? 'yes' : 'no'
+    });
+    document.getElementById('loadingBox').style.display='block';
+    document.querySelector('button[type="submit"]').disabled = true;
+    try {
+        const res = await fetch(GOOGLE_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'}, body:params });
+        const result = await res.json();
+        if (!result.success) throw new Error(result.message || 'ส่งคำขอไม่สำเร็จ');
+        const urgentText = result.urgent ? '<br><br>⚠️ ระบบจัดเป็นคำขอเร่งด่วน เจ้าหน้าที่ได้รับแจ้งเตือนแล้ว กรุณาอย่าอยู่คนเดียวหากขณะนี้ไม่ปลอดภัย' : '';
+        showSuccess(`✅ ${result.message}<br>เลขคำขอ: ${result.requestId || '-'}${urgentText}`);
+        document.getElementById('consultForm').reset(); updateVillageOptions(); toggleAnonymous(); updateEmergencyNotice();
+    } catch (err) { showError('❌ ' + err.message); }
+    finally { document.getElementById('loadingBox').style.display='none'; document.querySelector('button[type="submit"]').disabled = false; }
+}
+initAreaOptions();
+updateVillageOptions();
+toggleAnonymous();
+</script>
+</body>
+</html>
