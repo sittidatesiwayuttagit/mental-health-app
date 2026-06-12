@@ -940,7 +940,7 @@
     function logAuditEvent(action, patientName = '', gender = '', village = '', rowId = '', detail = '') {
         if (!currentAdminUsername) return;
         const adminName = document.getElementById('adminDisplayName')?.innerText || '';
-        fetch(`${GOOGLE_SCRIPT_URL}?action=logAudit&actorUsername=${encodeURIComponent(currentAdminUsername)}&actorName=${encodeURIComponent(adminName)}&actorRole=${encodeURIComponent(currentAdminRole)}&auditAction=${encodeURIComponent(action)}&patientName=${encodeURIComponent(patientName)}&patientGender=${encodeURIComponent(gender)}&villageNo=${encodeURIComponent(village)}&rowId=${encodeURIComponent(rowId)}&detail=${encodeURIComponent(detail)}`)
+        fetch(`${GOOGLE_SCRIPT_URL}?action=logAudit&actorUsername=${encodeURIComponent(currentAdminUsername)}&authToken=${encodeURIComponent(currentAdminAuthToken)}&actorName=${encodeURIComponent(adminName)}&actorRole=${encodeURIComponent(currentAdminRole)}&auditAction=${encodeURIComponent(action)}&patientName=${encodeURIComponent(patientName)}&patientGender=${encodeURIComponent(gender)}&villageNo=${encodeURIComponent(village)}&rowId=${encodeURIComponent(rowId)}&detail=${encodeURIComponent(detail)}`)
             .catch(err => console.warn('Audit log failed:', err));
     }
 
@@ -2586,7 +2586,7 @@
         const loading = document.getElementById('loadingText');
         const container = document.getElementById('feedbackContainer');
         loading.style.display = 'block'; container.innerHTML = '';
-        fetch(`${GOOGLE_SCRIPT_URL}?action=getFeedback`)
+        fetch(`${GOOGLE_SCRIPT_URL}?action=getFeedback&actorUsername=${encodeURIComponent(currentAdminUsername)}&authToken=${encodeURIComponent(currentAdminAuthToken)}`)
             .then(res => { if (!res.ok) throw new Error("HTTP Status " + res.status); return res.text(); })
             .then(text => {
                 loading.style.display = 'none';
