@@ -521,7 +521,7 @@
                     <p id="staffAreaHelp" class="case-status-muted" style="margin-top:0; line-height:1.5;"></p>
                     <div class="inputs-row">
                         <select id="staffTambonInput" onchange="updateStaffDependentAreaFields()"><option value="">-- เลือกตำบล --</option></select>
-                        <select id="staffFacilityInput" style="display:none;"><option value="">-- เลือก รพ.สต. --</option></select>
+                        <select id="staffFacilityInput" onchange="updateStaffDependentAreaFields()" style="display:none;"><option value="">-- เลือก รพ.สต. --</option></select>
                         <select id="staffVillageScopeInput" style="display:none;"><option value="">-- เลือกหมู่ที่รับผิดชอบ --</option></select>
                     </div>
                 </div>
@@ -1103,11 +1103,11 @@
             return;
         }
         areaBox.style.display = 'block';
-        facility.style.display = role === 'admin' ? 'block' : 'none';
+        facility.style.display = (role === 'admin' || role === 'vhv') ? 'block' : 'none';
         village.style.display = role === 'vhv' ? 'block' : 'none';
         help.innerText = role === 'admin'
             ? 'บัญชี Admin ต้องเลือกตำบล แล้วเลือก รพ.สต. ที่สังกัด เพื่อให้ระบบรู้หน่วยงานรับผิดชอบ'
-            : 'บัญชี VHV/อสม. ต้องเลือกตำบล แล้วเลือกหมู่ที่รับผิดชอบ เพื่อบันทึกเขตลงแท็บ อสม.';
+            : 'บัญชี VHV/อสม. ต้องเลือกตำบล เลือก รพ.สต. แล้วเลือกเฉพาะหมู่ที่อยู่ในการดูแลของ รพ.สต. นั้น เพื่อบันทึกเขตลงแท็บ อสม.';
         updateStaffDependentAreaFields();
     }
 
@@ -1117,16 +1117,25 @@
         const facility = document.getElementById('staffFacilityInput');
         const village = document.getElementById('staffVillageScopeInput');
         if (!facility || !village) return;
+
         const rows = SERVICE_AREA_LIST.filter(x => x.tambon === tambon);
         const currentFacility = facility.value;
         const currentVillage = village.value;
-        facility.innerHTML = '<option value="">-- เลือก รพ.สต. --</option>' + rows.map(x => `<option value="${escapeHTML(x.facility)}">${escapeHTML(x.facility)}</option>`).join('');
-        const villages = Array.from(new Set(rows.flatMap(x => x.villages))).sort((a, b) => parseInt(a.replace(/\D/g,''),10) - parseInt(b.replace(/\D/g,''),10));
-        village.innerHTML = '<option value="">-- เลือกหมู่ที่รับผิดชอบ --</option>' + villages.map(v => `<option value="${escapeHTML(v)}">${escapeHTML(v)}</option>`).join('');
-        if (currentFacility && rows.some(x => x.facility === currentFacility)) facility.value = currentFacility;
+        const facilityList = Array.from(new Set(rows.map(x => x.facility))).filter(Boolean);
+        facility.innerHTML = '<option value="">-- เลือก รพ.สต. --</option>' + facilityList.map(f => `<option value="${escapeHTML(f)}">${escapeHTML(f)}</option>`).join('');
+        if (currentFacility && facilityList.includes(currentFacility)) facility.value = currentFacility;
+
+        let villageRows = rows;
+        if (role === 'vhv') {
+            const selectedFacility = facility.value;
+            villageRows = selectedFacility ? rows.filter(x => x.facility === selectedFacility) : [];
+        }
+        const villages = Array.from(new Set(villageRows.flatMap(x => x.villages))).sort((a, b) => parseInt(a.replace(/\D/g,''),10) - parseInt(b.replace(/\D/g,''),10));
+        const villagePlaceholder = role === 'vhv' && !facility.value ? '-- เลือก รพ.สต. ก่อน --' : '-- เลือกหมู่ที่รับผิดชอบ --';
+        village.innerHTML = `<option value="">${villagePlaceholder}</option>` + villages.map(v => `<option value="${escapeHTML(v)}">${escapeHTML(v)}</option>`).join('');
         if (currentVillage && villages.includes(currentVillage)) village.value = currentVillage;
+        else village.value = '';
         if (role === 'admin') village.value = '';
-        if (role === 'vhv') facility.value = '';
     }
 
     function updateRoleDisplay() {
@@ -2338,7 +2347,7 @@
                 ? ''
                 : role === 'admin'
                     ? `<div class="info-row"><span>ตำบลที่สังกัด:</span> <span>${escapeHTML(staff.subdistrict || '-')}</span></div><div class="info-row"><span>รพ.สต.ที่สังกัด:</span> <span>${escapeHTML(staff.facility || '-')}</span></div>`
-                    : `<div class="info-row"><span>ตำบลที่รับผิดชอบ:</span> <span>${escapeHTML(staff.subdistrict || '-')}</span></div><div class="info-row"><span>หมู่ที่รับผิดชอบ:</span> <span>${escapeHTML(staff.villageScope || '-')}</span></div>`;
+                    : `<div class="info-row"><span>ตำบลที่รับผิดชอบ:</span> <span>${escapeHTML(staff.subdistrict || '-')}</span></div><div class="info-row"><span>รพ.สต.ที่สังกัด:</span> <span>${escapeHTML(staff.facility || '-')}</span></div><div class="info-row"><span>หมู่ที่รับผิดชอบ:</span> <span>${escapeHTML(staff.villageScope || '-')}</span></div>`;
             card.innerHTML = `
                 <div class="vhm-row-header"><span>ชื่อ-นามสกุล: <b>${escapeHTML(staff.name || '-')}</b> <span class="role-pill ${role}">${escapeHTML(roleLabel)}</span></span><span>Username: ${escapeHTML(staff.username || '-')}</span></div>
                 ${positionRow}
@@ -2387,14 +2396,14 @@
         const position = (role === 'admin' || role === 'hospital') ? (document.getElementById('staffPositionInput')?.value || '') : '';
         const positionOther = (role === 'admin' || role === 'hospital') ? (document.getElementById('staffPositionOtherInput')?.value || '').trim() : '';
         const subdistrict = document.getElementById('staffTambonInput')?.value || '';
-        const facility = role === 'admin' ? (document.getElementById('staffFacilityInput')?.value || '') : '';
+        const facility = (role === 'admin' || role === 'vhv') ? (document.getElementById('staffFacilityInput')?.value || '') : '';
         const villageScope = role === 'vhv' ? (document.getElementById('staffVillageScopeInput')?.value || '') : '';
         if (!username || !firstName || !lastName) { alert('⚠️ กรุณากรอก Username ชื่อ และนามสกุลเจ้าหน้าที่ให้ครบ'); return; }
         if (mode !== 'edit' && (!password || !secretKey)) { alert('⚠️ บัญชีใหม่ต้องระบุ Password และรหัสลับกู้บัญชีให้ครบ'); return; }
         if ((role === 'admin' || role === 'hospital') && !position) { alert('⚠️ กรุณาเลือกตำแหน่งของเจ้าหน้าที่'); return; }
         if ((role === 'admin' || role === 'hospital') && position === 'อื่นๆ' && !positionOther) { alert('⚠️ กรุณากรอกตำแหน่งในช่องอื่น ๆ'); return; }
         if (role === 'admin' && (!subdistrict || !facility)) { alert('⚠️ กรุณาเลือกตำบลและ รพ.สต.ที่สังกัดสำหรับบัญชี Admin'); return; }
-        if (role === 'vhv' && (!subdistrict || !villageScope)) { alert('⚠️ กรุณาเลือกตำบลและหมู่ที่รับผิดชอบสำหรับบัญชี VHV/อสม.'); return; }
+        if (role === 'vhv' && (!subdistrict || !facility || !villageScope)) { alert('⚠️ กรุณาเลือกตำบล รพ.สต. และหมู่ที่รับผิดชอบสำหรับบัญชี VHV/อสม.'); return; }
         if (!canCurrentUserManageRole(role)) { alert('🔒 สิทธิ์ไม่เพียงพอ: Admin จัดการได้เฉพาะ Admin และ VHV ส่วน Hospital จัดการได้ทุกยศ'); return; }
         const loading = document.getElementById('loadingText');
         loading.style.display = 'block';
@@ -2476,6 +2485,7 @@
         document.getElementById('staffTambonInput').value = staff.subdistrict || '';
         updateStaffDependentAreaFields();
         document.getElementById('staffFacilityInput').value = staff.facility || '';
+        updateStaffDependentAreaFields();
         document.getElementById('staffVillageScopeInput').value = staff.villageScope || '';
         document.getElementById('btnCancelStaffEdit').style.display = 'inline-block';
         window.scrollTo(0, 0);
