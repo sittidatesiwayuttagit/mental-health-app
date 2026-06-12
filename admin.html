@@ -249,6 +249,29 @@
         }
         .tiny-eye-btn:hover { background: #e0f2fe; border-color: #7dd3fc; }
 
+
+        .work-today-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:12px; margin: 14px 0; }
+        .work-card { background:#fff; border:1px solid #dbeafe; border-left:5px solid #3b82f6; border-radius:16px; padding:14px; box-shadow:0 6px 16px rgba(15,23,42,.06); }
+        .work-card.red { border-left-color:#ef4444; background:#fff7f7; }
+        .work-card.yellow { border-left-color:#f59e0b; background:#fffbeb; }
+        .work-card.green { border-left-color:#10b981; background:#f0fdf4; }
+        .work-card h4 { margin:0 0 6px 0; color:#0f172a; }
+        .work-count { font-size:28px; font-weight:800; color:#1d4ed8; }
+        .task-list { display:grid; gap:10px; margin-top:12px; }
+        .task-item { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:12px; }
+        .task-item.red { border-left:5px solid #ef4444; }
+        .task-item.yellow { border-left:5px solid #f59e0b; }
+        .task-item.blue { border-left:5px solid #3b82f6; }
+        .task-item.gray { border-left:5px solid #64748b; }
+        .task-actions { margin-top:8px; display:flex; flex-wrap:wrap; gap:8px; }
+        .note-box { background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:12px; margin:10px 0; }
+        .note-item { background:#fff; border:1px solid #e2e8f0; border-left:4px solid #0ea5e9; border-radius:12px; padding:10px; margin:8px 0; }
+        .timeline-list { border-left:3px solid #bfdbfe; padding-left:14px; margin-left:8px; }
+        .timeline-item { position:relative; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:10px; margin:10px 0; }
+        .timeline-item:before { content:''; position:absolute; left:-23px; top:16px; width:10px; height:10px; border-radius:50%; background:#3b82f6; }
+        .quality-list { display:grid; gap:8px; margin-top:10px; }
+        .quality-item { background:#fff; border:1px solid #fde68a; border-left:5px solid #f59e0b; border-radius:12px; padding:10px; }
+        .assign-box { background:#eff6ff; border:1px solid #bfdbfe; border-radius:14px; padding:12px; margin:10px 0; }
     </style>
 </head>
 <body>
@@ -301,6 +324,7 @@
 
         <div class="tabs-bar">
             <button id="tabPatientsBtn" class="tab-btn active" onclick="switchTab('patientsTab')">📋 ข้อมูลผู้ป่วย</button>
+            <button id="tabWorkTodayBtn" class="tab-btn" onclick="switchTab('workTodayTab')">📌 งานวันนี้</button>
             <button id="tabOverviewBtn" class="tab-btn" onclick="switchTab('overviewTab')">📊 ข้อมูลภาพรวมเคส</button>
             <button id="tabStaffBtn" class="tab-btn" onclick="switchTab('staffTab')">👥 ข้อมูลเจ้าหน้าที่</button>
             <button id="tabConsultBtn" class="tab-btn" onclick="switchTab('consultTab')">🧭 คำปรึกษา/ขอความช่วยเหลือ</button>
@@ -309,6 +333,29 @@
         </div>
 
         <div id="loadingText" class="loading" style="display:none;">กำลังดึงข้อมูลล่าสุดจาก Google Sheet...</div>
+
+
+        <div id="workTodayTab" class="tab-content">
+            <div class="search-container">
+                <div class="history-summary-line">
+                    <div>
+                        <h3 style="margin:0; color:#1e293b;">📌 งานที่ต้องทำวันนี้</h3>
+                        <p class="overview-note" style="margin:6px 0 0 0;">รวมงานสำคัญที่ควรติดตามก่อน เช่น เคสแดง, SLA เกินกำหนด, รอจองคิว, รอเลื่อนนัด, คำปรึกษาใหม่ และข้อมูลที่ควรตรวจสอบ</p>
+                    </div>
+                    <button class="btn-refresh" onclick="loadWorkTodayDashboard(true)">🔄 รีเฟรชงานวันนี้</button>
+                </div>
+            </div>
+            <div id="workTodaySummary" class="work-today-grid"></div>
+            <div class="search-container">
+                <h4 style="margin-top:0; color:#334155;">รายการงานค้าง/งานด่วน</h4>
+                <div id="workTodayList" class="task-list"></div>
+            </div>
+            <div class="search-container">
+                <h4 style="margin-top:0; color:#334155;">⚠️ ข้อมูลที่ควรตรวจสอบ</h4>
+                <p class="case-status-muted">ช่วยตรวจข้อมูลที่อาจทำให้แจ้งเตือนผิดพื้นที่ ติดตามไม่ได้ หรือรายงานไม่สมบูรณ์</p>
+                <div id="dataQualityList" class="quality-list"></div>
+            </div>
+        </div>
 
         <div id="patientsTab" class="tab-content active">
             <div id="patientListSection">
@@ -342,6 +389,7 @@
                     <button id="detailSubAssessmentBtn" class="detail-subtab-btn active" onclick="switchPatientDetailSubTab('assessment')">📋 ข้อมูลการประเมิน</button>
                     <button id="detailSubProfileBtn" class="detail-subtab-btn" onclick="switchPatientDetailSubTab('profile')">👤 ข้อมูลทั่วไป</button>
                     <button id="detailSubCompareBtn" class="detail-subtab-btn" onclick="switchPatientDetailSubTab('compare')">📊 ข้อมูลเปรียบเทียบ</button>
+                    <button id="detailSubTimelineBtn" class="detail-subtab-btn" onclick="switchPatientDetailSubTab('timeline')">🕘 Timeline/Note</button>
                 </div>
 
                 <div id="detailAssessmentSubSection" class="detail-subsection active">
@@ -425,6 +473,22 @@
                             <button type="button" class="btn-refresh" onclick="moveComparisonPage(-5)">➡️ 5 รายการล่าสุด</button>
                         </div>
                         <div id="comparisonTableBox"></div>
+                    </div>
+                </div>
+
+                <div id="detailTimelineSubSection" class="detail-subsection">
+                    <div class="compare-panel">
+                        <h4 style="margin-top:0; color:#334155;">🕘 Timeline รวม / Note ภายในเจ้าหน้าที่</h4>
+                        <p class="case-status-muted" style="margin-top:0;">แสดงประวัติสำคัญของผู้ป่วยรายนี้ เช่น การคัดกรอง การจองคิว เลื่อนนัด Referral/Follow-up และบันทึกภายในทีม</p>
+                        <div id="caseAssignmentPanel"></div>
+                        <div class="note-box">
+                            <label style="font-weight:700; color:#334155;">เพิ่มบันทึกภายในเจ้าหน้าที่</label>
+                            <textarea id="caseInternalNoteText" rows="3" placeholder="เช่น โทรแล้วไม่รับสาย, ญาติแจ้งว่าสะดวกวันศุกร์, ผู้ป่วยขอเลื่อนนัด..." style="margin-top:8px;"></textarea>
+                            <div style="text-align:right; margin-top:8px;"><button class="small-btn green" onclick="addInternalCaseNoteFromWeb()">💾 บันทึก Note</button></div>
+                        </div>
+                        <div id="caseNotesList"></div>
+                        <h4 style="color:#334155; margin-top:20px;">ประวัติเหตุการณ์เรียงตามเวลา</h4>
+                        <div id="patientTimelineList" class="timeline-list"></div>
                     </div>
                 </div>
             </div>
@@ -632,6 +696,8 @@
     let currentPatientPhotoDataUrl = "";
     let comparisonPageOffset = 0;
     let currentPatientDetailSubTab = "assessment";
+    let currentCaseSupportData = { assignment: null, notes: [] };
+    let dataQualityCache = [];
 
     function safeText(value) { return value === undefined || value === null ? "" : String(value); }
 
@@ -1221,6 +1287,7 @@
         const target = document.getElementById(tabId);
         if (target) target.classList.add('active');
         if (tabId === 'patientsTab') { document.getElementById('tabPatientsBtn').classList.add('active'); fetchPatientData(); }
+        else if (tabId === 'workTodayTab') { document.getElementById('tabWorkTodayBtn').classList.add('active'); loadWorkTodayDashboard(false); }
         else if (tabId === 'overviewTab') { document.getElementById('tabOverviewBtn').classList.add('active'); showOverviewHomePage(); if (!Array.isArray(allData) || allData.length === 0) fetchPatientData(); else renderDashboardSummary(allData); }
         else if (tabId === 'staffTab') { document.getElementById('tabStaffBtn').classList.add('active'); fetchStaffData(); }
         else if (tabId === 'consultTab') { document.getElementById('tabConsultBtn').classList.add('active'); fetchConsultRequests(); }
@@ -1565,7 +1632,7 @@
 
     function switchPatientDetailSubTab(tabName) {
         currentPatientDetailSubTab = tabName || 'assessment';
-        const map = { assessment: ['detailSubAssessmentBtn', 'detailAssessmentSubSection'], profile: ['detailSubProfileBtn', 'detailProfileSubSection'], compare: ['detailSubCompareBtn', 'detailCompareSubSection'] };
+        const map = { assessment: ['detailSubAssessmentBtn', 'detailAssessmentSubSection'], profile: ['detailSubProfileBtn', 'detailProfileSubSection'], compare: ['detailSubCompareBtn', 'detailCompareSubSection'], timeline: ['detailSubTimelineBtn', 'detailTimelineSubSection'] };
         Object.keys(map).forEach(key => {
             const btn = document.getElementById(map[key][0]);
             const section = document.getElementById(map[key][1]);
@@ -1573,6 +1640,7 @@
             if (section) section.classList.toggle('active', key === currentPatientDetailSubTab);
         });
         if (currentPatientDetailSubTab === 'compare') renderAssessmentComparison();
+        if (currentPatientDetailSubTab === 'timeline') loadPatientSupportData();
     }
 
     function getPatientGroupRecords() {
@@ -1867,6 +1935,7 @@
                 <div class="case-status-buttons"></div>
             </div>
             <div class="clinical-box"><b>Risk:</b> <span class="risk-pill ${getRiskClass(deriveRiskLevel(item))}">${escapeHTML(deriveRiskLevel(item))}</span><br><b>Patient ID:</b> ${escapeHTML(item.patientId || '-')}<br><b>SLA:</b> ${renderSlaText(item)}<br><b>Outcome Stage:</b> ${escapeHTML(item.outcomeStage || '-')}<br><b>LINE Delivery:</b> ${escapeHTML(item.lastAlertDeliverySummary || '-')}<br><b>Emergency Checklist:</b> ${escapeHTML(item.emergencyChecklistStatus || '-')} ${item.emergencyChecklistUpdatedAt ? '(' + escapeHTML(item.emergencyChecklistUpdatedAt) + ')' : ''}<br><b>ST-5:</b> ${formatST5Display(item)}<br><b>Psych:</b> ${escapeHTML(formatOptionalClinicalText(item.psychComorbidities))}<br><b>Medical:</b> ${escapeHTML(formatOptionalClinicalText(item.medicalComorbidities))}<br><b>10X:</b> ${formatSubstance10XDisplay(item)}</div>
+            ${renderCaseAssignmentBox(item)}
             <div class="feature-box"><h4>✏️ แก้ไขคะแนนประเมินพร้อมประวัติ</h4><p class="case-status-muted">ใช้เมื่อบันทึกคะแนนผิดเท่านั้น ระบบจะบันทึก old/new value และเหตุผลลงชีทประวัติ</p><button class="small-btn" onclick='openAssessmentEditPromptFromButton(this)' data-rowid="${escapeHTML(item.rowId)}">✏️ แก้ไขคะแนนรายการนี้</button></div>
             ${renderEmergencyChecklistBox(item)}
             <div class="info-row"><span>ผู้คัดกรองลงพื้นที่ (อสม.):</span> <span><b>${escapeHTML(item.vhmName || '-')}</b></span></div>
@@ -1936,6 +2005,216 @@
         });
     }
 
+
+
+
+    function buildPatientKeyForClient(item) {
+        if (!item) return '';
+        return safeText(item.patientId) || [item.patientName, item.patientGender, item.villageNo].map(safeText).join('|');
+    }
+
+    function renderCaseAssignmentBox(item) {
+        const assigned = safeText(item.caseAssignedToName || item.caseAssignedToUsername || '');
+        const assignedAt = safeText(item.caseAssignedAt || '');
+        return `<div class="assign-box">
+            <h4 style="margin:0 0 8px 0; color:#1d4ed8;">👤 ผู้รับผิดชอบเคส</h4>
+            <p class="case-status-muted" style="margin:0 0 8px 0;">${assigned ? 'ผู้รับผิดชอบหลัก: <b>' + escapeHTML(assigned) + '</b>' + (assignedAt ? ' | รับเมื่อ ' + escapeHTML(assignedAt) : '') : 'ยังไม่มีผู้รับผิดชอบหลัก'}</p>
+            <button class="small-btn" onclick="assignCurrentPatientCase()">👤 รับผิดชอบเคสนี้</button>
+        </div>`;
+    }
+
+    async function assignCurrentPatientCase() {
+        const records = getPatientGroupRecords();
+        if (!records.length) { alert('ไม่พบข้อมูลผู้ป่วย'); return; }
+        const latest = records[0];
+        const note = prompt('หมายเหตุการรับผิดชอบเคสนี้ (เว้นว่างได้)', 'รับผิดชอบติดตามเคสนี้');
+        if (note === null) return;
+        try {
+            const params = new URLSearchParams({
+                action: 'assignPatientCase',
+                authToken: currentAdminAuthToken,
+                actorUsername: currentAdminUsername,
+                actorName: getCurrentAdminNameForCase(),
+                patientId: latest.patientId || '',
+                patientName: latest.patientName || '',
+                patientGender: latest.patientGender || '',
+                villageNo: latest.villageNo || '',
+                note: note || ''
+            });
+            const res = await fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`);
+            if (!res.ok) throw new Error('HTTP Status ' + res.status);
+            const result = await res.json();
+            if (!result.success) throw new Error(result.message || 'บันทึกไม่สำเร็จ');
+            allData = allData.map(r => buildPatientKeyForClient(r) === buildPatientKeyForClient(latest) ? {
+                ...r,
+                caseAssignedToUsername: currentAdminUsername,
+                caseAssignedToName: getCurrentAdminNameForCase(),
+                caseAssignedAt: new Date().toLocaleString('th-TH', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', hour12:false })
+            } : r);
+            alert('✅ รับผิดชอบเคสนี้แล้ว');
+            renderPatientDetail();
+            if (currentPatientDetailSubTab === 'timeline') loadPatientSupportData(true);
+        } catch (err) { alert('❌ รับผิดชอบเคสไม่สำเร็จ: ' + err.message); }
+    }
+
+    async function loadPatientSupportData(force = false) {
+        const records = getPatientGroupRecords();
+        if (!records.length) return;
+        const latest = records[0];
+        const panel = document.getElementById('caseAssignmentPanel');
+        const notesEl = document.getElementById('caseNotesList');
+        const timelineEl = document.getElementById('patientTimelineList');
+        if (panel) panel.innerHTML = renderCaseAssignmentBox(latest);
+        if (notesEl) notesEl.innerHTML = '<p class="case-status-muted">กำลังโหลด note ภายใน...</p>';
+        try {
+            const params = new URLSearchParams({
+                action: 'getCaseSupportData', authToken: currentAdminAuthToken, actorUsername: currentAdminUsername,
+                patientId: latest.patientId || '', patientName: latest.patientName || '', patientGender: latest.patientGender || '', villageNo: latest.villageNo || ''
+            });
+            const res = await fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`);
+            if (!res.ok) throw new Error('HTTP Status ' + res.status);
+            const result = await res.json();
+            if (!result.success) throw new Error(result.message || 'โหลดข้อมูลไม่สำเร็จ');
+            currentCaseSupportData = { assignment: result.assignment || null, notes: result.notes || [] };
+            renderCaseNotes();
+            renderPatientTimeline();
+        } catch (err) {
+            if (notesEl) notesEl.innerHTML = `<p style="color:#ef4444;">โหลด Note ไม่สำเร็จ: ${escapeHTML(err.message)}</p>`;
+            renderPatientTimeline();
+        }
+    }
+
+    function renderCaseNotes() {
+        const notesEl = document.getElementById('caseNotesList');
+        if (!notesEl) return;
+        const notes = currentCaseSupportData.notes || [];
+        if (!notes.length) { notesEl.innerHTML = '<p class="case-status-muted">ยังไม่มี Note ภายในสำหรับเคสนี้</p>'; return; }
+        notesEl.innerHTML = notes.map(n => `<div class="note-item"><b>📝 ${escapeHTML(n.createdAt || '-')}</b> โดย ${escapeHTML(n.createdByName || n.createdByUsername || '-')}<br>${escapeHTML(n.noteText || '-')}</div>`).join('');
+    }
+
+    async function addInternalCaseNoteFromWeb() {
+        const textEl = document.getElementById('caseInternalNoteText');
+        const noteText = textEl ? textEl.value.trim() : '';
+        if (!noteText) { alert('กรุณากรอก Note ก่อนบันทึก'); return; }
+        const records = getPatientGroupRecords();
+        if (!records.length) return;
+        const latest = records[0];
+        try {
+            const params = new URLSearchParams({
+                action: 'addCaseNote', authToken: currentAdminAuthToken, actorUsername: currentAdminUsername, actorName: getCurrentAdminNameForCase(),
+                patientId: latest.patientId || '', patientName: latest.patientName || '', patientGender: latest.patientGender || '', villageNo: latest.villageNo || '', noteText
+            });
+            const res = await fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`);
+            if (!res.ok) throw new Error('HTTP Status ' + res.status);
+            const result = await res.json();
+            if (!result.success) throw new Error(result.message || 'บันทึก Note ไม่สำเร็จ');
+            if (textEl) textEl.value = '';
+            await loadPatientSupportData(true);
+            alert('✅ บันทึก Note แล้ว');
+        } catch (err) { alert('❌ บันทึก Note ไม่สำเร็จ: ' + err.message); }
+    }
+
+    function renderPatientTimeline() {
+        const timelineEl = document.getElementById('patientTimelineList');
+        if (!timelineEl) return;
+        const records = getPatientGroupRecords();
+        let events = [];
+        records.forEach(r => {
+            events.push({ date: r.timestamp, type:'คัดกรอง', text:`ทำแบบประเมิน | Risk ${deriveRiskLevel(r)} | 2Q+ ${safeText(r.q2Result || '-')} | 9Q ${safeText(r.q9Score || '-')}` });
+            if (safeText(r.bookingDateTime) && safeText(r.bookingDateTime) !== '-') events.push({ date:r.bookingDateTime, type:'จองคิว', text:`จองคิว: ${safeText(r.bookingDateTime)} โดย ${safeText(r.bookingBy || '-')}` });
+            if (safeText(r.rescheduleStatus)) events.push({ date:r.rescheduleRequestedAt || r.timestamp, type:'เลื่อนนัด', text:`${safeText(r.rescheduleStatus)} | ${safeText(r.rescheduleDecision || '')} ${safeText(r.rescheduleDecisionReason || '')}` });
+            if (safeText(r.referralStatus) && safeText(r.referralStatus) !== 'ยังไม่ระบุ') events.push({ date:r.timestamp, type:'Referral', text:`${safeText(r.referralStatus)} | ${safeText(r.referralPlace || '')} | ${safeText(r.outcomeStage || '')}` });
+            if (safeText(r.followupStatus) && safeText(r.followupStatus) !== 'ยังไม่ระบุ') events.push({ date:r.nextFollowupDate || r.timestamp, type:'Follow-up', text:`${safeText(r.followupStatus)} | ${safeText(r.followupNote || '')}` });
+        });
+        (currentCaseSupportData.notes || []).forEach(n => events.push({ date:n.createdAt, type:'Note', text:`${safeText(n.noteText)} | โดย ${safeText(n.createdByName || n.createdByUsername)}` }));
+        events.sort((a,b) => parseTimestamp(b.date) - parseTimestamp(a.date));
+        timelineEl.innerHTML = events.length ? events.map(e => `<div class="timeline-item"><b>${escapeHTML(e.date || '-')} · ${escapeHTML(e.type)}</b><br>${escapeHTML(e.text || '-')}</div>`).join('') : '<p class="case-status-muted">ยังไม่มีเหตุการณ์</p>';
+    }
+
+    async function loadWorkTodayDashboard(forceRefresh = false) {
+        if (!Array.isArray(allData) || allData.length === 0 || forceRefresh) {
+            fetchPatientData();
+        }
+        if (!Array.isArray(allConsultData) || allConsultData.length === 0 || forceRefresh) {
+            try {
+                const url = `${GOOGLE_SCRIPT_URL}?action=getConsultRequests&actorUsername=${encodeURIComponent(currentAdminUsername)}&authToken=${encodeURIComponent(currentAdminAuthToken)}`;
+                const res = await fetch(url);
+                if (res.ok) { const result = await res.json(); if (result.success) allConsultData = Array.isArray(result.records) ? result.records : []; }
+            } catch(e) {}
+        }
+        await fetchDataQualityIssues();
+        renderWorkTodayDashboard();
+    }
+
+    async function fetchDataQualityIssues() {
+        try {
+            const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=getDataQualityIssues&actorUsername=${encodeURIComponent(currentAdminUsername)}&authToken=${encodeURIComponent(currentAdminAuthToken)}`);
+            if (!res.ok) throw new Error('HTTP Status ' + res.status);
+            const result = await res.json();
+            dataQualityCache = result.success ? (result.issues || []) : [];
+        } catch (e) { dataQualityCache = [{ level:'warning', title:'โหลดข้อมูลตรวจสอบไม่ครบไม่สำเร็จ', detail:e.message }]; }
+    }
+
+    function isOverdueSla(item) { return safeText(item.slaStatus).includes('เกินกำหนด') || safeText(item.slaStatus).includes('เลยกำหนด'); }
+    function isPendingReschedule(item) { return safeText(item.rescheduleStatus).includes('รอ') && !safeText(item.rescheduleDecision); }
+    function isUnbooked(item) { return normalizeCaseStatus(item.alertStatus) !== 'จองคิวแล้ว'; }
+    function isTodayDateText(text) {
+        const d = parseTimestamp(text);
+        if (!d || d.getTime() === 0) return false;
+        const now = new Date();
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+    }
+
+    function getLatestPatientRecordsForDashboard() {
+        const map = {};
+        (allData || []).forEach(item => {
+            const key = buildPatientKeyForClient(item);
+            if (!key) return;
+            if (!map[key] || parseTimestamp(item.timestamp) > parseTimestamp(map[key].timestamp)) map[key] = item;
+        });
+        return Object.values(map);
+    }
+
+    function renderWorkTodayDashboard() {
+        const latest = getLatestPatientRecordsForDashboard();
+        const redUnfinished = latest.filter(x => deriveRiskLevel(x).includes('แดง') && !safeText(x.emergencyChecklistStatus).includes('ครบ')).length;
+        const overdue = latest.filter(isOverdueSla).length;
+        const unbooked = latest.filter(x => !deriveRiskLevel(x).includes('เขียว') && isUnbooked(x)).length;
+        const reschedule = latest.filter(isPendingReschedule).length;
+        const consultNew = (allConsultData || []).filter(x => ['ใหม่','รอรับเรื่อง',''].includes(safeText(x.status))).length;
+        const followToday = latest.filter(x => isTodayDateText(x.nextFollowupDate) && !['ติดตามแล้ว','ปิดเคสแล้ว','ไม่ต้องติดตาม'].includes(safeText(x.followupStatus))).length;
+        const summary = document.getElementById('workTodaySummary');
+        if (summary) summary.innerHTML = `
+            <div class="work-card red"><h4>🔴 เคสแดงยังไม่ครบ checklist</h4><div class="work-count">${redUnfinished}</div></div>
+            <div class="work-card yellow"><h4>⏰ SLA เกินกำหนด</h4><div class="work-count">${overdue}</div></div>
+            <div class="work-card blue"><h4>📅 รอจองคิว</h4><div class="work-count">${unbooked}</div></div>
+            <div class="work-card yellow"><h4>🔁 รอ Hospital ยืนยันเลื่อนนัด</h4><div class="work-count">${reschedule}</div></div>
+            <div class="work-card green"><h4>☎️ Follow-up วันนี้</h4><div class="work-count">${followToday}</div></div>
+            <div class="work-card blue"><h4>🧭 คำปรึกษาใหม่</h4><div class="work-count">${consultNew}</div></div>`;
+        let tasks = [];
+        latest.forEach(item => {
+            const risk = deriveRiskLevel(item);
+            if (risk.includes('แดง') && !safeText(item.emergencyChecklistStatus).includes('ครบ')) tasks.push({ cls:'red', title:'เคสแดงยังไม่ครบ checklist', item, detail:`${item.patientName} · ${item.patientSubdistrict || ''} ${item.villageNo || ''}` });
+            if (isOverdueSla(item)) tasks.push({ cls:'yellow', title:'SLA เกินกำหนด', item, detail:`${item.patientName} · ${item.slaStatus || ''} · กำหนด ${item.slaDueAt || '-'}` });
+            if (!risk.includes('เขียว') && isUnbooked(item)) tasks.push({ cls:'blue', title:'รอจองคิว', item, detail:`${item.patientName} · Risk ${risk}` });
+            if (isPendingReschedule(item)) tasks.push({ cls:'yellow', title:'รอ Hospital ยืนยันเลื่อนนัด', item, detail:`${item.patientName} · ${item.rescheduleOption1 || '-'}` });
+            if (isTodayDateText(item.nextFollowupDate) && !['ติดตามแล้ว','ปิดเคสแล้ว','ไม่ต้องติดตาม'].includes(safeText(item.followupStatus))) tasks.push({ cls:'green', title:'ถึงกำหนด Follow-up วันนี้', item, detail:`${item.patientName} · ${item.nextFollowupDate}` });
+        });
+        (allConsultData || []).filter(x => ['ใหม่','รอรับเรื่อง',''].includes(safeText(x.status))).slice(0, 20).forEach(c => tasks.push({ cls:getConsultUrgencyClass(c)==='urgent'?'red':'blue', title:'คำปรึกษา/ขอความช่วยเหลือใหม่', consult:c, detail:`${safeText(c.topic || c.issueType || '-')} · ${safeText(c.subdistrict || '')} ${safeText(c.village || '')}` }));
+        const list = document.getElementById('workTodayList');
+        if (list) list.innerHTML = tasks.length ? tasks.slice(0,80).map(t => `<div class="task-item ${t.cls}"><b>${escapeHTML(t.title)}</b><br><span class="case-status-muted">${escapeHTML(t.detail || '-')}</span>${t.item ? `<div class="task-actions"><button class="small-btn" onclick="openPatientFromTask('${escapeHTML(t.item.patientName)}','${escapeHTML(t.item.patientGender)}','${escapeHTML(t.item.villageNo)}')">เปิดเคส</button></div>` : ''}</div>`).join('') : '<p class="case-status-muted">ยังไม่มีงานค้างสำคัญในขณะนี้</p>';
+        const q = document.getElementById('dataQualityList');
+        if (q) q.innerHTML = (dataQualityCache || []).length ? dataQualityCache.map(x => `<div class="quality-item"><b>${escapeHTML(x.title || 'ข้อมูลควรตรวจสอบ')}</b><br><span class="case-status-muted">${escapeHTML(x.detail || '-')}</span></div>`).join('') : '<p class="case-status-muted">ยังไม่พบข้อมูลที่ควรตรวจสอบ</p>';
+    }
+
+    function openPatientFromTask(name, gender, village) {
+        currentSelectedPatientName = name;
+        currentSelectedPatientGender = gender;
+        currentSelectedPatientVillage = village;
+        currentPatientDetailSubTab = 'assessment';
+        switchTab('patientsTab');
+        setTimeout(() => renderPatientDetail(), 100);
+    }
 
     function renderReferralEditor(container, item) {
         if (!container) return;
