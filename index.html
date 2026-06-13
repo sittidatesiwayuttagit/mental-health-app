@@ -47,6 +47,41 @@
         .btn-draft.secondary { background: #64748b; }
         .btn-draft.danger { background: #ef4444; }
 
+        .home-card { background:#ffffff; border:1px solid #dbe4f0; border-radius:18px; padding:16px; margin-bottom:14px; box-shadow:0 8px 20px rgba(15,23,42,.06); }
+        .home-title { font-size:22px; font-weight:800; color:#1e293b; margin:0 0 6px; }
+        .home-subtitle { color:#64748b; font-size:14px; line-height:1.55; margin:0; }
+        .home-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+        .home-btn { width:100%; min-height:78px; padding:12px; border:none; border-radius:16px; font-size:16px; font-weight:800; color:#ffffff; cursor:pointer; line-height:1.35; text-align:center; }
+        .home-btn.blue { background:#2563eb; }
+        .home-btn.green { background:#059669; }
+        .home-btn.orange { background:#d97706; }
+        .home-btn.red { background:#dc2626; }
+        .home-btn.gray { background:#475569; }
+        .home-btn.purple { background:#7c3aed; }
+        .home-status-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
+        .home-status { background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:10px; font-size:13px; color:#334155; }
+        .home-status b { display:block; color:#0f172a; font-size:15px; }
+        .patient-list-panel { display:none; margin-top:12px; }
+        .patient-list-panel.active { display:block; }
+        .patient-search-row { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0; }
+        .patient-search-row input { flex:1 1 180px; padding:10px 12px; border:1.5px solid #cbd5e1; border-radius:12px; font-size:15px; }
+        .patient-mini-card { border:1px solid #e2e8f0; background:#f8fafc; border-radius:14px; padding:12px; margin:8px 0; }
+        .patient-mini-card b { color:#0f172a; }
+        .patient-meta { color:#64748b; font-size:13px; margin-top:4px; }
+        .patient-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+        .small-action { border:none; border-radius:10px; padding:9px 10px; font-weight:800; cursor:pointer; color:#fff; background:#2563eb; }
+        .small-action.green { background:#059669; }
+        .small-action.red { background:#dc2626; }
+        .small-action.gray { background:#64748b; }
+        .post-submit-card { background:#ecfdf5; border:1px solid #bbf7d0; border-radius:18px; padding:16px; margin:12px 0; color:#064e3b; }
+        .post-submit-card.warning { background:#fff7ed; border-color:#fed7aa; color:#7c2d12; }
+        .post-submit-card.danger { background:#fef2f2; border-color:#fecaca; color:#7f1d1d; }
+        .post-submit-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
+        @media (max-width: 520px) {
+            .home-grid, .home-status-grid, .post-submit-actions { grid-template-columns:1fr; }
+            .home-btn { min-height:64px; }
+        }
+
         .optional-toggle { width: 100%; padding: 13px; border: 2px dashed #3b82f6; border-radius: 12px; background:#eff6ff; color:#1d4ed8; font-weight:bold; cursor:pointer; margin: 10px 0; font-size:15px; }
         .optional-toggle.off { border-color:#cbd5e1; background:#ffffff; color:#475569; }
         .optional-panel { display: none; margin-top: 12px; }
@@ -86,6 +121,59 @@
     <div id="vhmInfoHeader" class="vhm-info-header">
         <div>ผู้ประเมิน: <span id="vhmDisplayName">-</span></div>
         <button class="btn-logout" onclick="logout()">🔒 ออกจากระบบ</button>
+    </div>
+
+    <div id="stepHome" class="step">
+        <div class="home-card">
+            <div class="home-title">สวัสดีครับ/ค่ะ <span id="homeDisplayName">อสม.</span></div>
+            <p class="home-subtitle">หน้านี้รวมปุ่มที่ใช้บ่อย เลือกงานที่ต้องการได้เลย</p>
+            <div class="home-status-grid">
+                <div class="home-status"><b>พื้นที่รับผิดชอบ</b><span id="homeAreaText">-</span></div>
+                <div class="home-status"><b>ร่างรอส่ง</b><span id="homeDraftCount">0 รายการ</span></div>
+            </div>
+            <div class="home-grid">
+                <button class="home-btn blue" onclick="startNewScreeningFromHome()">📝 เริ่มคัดกรองใหม่</button>
+                <button class="home-btn green" onclick="toggleMyPatientsPanel()">👥 รายชื่อในหมู่ของฉัน</button>
+                <button class="home-btn orange" onclick="toggleOfflineQueuePanel()">📦 ดูร่างรอส่ง</button>
+                <button class="home-btn red" onclick="window.location.href='urgent.html'">🚨 แจ้งเหตุเร่งด่วน</button>
+                <button class="home-btn purple" onclick="window.location.href='manual.html'">📚 คู่มือ อสม.</button>
+                <button class="home-btn gray" onclick="syncOfflineDrafts()">🔄 ส่งร่างค้าง</button>
+            </div>
+        </div>
+
+        <div id="myPatientsPanel" class="home-card patient-list-panel">
+            <div class="home-title">👥 รายชื่อในหมู่ของฉัน</div>
+            <p class="home-subtitle">กด “คัดกรองซ้ำ” เพื่อลดการกรอกชื่อ เพศ ตำบล และหมู่ซ้ำ</p>
+            <div class="patient-search-row">
+                <input type="text" id="myPatientSearchInput" placeholder="ค้นหาชื่อในหมู่ของฉัน" oninput="renderMyPatientsList()">
+                <button class="small-action" onclick="loadMyPatientsForHome(true)">รีเฟรช</button>
+            </div>
+            <div id="myPatientsList"><div class="mini-note">กำลังโหลดรายชื่อ...</div></div>
+        </div>
+
+        <div id="offlineQueuePanel" class="home-card patient-list-panel">
+            <div class="home-title">📦 ร่างออฟไลน์ / ข้อมูลรอส่ง</div>
+            <p class="home-subtitle">ถ้าส่งไม่สำเร็จเพราะเน็ตหลุด ระบบจะเก็บไว้ในเครื่องนี้ ให้กดส่งร่างค้างเมื่อมีสัญญาณ</p>
+            <div class="patient-actions">
+                <button class="small-action green" onclick="syncOfflineDrafts()">🔄 ส่งร่างค้างทั้งหมด</button>
+                <button class="small-action red" onclick="clearOfflineDrafts()">🗑️ ลบร่างทั้งหมด</button>
+            </div>
+            <div id="offlineQueueList" style="margin-top:10px;"></div>
+        </div>
+    </div>
+
+    <div id="stepDone" class="step">
+        <div class="header">
+            <h2>✅ ส่งข้อมูลเรียบร้อย</h2>
+            <p>โปรดอ่านคำแนะนำสั้น ๆ ก่อนทำรายการถัดไป</p>
+        </div>
+        <div id="postSubmitGuidance" class="post-submit-card"></div>
+        <div class="post-submit-actions">
+            <button class="btn-nav btn-next" onclick="startNewScreeningFromHome()">📝 คัดกรองรายใหม่</button>
+            <button class="btn-nav btn-back" onclick="goHome()">🏠 กลับหน้าแรก อสม.</button>
+            <button class="btn-nav btn-submit" onclick="window.location.href='manual.html'">📚 เปิดคู่มือ อสม.</button>
+            <button class="btn-nav btn-back" onclick="window.location.href='urgent.html'">🚨 ช่วยเหลือเร่งด่วน</button>
+        </div>
     </div>
     
     <div id="step0" class="step active">
@@ -394,8 +482,10 @@
     let currentUserRole = "vhm";
     let currentAuthToken = "";
     let currentVhmSubdistrict = "";
+    let currentVhmFacility = "";
     let currentVhmVillageScope = "";
     let localScreeningHistory = [];
+    let myPatientRecords = [];
     let selectedPatientKey = "";
 
     function safeText(value) {
@@ -815,7 +905,7 @@
                     setAuthChecking(true, `พบสิทธิ์ของ ${res.name || 'ผู้ใช้งาน'} กำลังเข้าสู่ระบบอัตโนมัติ...`);
                     applyLoginSession(res);
                     fetchPatientHistoryForAutocomplete();
-                    changeStep(1);
+                    goHome();
                     setAuthChecking(false);
                 } else {
                     setAuthChecking(false);
@@ -840,11 +930,13 @@
         currentUserRole = (res.role === 'admin' || res.role === 'hospital') ? 'admin' : 'vhm';
         currentAuthToken = res.authToken || '';
         currentVhmSubdistrict = res.subdistrict || '';
+        currentVhmFacility = res.facility || '';
         currentVhmVillageScope = res.villageScope || '';
-        const scopeText = currentUserRole === 'vhm' && currentVhmSubdistrict && currentVhmVillageScope ? ` | เขต: ${currentVhmSubdistrict} ${currentVhmVillageScope}` : '';
+        const scopeText = currentUserRole === 'vhm' && currentVhmSubdistrict && currentVhmVillageScope ? ` | เขต: ${currentVhmSubdistrict} ${currentVhmFacility ? currentVhmFacility + ' ' : ''}${currentVhmVillageScope}` : '';
         document.getElementById('vhmDisplayName').innerText = `${currentVhmName} (${res.roleTitle || '-'})${scopeText}`;
         document.getElementById('vhmInfoHeader').style.display = "flex";
         populatePatientSubdistrictOptions();
+        updateHomeDashboard();
     }
 
     function changeStep(step) {
@@ -852,6 +944,135 @@
         const target = document.getElementById('step' + step);
         if (target) target.classList.add('active');
         window.scrollTo(0, 0);
+    }
+
+
+    function goHome() {
+        updateHomeDashboard();
+        loadMyPatientsForHome(false);
+        renderOfflineQueuePanel();
+        changeStep('Home');
+    }
+
+    function updateHomeDashboard() {
+        const nameEl = document.getElementById('homeDisplayName');
+        if (nameEl) nameEl.innerText = currentVhmName || 'อสม.';
+        const areaEl = document.getElementById('homeAreaText');
+        if (areaEl) {
+            if (currentUserRole === 'vhm') areaEl.innerText = `${currentVhmSubdistrict || '-'} | ${currentVhmFacility || '-'} | ${currentVhmVillageScope || '-'}`;
+            else areaEl.innerText = 'บัญชีผู้ดูแลระบบ';
+        }
+        const drafts = getOfflineDrafts();
+        const homeDraftCount = document.getElementById('homeDraftCount');
+        if (homeDraftCount) homeDraftCount.innerText = `${drafts.length} รายการ`;
+        renderOfflineQueuePanel();
+    }
+
+    function startNewScreeningFromHome() {
+        resetScreeningFormAfterSuccess();
+    }
+
+    function toggleMyPatientsPanel() {
+        const panel = document.getElementById('myPatientsPanel');
+        const offline = document.getElementById('offlineQueuePanel');
+        if (offline) offline.classList.remove('active');
+        if (!panel) return;
+        panel.classList.toggle('active');
+        if (panel.classList.contains('active')) loadMyPatientsForHome(false);
+    }
+
+    function toggleOfflineQueuePanel() {
+        const panel = document.getElementById('offlineQueuePanel');
+        const patients = document.getElementById('myPatientsPanel');
+        if (patients) patients.classList.remove('active');
+        if (!panel) return;
+        panel.classList.toggle('active');
+        renderOfflineQueuePanel();
+    }
+
+    async function loadMyPatientsForHome(force) {
+        if (!currentVhmUsername || !currentAuthToken) return;
+        const listEl = document.getElementById('myPatientsList');
+        if (listEl && (force || myPatientRecords.length === 0)) listEl.innerHTML = '<div class="mini-note">⏳ กำลังโหลดรายชื่อในพื้นที่...</div>';
+        if (!force && myPatientRecords.length > 0) { renderMyPatientsList(); return; }
+        const params = new URLSearchParams({
+            action: 'getVhmMyPatients',
+            submitterUsername: currentVhmUsername,
+            vhmUsername: currentVhmUsername,
+            actorUsername: currentVhmUsername,
+            submitterRole: currentUserRole === 'admin' ? 'admin' : 'vhm',
+            role: currentUserRole === 'admin' ? 'admin' : 'vhm',
+            vhmAuthToken: currentAuthToken,
+            authToken: currentAuthToken,
+            sessionToken: currentAuthToken
+        });
+        try {
+            const res = await fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`);
+            if (!res.ok) throw new Error('HTTP Status ' + res.status);
+            const data = await res.json();
+            if (!data.success) throw new Error(data.message || 'โหลดรายชื่อไม่สำเร็จ');
+            myPatientRecords = Array.isArray(data.records) ? data.records : [];
+            renderMyPatientsList();
+        } catch (err) {
+            if (listEl) listEl.innerHTML = `<div class="mini-note">⚠️ โหลดรายชื่อไม่สำเร็จ: ${err.message}</div>`;
+        }
+    }
+
+    function renderMyPatientsList() {
+        const listEl = document.getElementById('myPatientsList');
+        if (!listEl) return;
+        const keyword = normalizeNameForCompare(document.getElementById('myPatientSearchInput')?.value || '');
+        let rows = myPatientRecords || [];
+        if (keyword) rows = rows.filter(p => normalizeNameForCompare(`${p.patientName || ''} ${p.patientGender || ''} ${p.villageNo || ''} ${p.riskLevel || ''}`).includes(keyword));
+        if (!rows.length) {
+            listEl.innerHTML = '<div class="mini-note">ยังไม่พบรายชื่อในพื้นที่ หรือยังไม่มีข้อมูลเดิม</div>';
+            return;
+        }
+        listEl.innerHTML = rows.slice(0, 30).map((p, idx) => {
+            const risk = p.riskLevel || p.q2Result || '-';
+            return `<div class="patient-mini-card">
+                <b>${idx + 1}. ${escapeHTML(p.patientName || '-')}</b>
+                <div class="patient-meta">${escapeHTML(p.patientGender || '-')} | ${escapeHTML(p.patientSubdistrict || '-')} ${escapeHTML(p.villageNo || '-')}</div>
+                <div class="patient-meta">ล่าสุด: ${escapeHTML(p.lastAssessmentAt || '-')} | ผล: ${escapeHTML(risk)}</div>
+                <div class="patient-actions">
+                    <button class="small-action green" onclick="repeatScreeningFromMyPatient(${idx})">คัดกรองซ้ำ</button>
+                    <button class="small-action" onclick="fillPatientFromMyPatient(${idx})">เลือกข้อมูล</button>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function getVisibleMyPatients() {
+        const keyword = normalizeNameForCompare(document.getElementById('myPatientSearchInput')?.value || '');
+        let rows = myPatientRecords || [];
+        if (keyword) rows = rows.filter(p => normalizeNameForCompare(`${p.patientName || ''} ${p.patientGender || ''} ${p.villageNo || ''} ${p.riskLevel || ''}`).includes(keyword));
+        return rows.slice(0, 30);
+    }
+
+    function fillPatientRecordToForm(p) {
+        if (!p) return;
+        document.getElementById('patientName').value = p.patientName || '';
+        document.getElementById('patientGender').value = p.patientGender || '';
+        setPatientArea(p.patientSubdistrict, p.villageNo);
+        selectedPatientKey = `${p.patientName || ''}|${p.patientGender || ''}|${p.patientSubdistrict || ''}|${p.villageNo || ''}`;
+        updatePatientNameWarning();
+    }
+
+    function fillPatientFromMyPatient(index) {
+        const p = getVisibleMyPatients()[index];
+        fillPatientRecordToForm(p);
+        changeStep(1);
+    }
+
+    function repeatScreeningFromMyPatient(index) {
+        const p = getVisibleMyPatients()[index];
+        fillPatientRecordToForm(p);
+        alert('✅ เติมข้อมูลเดิมให้แล้ว กรุณาตรวจชื่อ/เพศ/หมู่ แล้วกด “ถัดไป” เพื่อคัดกรองซ้ำ');
+        changeStep(1);
+    }
+
+    function escapeHTML(value) {
+        return safeText(value).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
     }
 
     function fetchPatientHistoryForAutocomplete() {
@@ -991,7 +1212,7 @@
                 applyLoginSession(res);
                 localStorage.removeItem("vhm_logout_flag");
                 fetchPatientHistoryForAutocomplete();
-                changeStep(1);
+                goHome();
             } else {
                 alert("❌ " + (res.message || 'เข้าสู่ระบบไม่สำเร็จ'));
             }
@@ -1013,8 +1234,10 @@
         currentUserRole = "vhm";
         currentAuthToken = "";
         currentVhmSubdistrict = "";
+        currentVhmFacility = "";
         currentVhmVillageScope = "";
         localScreeningHistory = [];
+        myPatientRecords = [];
         localStorage.setItem("vhm_logout_flag", "true");
         
         document.getElementById('vhmInfoHeader').style.display = "none";
@@ -1138,7 +1361,7 @@ ${listText}
         const q2PlusDetails = getQ2PlusDetailsText(q2q1.value, q2q2.value, q2q3.value);
         const q2Res = (q2q1.value === "มี" || q2q2.value === "มี" || q2q3.value === "มี") ? "🚨 มีความเสี่ยงจาก 2Q+" : "🟢 ปกติจาก 2Q+";
 
-        if (q2Res === "🚨 มีความเสี่ยง" && type === "2Q") {
+        if (q2Res.indexOf("เสี่ยง") !== -1 && type === "2Q") {
             alert("🚨 ผู้ที่ได้รับการประเมินมีความเสี่ยงจากผล 2Q+! ระบบบังคับให้ทำแบบประเมิน 9Q ต่อเพื่อตรวจสอบความรุนแรง กรุณากรอกแบบสอบถามหัวข้อ 9Q ด้านล่างครับ");
             document.getElementById('assessmentTypeSelect').value = "9Q"; switchAssessment(); return;
         }
@@ -1209,7 +1432,7 @@ ${listText}
     }
 
     function resetScreeningFormAfterSuccess() {
-        document.getElementById('patientName').value = ""; document.getElementById('patientGender').value = ""; document.getElementById('patientSubdistrict').value = ""; document.getElementById('patientSubdistrict').disabled = false; handlePatientSubdistrictChange(); document.getElementById('comment').value = ""; const privacyEl = document.getElementById('privacyNoticeConfirmed'); if (privacyEl) privacyEl.checked = false;
+        document.getElementById('patientName').value = ""; document.getElementById('patientGender').value = ""; document.getElementById('patientSubdistrict').value = ""; document.getElementById('patientSubdistrict').disabled = false; populatePatientSubdistrictOptions(); document.getElementById('comment').value = ""; const privacyEl = document.getElementById('privacyNoticeConfirmed'); if (privacyEl) privacyEl.checked = false;
         document.getElementById('nameSuggestionsBox').style.display = 'none';
         
         document.querySelectorAll('input[name="q2q1"], input[name="q2q2"], input[name="q2q3"]').forEach(radio => radio.checked = false);
@@ -1262,6 +1485,27 @@ ${listText}
         const count = document.getElementById('offlineDraftCount');
         if (count) count.innerText = drafts.length;
         if (box) box.style.display = drafts.length > 0 ? 'block' : 'none';
+        updateHomeDashboard();
+    }
+
+
+    function renderOfflineQueuePanel() {
+        const el = document.getElementById('offlineQueueList');
+        if (!el) return;
+        const drafts = getOfflineDrafts();
+        if (!drafts.length) {
+            el.innerHTML = '<div class="mini-note">✅ ไม่มีข้อมูลรอส่ง เครื่องนี้ไม่มีร่างค้างอยู่</div>';
+            return;
+        }
+        el.innerHTML = drafts.map((d, idx) => {
+            const p = d.payload || {};
+            const dateText = d.savedAt ? new Date(d.savedAt).toLocaleString('th-TH') : '-';
+            return `<div class="patient-mini-card">
+                <b>${idx + 1}. ${escapeHTML(p.patientName || '-')}</b>
+                <div class="patient-meta">${escapeHTML(p.patientGender || '-')} | ${escapeHTML(p.patientSubdistrict || '-')} ${escapeHTML(p.villageNo || '-')}</div>
+                <div class="patient-meta">บันทึกไว้: ${escapeHTML(dateText)} | สาเหตุ: ${escapeHTML(d.reason || '-')}</div>
+            </div>`;
+        }).join('');
     }
 
     function buildScreeningPayloadObject() {
@@ -1403,6 +1647,31 @@ ${listText}
         }
     }
 
+
+    function getFirstNumberFromText(text) {
+        const m = safeText(text).match(/\d+/);
+        return m ? parseInt(m[0], 10) : 0;
+    }
+
+    function renderPostSubmitGuidance(payload, result) {
+        const box = document.getElementById('postSubmitGuidance');
+        if (!box) return;
+        const q9 = getFirstNumberFromText(payload.q9Score || '');
+        const q8 = getFirstNumberFromText(payload.q8Result || '');
+        const q2Risk = safeText(payload.q2Result).indexOf('เสี่ยง') !== -1 && safeText(payload.q2Result).indexOf('ไม่เสี่ยง') === -1;
+        const highRisk = q8 >= 1 || q9 >= 7 || q2Risk;
+        box.className = 'post-submit-card' + (highRisk ? ' danger' : '');
+        if (highRisk) {
+            box.innerHTML = `<h3 style="margin-top:0;">🚨 ส่งข้อมูลแล้ว และควรแจ้งเจ้าหน้าที่ทันที</h3>
+                <p><b>ผู้รับการประเมิน:</b> ${escapeHTML(payload.patientName || '-')}</p>
+                <ul><li>อย่าปล่อยให้อยู่ลำพัง ถ้ามีความเสี่ยงต่อความปลอดภัย</li><li>ติดต่อเจ้าหน้าที่/ญาติ/หน่วยช่วยเหลือในพื้นที่ตามแนวทางของหน่วยงาน</li><li>ถ้าเป็นเหตุเร่งด่วน ให้ใช้ปุ่ม “ช่วยเหลือเร่งด่วน”</li></ul>`;
+        } else {
+            box.innerHTML = `<h3 style="margin-top:0;">✅ ส่งข้อมูลสำเร็จ</h3>
+                <p><b>ผู้รับการประเมิน:</b> ${escapeHTML(payload.patientName || '-')}</p>
+                <ul><li>ข้อมูลถูกบันทึกขึ้นระบบแล้ว</li><li>ติดตามตามรอบหรือคำแนะนำของเจ้าหน้าที่</li><li>ถ้ามีอาการเปลี่ยนแปลง สามารถคัดกรองซ้ำได้จากรายชื่อในหมู่ของฉัน</li></ul>`;
+        }
+    }
+
     async function submitData() {
         const btn = document.getElementById('btnSubmitScreening');
         const validation = validateFullPatientName(document.getElementById('patientName').value);
@@ -1442,9 +1711,10 @@ ${listText}
             const result = await postScreeningPayload(payload);
 
             if (result.success) {
-                alert('🎉 ส่งรายงานการคัดกรองขึ้นระบบคลาวด์ รพ.สต. สำเร็จเรียบร้อยครับ!');
-                resetScreeningFormAfterSuccess();
+                renderPostSubmitGuidance(payload, result);
                 fetchPatientHistoryForAutocomplete();
+                loadMyPatientsForHome(true);
+                changeStep('Done');
             } else {
                 alert('❌ บันทึกไม่สำเร็จ: ' + (result.message || 'ไม่ทราบสาเหตุ'));
             }
