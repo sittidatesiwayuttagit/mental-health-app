@@ -171,6 +171,31 @@
             .system-controls-row { grid-template-columns: 1fr; }
         }
 
+        .system-panel {
+            display: none;
+            margin-top: 14px;
+            padding: 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 14px;
+            background: #ffffff;
+        }
+        .system-panel.active { display: block; }
+        .system-panel h4 { margin: 0 0 10px 0; color:#1e293b; }
+        .health-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap:10px; }
+        .health-item { border:1px solid #e2e8f0; border-radius:12px; padding:11px; background:#f8fafc; }
+        .health-item.ok { border-color:#bbf7d0; background:#f0fdf4; }
+        .health-item.warning { border-color:#fde68a; background:#fffbeb; }
+        .health-item.error { border-color:#fecaca; background:#fef2f2; }
+        .health-item.info { border-color:#bfdbfe; background:#eff6ff; }
+        .health-title { font-weight:800; color:#0f172a; margin-bottom:4px; }
+        .health-message { color:#475569; font-size:13px; line-height:1.45; }
+        .system-table { width:100%; border-collapse:collapse; font-size:13px; margin-top:10px; }
+        .system-table th, .system-table td { border:1px solid #e2e8f0; padding:8px; text-align:left; vertical-align:top; }
+        .system-table th { background:#f1f5f9; color:#334155; }
+        .csv-template-box { background:#0f172a; color:#e2e8f0; border-radius:12px; padding:12px; overflow:auto; font-size:12px; line-height:1.6; white-space:pre; }
+        .help-card { background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px; margin:10px 0; }
+        .help-card b { color:#0f172a; }
+
 
         @media (max-width: 600px) { .profile-info-grid { grid-template-columns:1fr !important; } .patient-photo-box { width:96px; height:96px; min-width:96px; } }
         .mini-section-title { font-weight:bold; color:#1e293b; border-left:4px solid #3b82f6; padding-left:8px; margin:14px 0 8px 0; }
@@ -660,6 +685,11 @@
                 <h3 style="margin-top:0; color:#334155;">🧮 งานระบบ</h3>
                 <p class="overview-note">หน้านี้รวมปุ่มสำหรับดูแลระบบหลังบ้านและงานติดตาม ไม่ใช่หน้าข้อมูลผู้ป่วยรายบุคคล</p>
                 <div class="system-controls-row">
+                    <button class="btn-search" onclick="runSystemHealthCheckFromWeb()">🧩 ตรวจสุขภาพระบบ</button>
+                    <button class="btn-refresh" onclick="repairSystemNowFromWeb()">🛠️ ซ่อมระบบ/สร้างชีทที่ขาด</button>
+                    <button class="btn-search" onclick="showStaffImportPanel()">📥 Import เจ้าหน้าที่ CSV</button>
+                    <button class="btn-refresh" onclick="loadLoginSessionMonitorFromWeb()">👥 Login/Session Monitor</button>
+                    <button class="btn-search" onclick="showAdminHelpPanel()">❓ คู่มือใช้งานระบบ</button>
                     <button class="btn-refresh" onclick="runFollowupReminderNow()">🔔 ทดสอบแจ้งเตือน Follow-up วันนี้</button>
                     <button class="btn-search" onclick="createBackupNowFromWeb()">💾 สำรองข้อมูล Google Sheet ตอนนี้</button>
                     <button class="btn-refresh" onclick="setupBackupTriggerFromWeb()">⏰ ตั้งสำรองข้อมูลอัตโนมัติรายสัปดาห์</button>
@@ -671,6 +701,32 @@
                     <button class="btn-action delete" onclick="archiveClosedCasesFromWeb()">🗄️ ย้ายเคสปิดงานเกิน 1 ปีเข้าคลัง</button>
                 </div>
                 <div class="case-status-muted" style="margin-top:8px;">ปุ่มย้ายคลังใช้ได้เฉพาะบัญชี Hospital และจะย้ายเฉพาะเคสที่ Follow-up Status = ปิดเคสแล้ว และ Closed At เกิน 1 ปี ส่วนปุ่มสำรองข้อมูลจะสร้างไฟล์ copy ใน Google Drive โฟลเดอร์ Mental Health App Backups</div>
+                <div id="systemHealthPanel" class="system-panel"></div>
+                <div id="staffImportPanel" class="system-panel">
+                    <h4>📥 Import เจ้าหน้าที่จาก CSV</h4>
+                    <p class="overview-note">ใช้สำหรับเพิ่ม/อัปเดตเจ้าหน้าที่จำนวนมาก รองรับ Hospital/Admin/VHV โดยต้องเป็นบัญชี Hospital เท่านั้น</p>
+                    <div class="csv-template-box">Username,Password,First Name,Last Name,Secret Key,Role,Position,Subdistrict,Facility,Village Scope
+vhv001,1234,สมชาย,ใจดี,9999,VHV,,ทองหลาง,รพ.สต.บ้านทองหลาง,หมู่ 2
+admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิชาชีพชำนาญการ,ทองหลาง,รพ.สต.บ้านทองหลาง,</div>
+                    <label style="font-weight:bold; display:block; margin-top:12px;">เลือกไฟล์ CSV หรือวางข้อมูล CSV</label>
+                    <input type="file" id="staffCsvFileInput" accept=".csv,text/csv,text/plain" onchange="handleStaffCsvFile(this)" style="margin:8px 0; width:100%;">
+                    <textarea id="staffCsvTextarea" rows="8" placeholder="วางข้อมูล CSV ที่นี่..."></textarea>
+                    <div class="system-controls-row" style="margin-top:10px;">
+                        <button class="btn-search" onclick="importStaffCsvFromWeb()">📥 เริ่มนำเข้าเจ้าหน้าที่</button>
+                        <button class="btn-refresh" onclick="document.getElementById('staffCsvTextarea').value=''">ล้างข้อมูล CSV</button>
+                    </div>
+                    <div id="staffImportResult" style="margin-top:10px;"></div>
+                </div>
+                <div id="sessionMonitorPanel" class="system-panel"></div>
+                <div id="adminHelpPanel" class="system-panel">
+                    <h4>❓ คู่มือใช้งานระบบแบบย่อ</h4>
+                    <div class="help-card"><b>📌 งานวันนี้</b><br>ดูเคสที่ควรจัดการก่อน เช่น เคสแดง, SLA เกินกำหนด, follow-up วันนี้, คำปรึกษาใหม่ และข้อมูลที่ควรตรวจสอบ</div>
+                    <div class="help-card"><b>ข้อมูลผู้ป่วย</b><br>ค้นหา เปิดประวัติ ดู assessment แก้ข้อมูลทั่วไป จองคิว เลื่อนนัด ติดตาม referral และเพิ่ม note ภายใน</div>
+                    <div class="help-card"><b>ข้อมูลเจ้าหน้าที่</b><br>เพิ่ม/แก้ไข Hospital, Admin, VHV/อสม. โหลดทีละ 50 คน ค้นหาจาก backend และสามารถ import CSV ได้จากงานระบบ</div>
+                    <div class="help-card"><b>คำปรึกษา/ขอความช่วยเหลือ</b><br>รับเรื่องจาก consult, urgent, self-check และ AI chat กดรับเรื่อง ติดต่อกลับ นัดหมาย ส่งต่อ หรือปิดเรื่องได้</div>
+                    <div class="help-card"><b>งานระบบ</b><br>ใช้ตรวจสุขภาพระบบ ซ่อมหัวตาราง สำรองข้อมูล export รายงาน ดู session และตั้งค่า staging/production</div>
+                    <div class="help-card"><b>ข้อควรระวัง</b><br>ไม่ควรแชร์ Google Sheet แบบ Anyone with the link และไม่ควรใส่ LINE token/OpenAI key ใน GitHub หรือไฟล์ HTML</div>
+                </div>
             </div>
         </div>
     </div>
@@ -2371,6 +2427,131 @@
             alert((result.success ? '✅ ' : '❌ ') + (result.message || ''));
         } catch (err) { alert('❌ ตั้งสำรองข้อมูลอัตโนมัติไม่สำเร็จ: ' + err.message); }
         finally { loading.style.display = 'none'; }
+    }
+
+
+
+    function hideAllSystemPanels() {
+        ['systemHealthPanel','staffImportPanel','sessionMonitorPanel','adminHelpPanel'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('active');
+        });
+    }
+
+    function showSystemPanel(id) {
+        hideAllSystemPanels();
+        const el = document.getElementById(id);
+        if (el) el.classList.add('active');
+    }
+
+    async function runSystemHealthCheckFromWeb() {
+        if (!currentAdminUsername || !currentAdminAuthToken) { alert('⚠️ session ผู้ดูแลไม่สมบูรณ์ กรุณา login ใหม่'); return; }
+        const panel = document.getElementById('systemHealthPanel');
+        showSystemPanel('systemHealthPanel');
+        panel.innerHTML = '<h4>🧩 ตรวจสุขภาพระบบ</h4><p class="overview-note">⏳ กำลังตรวจระบบ...</p>';
+        const loading = document.getElementById('loadingText');
+        try {
+            if (loading) loading.style.display = 'block';
+            const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=getSystemHealthStatus&actorUsername=${encodeURIComponent(currentAdminUsername)}&authToken=${encodeURIComponent(currentAdminAuthToken)}`);
+            if (!res.ok) throw new Error('HTTP Status ' + res.status);
+            const data = await res.json();
+            if (!data.success) throw new Error(data.message || 'ตรวจสุขภาพระบบไม่สำเร็จ');
+            renderSystemHealthResult(data);
+        } catch (err) {
+            panel.innerHTML = `<h4>🧩 ตรวจสุขภาพระบบ</h4><div class="alert-card" style="background:#fee2e2; border-color:#fecaca; color:#991b1b;">❌ ${escapeHTML(err.message)}</div>`;
+        } finally { if (loading) loading.style.display = 'none'; }
+    }
+
+    function renderSystemHealthResult(data) {
+        const panel = document.getElementById('systemHealthPanel');
+        const checkHtml = (data.checks || []).map(c => {
+            const cls = c.ok ? 'ok' : (c.level || 'warning');
+            const icon = c.ok ? '✅' : (c.level === 'error' ? '❌' : c.level === 'info' ? 'ℹ️' : '⚠️');
+            return `<div class="health-item ${cls}"><div class="health-title">${icon} ${escapeHTML(c.label || '-')}</div><div class="health-message">${escapeHTML(c.message || '')}</div></div>`;
+        }).join('');
+        const sheetRows = (data.sheetChecks || []).map(s => `<tr><td>${escapeHTML(s.name)}</td><td>${s.ok ? '✅ ปกติ' : '⚠️ ควรซ่อม'}</td><td>${escapeHTML(s.message || '')}</td><td>${escapeHTML(String(s.rows ?? '-'))}</td></tr>`).join('');
+        const examples = data.staff && data.staff.examples && data.staff.examples.length ? `<ul>${data.staff.examples.map(x => `<li>${escapeHTML(x)}</li>`).join('')}</ul>` : '<span class="case-status-muted">ยังไม่พบตัวอย่างข้อมูลเจ้าหน้าที่ที่ควรตรวจ</span>';
+        panel.innerHTML = `
+            <h4>🧩 ตรวจสุขภาพระบบ</h4>
+            <p class="overview-note">ตรวจล่าสุด: ${escapeHTML(data.generatedAt || '-')}</p>
+            <div class="health-grid">${checkHtml}</div>
+            <h4 style="margin-top:14px;">แท็บ/หัวตาราง</h4>
+            <table class="system-table"><thead><tr><th>แท็บ</th><th>สถานะ</th><th>รายละเอียด</th><th>จำนวนแถว</th></tr></thead><tbody>${sheetRows}</tbody></table>
+            <h4 style="margin-top:14px;">ข้อมูลเจ้าหน้าที่ที่ควรตรวจ</h4>
+            ${examples}
+            <div class="system-controls-row" style="margin-top:12px;"><button class="btn-refresh" onclick="repairSystemNowFromWeb()">🛠️ ซ่อมหัวตาราง/สร้างชีทที่ขาด</button></div>
+        `;
+    }
+
+    async function repairSystemNowFromWeb() {
+        if (normalizeAdminRole(currentAdminRole) !== 'hospital') { alert('⚠️ เฉพาะบัญชี Hospital เท่านั้นที่ซ่อมระบบได้'); return; }
+        if (!confirm('ต้องการรันซ่อมระบบ สร้างชีทที่ขาด และจัดหัวตารางให้ครบใช่หรือไม่?')) return;
+        const loading = document.getElementById('loadingText');
+        try {
+            if (loading) loading.style.display = 'block';
+            const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=repairSystemNow&actorUsername=${encodeURIComponent(currentAdminUsername)}&authToken=${encodeURIComponent(currentAdminAuthToken)}`);
+            if (!res.ok) throw new Error('HTTP Status ' + res.status);
+            const data = await res.json();
+            if (!data.success) throw new Error(data.message || 'ซ่อมระบบไม่สำเร็จ');
+            alert('✅ ' + (data.message || 'ซ่อมระบบเรียบร้อย'));
+            if (data.health) { showSystemPanel('systemHealthPanel'); renderSystemHealthResult(data.health); }
+        } catch (err) { alert('❌ ซ่อมระบบไม่สำเร็จ: ' + err.message); }
+        finally { if (loading) loading.style.display = 'none'; }
+    }
+
+    function showStaffImportPanel() {
+        showSystemPanel('staffImportPanel');
+    }
+
+    function handleStaffCsvFile(input) {
+        const file = input && input.files && input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => { document.getElementById('staffCsvTextarea').value = e.target.result || ''; };
+        reader.readAsText(file, 'utf-8');
+    }
+
+    async function importStaffCsvFromWeb() {
+        if (normalizeAdminRole(currentAdminRole) !== 'hospital') { alert('⚠️ เฉพาะบัญชี Hospital เท่านั้นที่ import เจ้าหน้าที่ได้'); return; }
+        const csvText = document.getElementById('staffCsvTextarea').value.trim();
+        const resultBox = document.getElementById('staffImportResult');
+        if (!csvText) { alert('⚠️ กรุณาเลือกไฟล์หรือวางข้อมูล CSV ก่อนนำเข้า'); return; }
+        if (!confirm('ยืนยันนำเข้า/อัปเดตรายชื่อเจ้าหน้าที่จาก CSV ใช่หรือไม่?')) return;
+        const params = new URLSearchParams({ action:'importStaffCsv', actorUsername:currentAdminUsername, authToken:currentAdminAuthToken, csvText });
+        const loading = document.getElementById('loadingText');
+        try {
+            if (loading) loading.style.display = 'block';
+            resultBox.innerHTML = '<p class="overview-note">⏳ กำลังนำเข้า...</p>';
+            const res = await fetch(GOOGLE_SCRIPT_URL, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'}, body:params });
+            if (!res.ok) throw new Error('HTTP Status ' + res.status);
+            const data = await res.json();
+            const errs = data.errors && data.errors.length ? `<h4 style="margin-top:10px;">รายการที่ไม่สำเร็จ</h4><ul>${data.errors.map(e => `<li>${escapeHTML(e)}</li>`).join('')}</ul>` : '';
+            resultBox.innerHTML = `<div class="alert-card" style="background:${data.success ? '#dcfce7' : '#fffbeb'}; border-color:${data.success ? '#bbf7d0' : '#fde68a'}; color:#334155;"><b>${data.success ? '✅' : '⚠️'} ${escapeHTML(data.message || '')}</b>${errs}</div>`;
+            fetchStaffData(1);
+        } catch (err) {
+            resultBox.innerHTML = `<div class="alert-card" style="background:#fee2e2; border-color:#fecaca; color:#991b1b;">❌ ${escapeHTML(err.message)}</div>`;
+        } finally { if (loading) loading.style.display = 'none'; }
+    }
+
+    async function loadLoginSessionMonitorFromWeb() {
+        const panel = document.getElementById('sessionMonitorPanel');
+        showSystemPanel('sessionMonitorPanel');
+        panel.innerHTML = '<h4>👥 Login/Session Monitor</h4><p class="overview-note">⏳ กำลังโหลด session...</p>';
+        const loading = document.getElementById('loadingText');
+        try {
+            if (loading) loading.style.display = 'block';
+            const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=getLoginSessionMonitor&actorUsername=${encodeURIComponent(currentAdminUsername)}&authToken=${encodeURIComponent(currentAdminAuthToken)}`);
+            if (!res.ok) throw new Error('HTTP Status ' + res.status);
+            const data = await res.json();
+            if (!data.success) throw new Error(data.message || 'โหลด session ไม่สำเร็จ');
+            const rows = (data.sessions || []).map(s => `<tr><td>${escapeHTML(s.username || '-')}</td><td>${escapeHTML(s.name || '-')}</td><td>${escapeHTML(getRoleLabel(normalizeAdminRole(s.role || s.type)))}</td><td>${s.active ? '✅ active' : '⌛ หมดอายุ/ไม่อยู่ใน cache'}</td><td>${escapeHTML(s.createdAt || '-')}</td><td>${escapeHTML(s.lastSeenAt || '-')}</td></tr>`).join('') || '<tr><td colspan="6">ยังไม่มี session ที่บันทึกในระบบ</td></tr>';
+            panel.innerHTML = `<h4>👥 Login/Session Monitor</h4><p class="overview-note">โหลดล่าสุด: ${escapeHTML(data.generatedAt || '-')} | Active ${escapeHTML(String(data.activeCount || 0))}/${escapeHTML(String(data.totalCount || 0))}</p><table class="system-table"><thead><tr><th>Username</th><th>ชื่อ</th><th>สิทธิ์</th><th>สถานะ</th><th>สร้างเมื่อ</th><th>ใช้งานล่าสุด</th></tr></thead><tbody>${rows}</tbody></table>`;
+        } catch (err) { panel.innerHTML = `<h4>👥 Login/Session Monitor</h4><div class="alert-card" style="background:#fee2e2; border-color:#fecaca; color:#991b1b;">❌ ${escapeHTML(err.message)}</div>`; }
+        finally { if (loading) loading.style.display = 'none'; }
+    }
+
+    function showAdminHelpPanel() {
+        showSystemPanel('adminHelpPanel');
     }
 
     function clearDetailDateFilter() { document.getElementById('detailDateFilter').value = ""; renderPatientDetail(); }
