@@ -196,6 +196,16 @@
         .help-card { background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px; margin:10px 0; }
         .help-card b { color:#0f172a; }
 
+        .system-quick-row { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:10px; margin:12px 0 14px 0; }
+        .system-section-card { border:1px solid #cbd5e1; border-radius:16px; background:#ffffff; margin:12px 0; overflow:hidden; }
+        .system-section-head { width:100%; border:0; background:#f8fafc; padding:14px; text-align:left; cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:10px; color:#1e293b; font-weight:800; font-size:15px; }
+        .system-section-head:hover { background:#eef2ff; }
+        .system-section-body { display:none; padding:14px; border-top:1px solid #e2e8f0; }
+        .system-section-body.active { display:block; }
+        .system-section-desc { color:#64748b; font-size:13px; line-height:1.55; margin:0 0 12px 0; }
+        .system-filter-row { display:flex; gap:10px; flex-wrap:wrap; align-items:end; margin:8px 0 12px 0; }
+        .system-filter-row > div { flex:1 1 180px; }
+
 
         @media (max-width: 600px) { .profile-info-grid { grid-template-columns:1fr !important; } .patient-photo-box { width:96px; height:96px; min-width:96px; } }
         .mini-section-title { font-weight:bold; color:#1e293b; border-left:4px solid #3b82f6; padding-left:8px; margin:14px 0 8px 0; }
@@ -683,24 +693,75 @@
         <div id="systemTab" class="tab-content">
             <div class="search-container" style="background:#f8fafc; border:1px solid #cbd5e1;">
                 <h3 style="margin-top:0; color:#334155;">🧮 งานระบบ</h3>
-                <p class="overview-note">หน้านี้รวมปุ่มสำหรับดูแลระบบหลังบ้านและงานติดตาม ไม่ใช่หน้าข้อมูลผู้ป่วยรายบุคคล</p>
-                <div class="system-controls-row">
+                <p class="overview-note">รวมเครื่องมือดูแลระบบ โดยจัดเป็นหมวดเพื่อให้ผู้ดูแลใช้งานง่ายขึ้นและลดการกดผิด</p>
+
+                <div class="system-quick-row">
                     <button class="btn-search" onclick="runSystemHealthCheckFromWeb()">🧩 ตรวจสุขภาพระบบ</button>
-                    <button class="btn-refresh" onclick="repairSystemNowFromWeb()">🛠️ ซ่อมระบบ/สร้างชีทที่ขาด</button>
-                    <button class="btn-search" onclick="showStaffImportPanel()">📥 Import เจ้าหน้าที่ CSV</button>
-                    <button class="btn-refresh" onclick="loadLoginSessionMonitorFromWeb()">👥 Login/Session Monitor</button>
-                    <button class="btn-search" onclick="showAdminHelpPanel()">❓ คู่มือใช้งานระบบ</button>
-                    <button class="btn-refresh" onclick="runFollowupReminderNow()">🔔 ทดสอบแจ้งเตือน Follow-up วันนี้</button>
-                    <button class="btn-search" onclick="createBackupNowFromWeb()">💾 สำรองข้อมูล Google Sheet ตอนนี้</button>
-                    <button class="btn-refresh" onclick="setupBackupTriggerFromWeb()">⏰ ตั้งสำรองข้อมูลอัตโนมัติรายสัปดาห์</button>
-                    <button class="btn-search" onclick="exportMonthlyReportFromWeb()">📤 Export รายงาน PDF/Excel รายเดือน</button>
-                    <button class="btn-refresh" onclick="createStagingCopyFromWeb()">🧪 สร้าง Staging/Test Copy</button>
-                    <button class="btn-refresh" onclick="showEnvironmentInfoFromWeb()">🌐 ดู Environment ปัจจุบัน</button>
-                    <button class="btn-refresh" onclick="switchEnvironmentFromWeb('staging')">🧪 ใช้ Staging</button>
-                    <button class="btn-refresh" onclick="switchEnvironmentFromWeb('production')">🏥 ใช้ Production</button>
-                    <button class="btn-action delete" onclick="archiveClosedCasesFromWeb()">🗄️ ย้ายเคสปิดงานเกิน 1 ปีเข้าคลัง</button>
+                    <button class="btn-search" onclick="createBackupNowFromWeb()">💾 สำรองข้อมูลตอนนี้</button>
                 </div>
-                <div class="case-status-muted" style="margin-top:8px;">ปุ่มย้ายคลังใช้ได้เฉพาะบัญชี Hospital และจะย้ายเฉพาะเคสที่ Follow-up Status = ปิดเคสแล้ว และ Closed At เกิน 1 ปี ส่วนปุ่มสำรองข้อมูลจะสร้างไฟล์ copy ใน Google Drive โฟลเดอร์ Mental Health App Backups</div>
+
+                <div class="system-section-card">
+                    <button class="system-section-head" onclick="toggleSystemSection('sysSectionHealth')"><span>🧩 ตรวจและซ่อมระบบ</span><span>▾</span></button>
+                    <div id="sysSectionHealth" class="system-section-body active">
+                        <p class="system-section-desc">ใช้เมื่อระบบโหลดผิดปกติ หลังอัปเดตโค้ดใหม่ หรืออยากตรวจว่า Sheet/Token/Trigger พร้อมใช้งานไหม</p>
+                        <div class="system-controls-row">
+                            <button class="btn-search" onclick="runSystemHealthCheckFromWeb()">🧩 ตรวจสุขภาพระบบ</button>
+                            <button class="btn-refresh" onclick="repairSystemNowFromWeb()">🛠️ ซ่อมระบบ/สร้างชีทที่ขาด</button>
+                            <button class="btn-refresh" onclick="showEnvironmentInfoFromWeb()">🌐 ดู Environment ปัจจุบัน</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="system-section-card">
+                    <button class="system-section-head" onclick="toggleSystemSection('sysSectionBackup')"><span>💾 สำรองและรายงาน</span><span>▾</span></button>
+                    <div id="sysSectionBackup" class="system-section-body">
+                        <p class="system-section-desc">ใช้สำรองข้อมูลและสร้างรายงานเพื่อประชุมหรือส่งต่อข้อมูลเชิงสรุป</p>
+                        <div class="system-controls-row">
+                            <button class="btn-search" onclick="createBackupNowFromWeb()">💾 สำรองข้อมูล Google Sheet ตอนนี้</button>
+                            <button class="btn-refresh" onclick="setupBackupTriggerFromWeb()">⏰ ตั้งสำรองข้อมูลอัตโนมัติรายสัปดาห์</button>
+                            <button class="btn-search" onclick="exportMonthlyReportFromWeb()">📤 Export รายงาน PDF/Excel รายเดือน</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="system-section-card">
+                    <button class="system-section-head" onclick="toggleSystemSection('sysSectionStaff')"><span>👥 เจ้าหน้าที่และ Session</span><span>▾</span></button>
+                    <div id="sysSectionStaff" class="system-section-body">
+                        <p class="system-section-desc">ใช้จัดการรายชื่อเจ้าหน้าที่จำนวนมาก ตรวจ session และ export รายชื่อโดยไม่ส่งออกรหัสผ่าน/รหัสลับจริง</p>
+                        <div class="system-controls-row">
+                            <button class="btn-search" onclick="showStaffImportPanel()">📥 Import เจ้าหน้าที่ CSV</button>
+                            <button class="btn-search" onclick="showStaffExportPanel()">📤 Export เจ้าหน้าที่ CSV</button>
+                            <button class="btn-refresh" onclick="loadLoginSessionMonitorFromWeb()">👥 Login/Session Monitor</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="system-section-card">
+                    <button class="system-section-head" onclick="toggleSystemSection('sysSectionAdvanced')"><span>⚙️ เครื่องมือขั้นสูง</span><span>▾</span></button>
+                    <div id="sysSectionAdvanced" class="system-section-body">
+                        <p class="system-section-desc">ควรใช้โดยผู้ดูแลระบบหลักเท่านั้น เพราะบางปุ่มมีผลกับ environment หรือข้อมูลจำนวนมาก</p>
+                        <div class="system-controls-row">
+                            <button class="btn-refresh" onclick="runFollowupReminderNow()">🔔 ทดสอบแจ้งเตือน Follow-up วันนี้</button>
+                            <button class="btn-refresh" onclick="createStagingCopyFromWeb()">🧪 สร้าง Staging/Test Copy</button>
+                            <button class="btn-refresh" onclick="switchEnvironmentFromWeb('staging')">🧪 ใช้ Staging</button>
+                            <button class="btn-refresh" onclick="switchEnvironmentFromWeb('production')">🏥 ใช้ Production</button>
+                            <button class="btn-action delete" onclick="archiveClosedCasesFromWeb()">🗄️ ย้ายเคสปิดงานเกิน 1 ปีเข้าคลัง</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="system-section-card">
+                    <button class="system-section-head" onclick="toggleSystemSection('sysSectionHelp')"><span>❓ คู่มือใช้งาน</span><span>▾</span></button>
+                    <div id="sysSectionHelp" class="system-section-body">
+                        <p class="system-section-desc">เปิดดูคำอธิบายการใช้งานแต่ละส่วนของระบบแบบย่อ</p>
+                        <div class="system-controls-row">
+                            <button class="btn-search" onclick="showAdminHelpPanel()">❓ เปิดคู่มือใช้งานระบบ</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="case-status-muted" style="margin-top:8px;">ปุ่มซ่อมระบบ, import เจ้าหน้าที่, ตั้ง trigger และเครื่องมือขั้นสูงบางปุ่มใช้ได้เฉพาะบัญชี Hospital</div>
+
                 <div id="systemHealthPanel" class="system-panel"></div>
                 <div id="staffImportPanel" class="system-panel">
                     <h4>📥 Import เจ้าหน้าที่จาก CSV</h4>
@@ -717,12 +778,35 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
                     </div>
                     <div id="staffImportResult" style="margin-top:10px;"></div>
                 </div>
+                <div id="staffExportPanel" class="system-panel">
+                    <h4>📤 Export เจ้าหน้าที่ CSV</h4>
+                    <p class="overview-note">ส่งออกข้อมูลเจ้าหน้าที่โดยไม่รวมรหัสผ่านจริงและรหัสลับจริง เหมาะสำหรับตรวจสอบรายชื่อ/พื้นที่/LINE ID</p>
+                    <div class="system-filter-row">
+                        <div>
+                            <label style="font-weight:bold;">ระดับเจ้าหน้าที่</label>
+                            <select id="staffExportRoleFilter">
+                                <option value="all">ทั้งหมด</option>
+                                <option value="hospital">Hospital</option>
+                                <option value="admin">Admin</option>
+                                <option value="vhv">VHV / อสม.</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-weight:bold;">คำค้นหา</label>
+                            <input type="text" id="staffExportKeyword" placeholder="ชื่อ / username / ตำบล / รพ.สต. / หมู่">
+                        </div>
+                    </div>
+                    <div class="system-controls-row">
+                        <button class="btn-search" onclick="exportStaffCsvFromWeb()">📤 Export CSV</button>
+                    </div>
+                    <div id="staffExportResult" style="margin-top:10px;"></div>
+                </div>
                 <div id="sessionMonitorPanel" class="system-panel"></div>
                 <div id="adminHelpPanel" class="system-panel">
                     <h4>❓ คู่มือใช้งานระบบแบบย่อ</h4>
                     <div class="help-card"><b>📌 งานวันนี้</b><br>ดูเคสที่ควรจัดการก่อน เช่น เคสแดง, SLA เกินกำหนด, follow-up วันนี้, คำปรึกษาใหม่ และข้อมูลที่ควรตรวจสอบ</div>
                     <div class="help-card"><b>ข้อมูลผู้ป่วย</b><br>ค้นหา เปิดประวัติ ดู assessment แก้ข้อมูลทั่วไป จองคิว เลื่อนนัด ติดตาม referral และเพิ่ม note ภายใน</div>
-                    <div class="help-card"><b>ข้อมูลเจ้าหน้าที่</b><br>เพิ่ม/แก้ไข Hospital, Admin, VHV/อสม. โหลดทีละ 50 คน ค้นหาจาก backend และสามารถ import CSV ได้จากงานระบบ</div>
+                    <div class="help-card"><b>ข้อมูลเจ้าหน้าที่</b><br>เพิ่ม/แก้ไข Hospital, Admin, VHV/อสม. โหลดทีละ 50 คน ค้นหาจาก backend และสามารถ import/export CSV ได้จากงานระบบ</div>
                     <div class="help-card"><b>คำปรึกษา/ขอความช่วยเหลือ</b><br>รับเรื่องจาก consult, urgent, self-check และ AI chat กดรับเรื่อง ติดต่อกลับ นัดหมาย ส่งต่อ หรือปิดเรื่องได้</div>
                     <div class="help-card"><b>งานระบบ</b><br>ใช้ตรวจสุขภาพระบบ ซ่อมหัวตาราง สำรองข้อมูล export รายงาน ดู session และตั้งค่า staging/production</div>
                     <div class="help-card"><b>ข้อควรระวัง</b><br>ไม่ควรแชร์ Google Sheet แบบ Anyone with the link และไม่ควรใส่ LINE token/OpenAI key ใน GitHub หรือไฟล์ HTML</div>
@@ -2431,8 +2515,14 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
 
 
 
+    function toggleSystemSection(id) {
+        const body = document.getElementById(id);
+        if (!body) return;
+        body.classList.toggle('active');
+    }
+
     function hideAllSystemPanels() {
-        ['systemHealthPanel','staffImportPanel','sessionMonitorPanel','adminHelpPanel'].forEach(id => {
+        ['systemHealthPanel','staffImportPanel','staffExportPanel','sessionMonitorPanel','adminHelpPanel'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.classList.remove('active');
         });
@@ -2530,6 +2620,48 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
             fetchStaffData(1);
         } catch (err) {
             resultBox.innerHTML = `<div class="alert-card" style="background:#fee2e2; border-color:#fecaca; color:#991b1b;">❌ ${escapeHTML(err.message)}</div>`;
+        } finally { if (loading) loading.style.display = 'none'; }
+    }
+
+
+
+    function showStaffExportPanel() {
+        showSystemPanel('staffExportPanel');
+    }
+
+    function downloadTextFile(fileName, content, mimeType = 'text/csv;charset=utf-8') {
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName || 'export.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    async function exportStaffCsvFromWeb() {
+        const roleFilter = document.getElementById('staffExportRoleFilter')?.value || 'all';
+        const keyword = document.getElementById('staffExportKeyword')?.value || '';
+        const resultBox = document.getElementById('staffExportResult');
+        const loading = document.getElementById('loadingText');
+        try {
+            if (loading) loading.style.display = 'block';
+            if (resultBox) resultBox.innerHTML = '<p class="overview-note">⏳ กำลังสร้างไฟล์ CSV...</p>';
+            const url = `${GOOGLE_SCRIPT_URL}?action=exportStaffCsv` +
+                `&actorUsername=${encodeURIComponent(currentAdminUsername)}` +
+                `&authToken=${encodeURIComponent(currentAdminAuthToken)}` +
+                `&roleFilter=${encodeURIComponent(roleFilter)}` +
+                `&keyword=${encodeURIComponent(keyword)}`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('HTTP Status ' + res.status);
+            const data = await res.json();
+            if (!data.success) throw new Error(data.message || 'Export ไม่สำเร็จ');
+            downloadTextFile(data.fileName || 'staff_export.csv', data.csv || '');
+            if (resultBox) resultBox.innerHTML = `<div class="alert-card" style="background:#dcfce7; border-color:#bbf7d0; color:#166534;">✅ Export สำเร็จ ${escapeHTML(String(data.count || 0))} รายการ<br><span class="case-status-muted">ไฟล์นี้ไม่รวมรหัสผ่านจริงและรหัสลับจริง</span></div>`;
+        } catch (err) {
+            if (resultBox) resultBox.innerHTML = `<div class="alert-card" style="background:#fee2e2; border-color:#fecaca; color:#991b1b;">❌ ${escapeHTML(err.message)}</div>`;
         } finally { if (loading) loading.style.display = 'none'; }
     }
 
