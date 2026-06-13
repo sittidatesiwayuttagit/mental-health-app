@@ -58,6 +58,9 @@
         .home-btn.red { background:#dc2626; }
         .home-btn.gray { background:#475569; }
         .home-btn.purple { background:#7c3aed; }
+        .step-home-action { margin-bottom:12px; display:flex; justify-content:flex-start; }
+        .step-home-btn { border:none; border-radius:14px; padding:10px 14px; background:#475569; color:#ffffff; font-weight:800; cursor:pointer; font-size:14px; box-shadow:0 6px 14px rgba(15,23,42,.12); }
+        .step-home-btn:hover { background:#334155; }
         .home-status-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
         .home-status { background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:10px; font-size:13px; color:#334155; }
         .home-status b { display:block; color:#0f172a; font-size:15px; }
@@ -232,6 +235,7 @@
     </div>
 
     <div id="step1" class="step">
+        <div class="step-home-action"><button type="button" class="step-home-btn" onclick="goHome()">🏠 กลับหน้าแรก อสม.</button></div>
         <div class="header">
             <h2>📋 ข้อมูลทั่วไปผู้รับการประเมิน</h2>
             <p>กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง</p>
@@ -279,6 +283,7 @@
     </div>
 
     <div id="step2" class="step">
+        <div class="step-home-action"><button type="button" class="step-home-btn" onclick="goHome()">🏠 กลับหน้าแรก อสม.</button></div>
         <div class="header">
             <h2>🧠 เลือกแบบประเมินสุขภาพจิต</h2>
             <p>ระบบควบคุมการประเมินตามเกณฑ์สากล (2Q+ ➡️ 9Q ➡️ 8Q)</p>
@@ -440,6 +445,7 @@
     </div>
 
     <div id="step3" class="step">
+        <div class="step-home-action"><button type="button" class="step-home-btn" onclick="goHome()">🏠 กลับหน้าแรก อสม.</button></div>
         <div class="header"><h2>🔍 ตรวจสอบความถูกต้อง</h2></div>
         <div class="summary-box">
             <h4>👤 ข้อมูลทั่วไป</h4>
