@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>คลังสุขภาพใจ | โรงพยาบาลบ้านนา</title>
+  <style>
+    :root {
+      --primary:#2563eb;
+      --primary-dark:#1d4ed8;
+      --green:#0f766e;
+      --red:#dc2626;
+      --orange:#d97706;
+      --purple:#7c3aed;
+      --bg:#eef2ff;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#64748b;
+      --line:#dbe4f0;
+      --soft:#f8fafc;
+      --shadow:0 16px 35px rgba(15,23,42,.12);
+    }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body {
+      margin:0;
+      font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans Thai", Tahoma, sans-serif;
+      background:linear-gradient(135deg,#dbeafe 0%,#ecfeff 44%,#f8fafc 100%);
+      color:var(--text);
+      line-height:1.65;
+    }
+    .page { max-width:1160px; margin:0 auto; padding:18px 14px 46px; }
+    .hero {
+      background:linear-gradient(135deg,#1d4ed8,#0f766e);
+      color:#fff;
+      border-radius:28px;
+      padding:26px 18px;
+      box-shadow:var(--shadow);
+      position:relative;
+      overflow:hidden;
+    }
+    .hero::before,.hero::after { content:""; position:absolute; border-radius:999px; background:rgba(255,255,255,.13); }
+    .hero::before { width:260px; height:260px; right:-90px; top:-100px; }
+    .hero::after { width:150px; height:150px; left:-60px; bottom:-70px; }
+    .hero h1 { margin:0; font-size:clamp(24px,5vw,40px); line-height:1.22; position:relative; z-index:1; }
+    .hero p { margin:10px 0 0; color:rgba(255,255,255,.92); max-width:820px; font-size:15px; position:relative; z-index:1; }
+    .badge-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; position:relative; z-index:1; }
+    .badge { background:rgba(255,255,255,.18); color:#fff; padding:6px 10px; border-radius:999px; font-size:13px; font-weight:800; }
+    .top-actions { display:grid; grid-template-columns:repeat(auto-fit,minmax(175px,1fr)); gap:10px; margin:16px 0; }
+    .btn {
+      border:0; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:8px;
+      padding:13px 14px; border-radius:16px; color:#fff; background:var(--primary); font-weight:900;
+      cursor:pointer; min-height:48px; text-align:center; box-shadow:0 8px 18px rgba(37,99,235,.18);
+    }
+    .btn:hover { background:var(--primary-dark); }
+    .btn.green { background:var(--green); }
+    .btn.red { background:var(--red); }
+    .btn.orange { background:var(--orange); }
+    .btn.gray { background:#475569; }
+    .search-card,.notice,.danger-box,.summary-card {
+      background:var(--card); border:1px solid var(--line); border-radius:20px; padding:12px; box-shadow:0 8px 22px rgba(15,23,42,.06); margin:14px 0;
+    }
+    .search-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    input[type="search"] { flex:1 1 220px; min-height:42px; padding:9px 12px; border-radius:12px; border:1.5px solid #cbd5e1; font-size:15px; outline:none; }
+    input:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,.12); }
+    .btn.compact { flex:0 0 auto; min-height:42px; padding:9px 14px; box-shadow:none; }
+    .chips { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+    .chip { border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:999px; padding:8px 11px; cursor:pointer; font-weight:800; font-size:13px; }
+    .chip.active { background:#dbeafe; border-color:#60a5fa; color:#1d4ed8; }
+    .notice { background:#fff7ed; border-color:#fed7aa; color:#7c2d12; }
+    .danger-box { background:#fef2f2; border-color:#fecaca; color:#7f1d1d; }
+    .summary-card { background:#f8fafc; }
+    .section-title { margin:26px 0 10px; font-size:23px; color:#0f172a; }
+    .subtle { color:var(--muted); font-size:14px; margin-top:0; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:14px; }
+    .card {
+      background:var(--card); border:1px solid var(--line); border-radius:22px; padding:16px;
+      box-shadow:0 8px 24px rgba(15,23,42,.07); display:flex; flex-direction:column; gap:10px; min-height:205px;
+    }
+    .card h3 { margin:0; font-size:18px; }
+    .card p { margin:0; color:var(--muted); font-size:14px; }
+    .tag-line { display:flex; flex-wrap:wrap; gap:6px; margin-top:auto; }
+    .tag { font-size:12px; color:#334155; background:#f1f5f9; padding:4px 8px; border-radius:999px; }
+    .card-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+    .mini-btn { border:0; border-radius:12px; padding:9px 10px; background:#e0f2fe; color:#075985; font-weight:900; cursor:pointer; text-decoration:none; font-size:13px; }
+    .mini-btn.green { background:#dcfce7; color:#166534; }
+    .mini-btn.red { background:#fee2e2; color:#991b1b; }
+    .mini-btn.orange { background:#ffedd5; color:#9a3412; }
+    .accordion { background:var(--card); border:1px solid var(--line); border-radius:18px; margin:10px 0; overflow:hidden; box-shadow:0 6px 18px rgba(15,23,42,.05); }
+    .accordion > button { width:100%; text-align:left; border:0; background:#fff; padding:15px; font-weight:900; color:#1e293b; cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:15px; }
+    .accordion > button:hover { background:#f8fafc; }
+    .accordion-content { display:none; padding:0 15px 16px; color:#334155; }
+    .accordion-content.active { display:block; }
+    .two-col { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:12px; }
+    .mini-box { background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:12px; }
+    .mini-box h4 { margin:0 0 6px; color:#1e293b; }
+    .quote { border-left:4px solid #38bdf8; background:#f0f9ff; border-radius:12px; padding:10px 12px; color:#075985; margin:10px 0; }
+    .resource-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(245px,1fr)); gap:12px; margin-top:12px; }
+    .resource-card { background:#fff; border:1px solid #dbe4f0; border-radius:16px; padding:12px; display:flex; flex-direction:column; gap:8px; min-height:160px; box-shadow:0 5px 14px rgba(15,23,42,.05); }
+    .resource-card h4 { margin:0; color:#0f172a; font-size:15px; line-height:1.45; }
+    .resource-card p { margin:0; color:#64748b; font-size:13px; }
+    .resource-meta { display:flex; flex-wrap:wrap; gap:6px; margin-top:auto; }
+    .resource-meta span { background:#eef2ff; color:#1d4ed8; border-radius:999px; padding:4px 8px; font-size:12px; font-weight:800; }
+    .resource-link { display:inline-flex; align-items:center; justify-content:center; text-decoration:none; border-radius:12px; padding:9px 10px; background:#dc2626; color:#fff; font-weight:900; font-size:13px; margin-top:4px; }
+    .resource-link.doc { background:#0f766e; }
+    .resource-link.gray { background:#475569; }
+    .checklist { padding-left:20px; }
+    .checklist li { margin:6px 0; }
+    .footer { text-align:center; color:#64748b; margin:30px 0 0; font-size:13px; }
+    .hidden { display:none !important; }
+    @media (max-width:640px) {
+      .page { padding:12px 10px 36px; }
+      .hero { border-radius:22px; padding:20px 15px; }
+      .top-actions { grid-template-columns:1fr; }
+      .search-row { flex-direction:column; align-items:stretch; }
+      input[type="search"], .btn.compact { width:100%; }
+      .grid { grid-template-columns:1fr; }
+      .card { min-height:unset; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <h1>คลังสุขภาพใจสำหรับชาวบ้าน</h1>
+      <p>คลังความรู้แบบอ่านง่ายสำหรับประชาชนทั่วไป ใช้สังเกตตนเองและคนใกล้ตัว เรียนรู้การดูแลใจเบื้องต้น และเข้าใจสัญญาณที่ควรขอความช่วยเหลือ</p>
+      <div class="badge-row">
+        <span class="badge">ไม่ต้องล็อกอิน</span>
+        <span class="badge">อ่านง่าย</span>
+        <span class="badge">ดูแลตนเอง</span>
+        <span class="badge">ช่วยคนใกล้ตัว</span>
+      </div>
+    </header>
+
+    <section class="danger-box">
+      <b>กรณีเร่งด่วน:</b> ถ้าตนเองหรือคนใกล้ตัวมีความคิดทำร้ายตนเอง มีแผน มีอุปกรณ์เสี่ยง อยู่ลำพัง หรือควบคุมตนเองไม่ได้ ให้รีบติดต่อคนใกล้ชิดหรือเจ้าหน้าที่ในพื้นที่ทันที ไม่ต้องรออ่านคู่มือนี้จนจบ
+    </section>
+
+    <section class="search-card">
+      <div class="search-row">
+        <input id="searchInput" type="search" placeholder="ค้นหา เช่น เครียด, ซึมเศร้า, นอนไม่หลับ, 1323, ผู้สูงอายุ" oninput="filterCards()" />
+        <button class="btn compact" type="button" onclick="clearSearch()">ล้างค้นหา</button>
+      </div>
+      <div class="chips" id="categoryChips">
+        <button class="chip active" data-category="all" onclick="setCategory('all')">ทั้งหมด</button>
+        <button class="chip" data-category="stress" onclick="setCategory('stress')">เครียด/นอน</button>
+        <button class="chip" data-category="depression" onclick="setCategory('depression')">ซึมเศร้า</button>
+        <button class="chip" data-category="risk" onclick="setCategory('risk')">สัญญาณอันตราย</button>
+        <button class="chip" data-category="family" onclick="setCategory('family')">ช่วยคนใกล้ตัว</button>
+        <button class="chip" data-category="elderly" onclick="setCategory('elderly')">ผู้สูงอายุ</button>
+        <button class="chip" data-category="resource" onclick="setCategory('resource')">วิดีโอ/เอกสาร</button>
+      </div>
+    </section>
+
+    <section class="summary-card">
+      <h2 style="margin:0 0 8px;">จำง่าย 4 ข้อ</h2>
+      <div class="two-col">
+        <div class="mini-box"><h4>1. ฟังโดยไม่ตัดสิน</h4><p>ไม่พูดว่า “คิดมากไปเอง” หรือ “คนอื่นหนักกว่านี้ยังทนได้”</p></div>
+        <div class="mini-box"><h4>2. สังเกตสัญญาณอันตราย</h4><p>เช่น พูดไม่อยากอยู่ มีแผนทำร้ายตนเอง หรือแยกตัวหนักขึ้น</p></div>
+        <div class="mini-box"><h4>3. ขอความช่วยเหลือเร็ว</h4><p>ปรึกษาเจ้าหน้าที่ อสม. รพ.สต. หรือสายด่วนสุขภาพจิตตามความเหมาะสม</p></div>
+        <div class="mini-box"><h4>4. ไม่ต้องแก้ปัญหาคนเดียว</h4><p>สุขภาพใจเป็นเรื่องที่ขอความช่วยเหลือได้ ไม่ใช่ความอ่อนแอ</p></div>
+      </div>
+    </section>
+
+    <h2 class="section-title">เลือกอ่านตามเรื่องที่สนใจ</h2>
+    <main class="grid" id="cardGrid">
+      <article class="card" data-category="stress" data-keywords="เครียด นอนไม่หลับ กังวล เหนื่อยใจ">
+        <h3>😟 เครียดมาก นอนไม่หลับ ทำอย่างไรดี</h3>
+        <p>วิธีดูแลใจเบื้องต้นเมื่อเครียด กังวล หรือพักผ่อนไม่พอ</p>
+        <div class="tag-line"><span class="tag">เครียด</span><span class="tag">นอน</span></div>
+        <div class="card-actions"><button class="mini-btn" onclick="openGuide('guideStress')">อ่านต่อ</button></div>
+      </article>
+
+      <article class="card" data-category="depression" data-keywords="ซึมเศร้า เศร้า เบื่อ ไม่อยากทำอะไร หมดกำลังใจ">
+        <h3>🌧️ สัญญาณซึมเศร้าที่ควรรู้</h3>
+        <p>อาการที่ควรสังเกตในตนเองและคนใกล้ตัว โดยไม่ด่วนตัดสินหรือวินิจฉัยเอง</p>
+        <div class="tag-line"><span class="tag">ซึมเศร้า</span><span class="tag">สังเกต</span></div>
+        <div class="card-actions"><button class="mini-btn" onclick="openGuide('guideDepression')">อ่านต่อ</button></div>
+      </article>
+
+      <article class="card" data-category="risk" data-keywords="ฆ่าตัวตาย ทำร้ายตัวเอง ไม่อยากอยู่ อันตราย ฉุกเฉิน">
+        <h3>🚨 เมื่อมีคำพูดว่า “ไม่อยากอยู่แล้ว”</h3>
+        <p>สิ่งที่ควรทำทันทีเมื่อพบความเสี่ยงต่อชีวิตหรือความปลอดภัย</p>
+        <div class="tag-line"><span class="tag">เร่งด่วน</span><span class="tag">ปลอดภัย</span></div>
+        <div class="card-actions"><button class="mini-btn red" onclick="openGuide('guideRisk')">อ่านต่อ</button></div>
+      </article>
+
+      <article class="card" data-category="family" data-keywords="คนใกล้ตัว ครอบครัว เพื่อน รับฟัง พูดคุย">
+        <h3>🫶 วิธีคุยกับคนใกล้ตัวที่กำลังทุกข์ใจ</h3>
+        <p>ตัวอย่างคำพูดที่ช่วยให้เขารู้สึกปลอดภัยและกล้าขอความช่วยเหลือ</p>
+        <div class="tag-line"><span class="tag">ครอบครัว</span><span class="tag">รับฟัง</span></div>
+        <div class="card-actions"><button class="mini-btn green" onclick="openGuide('guideFamily')">อ่านต่อ</button></div>
+      </article>
+
+      <article class="card" data-category="elderly" data-keywords="ผู้สูงอายุ เหงา ซึมเศร้า นอนไม่หลับ ลูกหลาน">
+        <h3>👵 ดูแลใจผู้สูงอายุในบ้าน</h3>
+        <p>สังเกตความเปลี่ยนแปลง ความเหงา การนอน และการแยกตัวของผู้สูงอายุ</p>
+        <div class="tag-line"><span class="tag">ผู้สูงอายุ</span><span class="tag">ครอบครัว</span></div>
+        <div class="card-actions"><button class="mini-btn orange" onclick="openGuide('guideElderly')">อ่านต่อ</button></div>
+      </article>
+
+      <article class="card" data-category="resource" data-keywords="วิดีโอ เอกสาร ยูทูป 1323 แผ่นพับ">
+        <h3>🎥 คลิปและเอกสารความรู้สุขภาพใจ</h3>
+        <p>รวมคลิปและเอกสารความรู้สำหรับอ่าน/ดูเพิ่มเติม เพื่อเข้าใจสุขภาพใจง่ายขึ้น</p>
+        <div class="tag-line"><span class="tag">YouTube</span><span class="tag">PDF</span></div>
+        <div class="card-actions"><button class="mini-btn" onclick="openGuide('guideResources')">เปิดรายการ</button></div>
+      </article>
+    </main>
+
+    <h2 class="section-title">เนื้อหาแบบละเอียด</h2>
+    <section id="guideArea">
+      <div class="accordion" id="guideStress">
+        <button onclick="toggleGuide('guideStress')"><span>😟 เครียดมาก นอนไม่หลับ ทำอย่างไรดี</span><span>▾</span></button>
+        <div class="accordion-content">
+          <div class="two-col">
+            <div class="mini-box"><h4>ลองทำก่อน</h4><ul class="checklist"><li>หายใจช้า ๆ ยาว ๆ 5–10 รอบ</li><li>พักจากข่าวหรือเรื่องที่กระตุ้นความเครียด</li><li>ขยับร่างกายเบา ๆ เดิน ยืดเหยียด หรือทำงานบ้านเล็กน้อย</li><li>พูดคุยกับคนที่ไว้ใจ</li><li>ถ้านอนไม่หลับหลายวันหรือกระทบชีวิต ควรขอคำปรึกษา</li></ul></div>
+            <div class="mini-box"><h4>ควรขอความช่วยเหลือเมื่อ</h4><ul class="checklist"><li>เครียดจนกินไม่ได้ นอนไม่ได้ หรือทำงานไม่ได้</li><li>ร้องไห้บ่อย หมดแรง ไม่อยากเจอใคร</li><li>ใช้สุราหรือยาเพื่อให้หลับ/ลืมความเครียด</li><li>เริ่มมีความคิดทำร้ายตนเอง</li></ul></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion" id="guideDepression">
+        <button onclick="toggleGuide('guideDepression')"><span>🌧️ สัญญาณซึมเศร้าที่ควรรู้</span><span>▾</span></button>
+        <div class="accordion-content">
+          <p>การมีอาการเหล่านี้ไม่ได้แปลว่าต้องเป็นโรคซึมเศร้าเสมอไป แต่เป็นสัญญาณที่ควรดูแลและประเมินเพิ่มเติม</p>
+          <ul class="checklist"><li>เศร้า ท้อแท้ หรือรู้สึกว่างเปล่าต่อเนื่อง</li><li>เบื่อ ไม่อยากทำสิ่งที่เคยชอบ</li><li>นอนมาก/นอนน้อยผิดปกติ</li><li>กินมาก/กินน้อยผิดปกติ</li><li>รู้สึกผิด ไร้ค่า หรือเป็นภาระ</li><li>สมาธิลดลง ตัดสินใจยาก</li><li>คิดว่าไม่อยากมีชีวิตอยู่ หรืออยากหายไป</li></ul>
+          <div class="quote">ถ้ามีอาการหลายข้อ หรือมีความคิดทำร้ายตนเอง ควรขอความช่วยเหลือ ไม่ต้องรอให้หนักขึ้น</div>
+        </div>
+      </div>
+
+      <div class="accordion" id="guideRisk">
+        <button onclick="toggleGuide('guideRisk')"><span>🚨 เมื่อมีคำพูดว่า “ไม่อยากอยู่แล้ว”</span><span>▾</span></button>
+        <div class="accordion-content">
+          <div class="danger-box"><b>อย่าปล่อยให้อยู่ลำพัง</b> ถ้ามีความเสี่ยงเฉพาะหน้า ให้รีบติดต่อคนใกล้ชิด เจ้าหน้าที่ในพื้นที่ หรือกดปุ่มติดต่อฉุกเฉิน</div>
+          <ol class="checklist"><li>อยู่เป็นเพื่อน พูดด้วยน้ำเสียงสงบ</li><li>เก็บของที่อาจใช้ทำร้ายตนเองออกจากบริเวณใกล้ตัว หากทำได้อย่างปลอดภัย</li><li>โทรหาญาติ คนที่ไว้ใจ หรือเจ้าหน้าที่ทันที</li><li>หลีกเลี่ยงการตำหนิ ขู่ หรือบอกให้เขา “คิดบวก” อย่างเดียว</li><li>เปิดหน้าติดต่อฉุกเฉินในระบบนี้เมื่อสถานการณ์ไม่ปลอดภัย</li></ol>
+        </div>
+      </div>
+
+      <div class="accordion" id="guideFamily">
+        <button onclick="toggleGuide('guideFamily')"><span>🫶 วิธีคุยกับคนใกล้ตัวที่กำลังทุกข์ใจ</span><span>▾</span></button>
+        <div class="accordion-content">
+          <div class="two-col">
+            <div class="mini-box"><h4>คำพูดที่ช่วยได้</h4><div class="quote">“เราอยู่ตรงนี้นะ เล่าให้ฟังได้ถ้าพร้อม”</div><div class="quote">“ช่วงนี้เหนื่อยมากไหม เราช่วยอะไรได้บ้าง”</div><div class="quote">“ถ้าไม่ไหว เราไปขอคำปรึกษาด้วยกันได้นะ”</div></div>
+            <div class="mini-box"><h4>คำพูดที่ควรหลีกเลี่ยง</h4><ul class="checklist"><li>“คิดมากไปเอง”</li><li>“แค่นี้เอง ทำไมไม่สู้”</li><li>“อย่าทำให้ครอบครัวอาย”</li><li>“คนอื่นหนักกว่าเธออีก”</li></ul></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion" id="guideElderly">
+        <button onclick="toggleGuide('guideElderly')"><span>👵 ดูแลใจผู้สูงอายุในบ้าน</span><span>▾</span></button>
+        <div class="accordion-content"><ul class="checklist"><li>ชวนคุยอย่างสม่ำเสมอ แม้เป็นเรื่องเล็ก ๆ</li><li>สังเกตการนอน การกิน การแยกตัว และอารมณ์หงุดหงิด</li><li>ชวนทำกิจกรรมเบา ๆ ตามกำลัง เช่น รดน้ำต้นไม้ เดินสั้น ๆ สวดมนต์ หรือฟังเพลง</li><li>หากพูดเรื่องตาย หมดหวัง หรือไม่อยากเป็นภาระ ควรรับฟังจริงจังและขอความช่วยเหลือ</li><li>พาใช้บริการศูนย์ชาวบ้านหรือแจ้ง อสม./เจ้าหน้าที่เมื่อกังวล</li></ul></div>
+      </div>
+
+      <div class="accordion" id="guideResources">
+        <button onclick="toggleGuide('guideResources')"><span>🎥 คลิปและเอกสารความรู้สุขภาพใจ</span><span>▾</span></button>
+        <div class="accordion-content">
+          <h3>🎬 คลิปที่ชาวบ้านควรดู</h3>
+          <div class="resource-grid">
+            <div class="resource-card"><h4>DMH Animation | Depression [โรคซึมเศร้า]</h4><p>อธิบายโรคซึมเศร้าแบบเข้าใจง่าย เหมาะกับประชาชนทั่วไป</p><div class="resource-meta"><span>ซึมเศร้า</span><span>อนิเมชัน</span></div><a class="resource-link" href="https://www.youtube.com/watch?v=o4ByWmqRAFY" target="_blank" rel="noopener">เปิด YouTube</a></div>
+            <div class="resource-card"><h4>จับสังเกตสัญญาณ “โรคซึมเศร้า”</h4><p>ช่วยให้ครอบครัวสังเกตอาการที่ควรดูแลต่อ</p><div class="resource-meta"><span>สังเกตอาการ</span><span>ซึมเศร้า</span></div><a class="resource-link" href="https://www.youtube.com/watch?v=w7QZKCJTw2o" target="_blank" rel="noopener">เปิด YouTube</a></div>
+            <div class="resource-card"><h4>อยู่อย่างไร กับคนใกล้ตัวที่มีภาวะซึมเศร้า</h4><p>เหมาะกับญาติ/เพื่อนที่อยากช่วยคนใกล้ตัวอย่างไม่ตัดสิน</p><div class="resource-meta"><span>ครอบครัว</span><span>รับฟัง</span></div><a class="resource-link" href="https://www.youtube.com/watch?v=WKbmN_g2qUc" target="_blank" rel="noopener">เปิด YouTube</a></div>
+            <div class="resource-card"><h4>เครียด สิ้นหวัง ไม่อยากมีชีวิต ปรึกษาได้ โทร 1323</h4><p>ใช้รู้ช่องทางปรึกษาเมื่อทุกข์ใจมากหรือหมดหวัง</p><div class="resource-meta"><span>1323</span><span>ทุกข์ใจ</span></div><a class="resource-link" href="https://www.youtube.com/watch?v=4Ql34MmNcEk" target="_blank" rel="noopener">เปิด YouTube</a></div>
+            <div class="resource-card"><h4>1323... เบอร์นี้เยียวยาใจ</h4><p>อธิบายบริการปรึกษาสุขภาพจิตทางโทรศัพท์</p><div class="resource-meta"><span>1323</span><span>ปรึกษา</span></div><a class="resource-link" href="https://www.youtube.com/watch?v=56dZGwXT9yw" target="_blank" rel="noopener">เปิด YouTube</a></div>
+            <div class="resource-card"><h4>เช็คสุขภาพใจด้วยตัวเอง Mental Health Check In</h4><p>ชวนประชาชนรู้จักการประเมินสุขภาพใจตนเอง</p><div class="resource-meta"><span>Self-check</span><span>Mental Health Check In</span></div><a class="resource-link" href="https://www.youtube.com/watch?v=E26uwBzGuus" target="_blank" rel="noopener">เปิด YouTube</a></div>
+            <div class="resource-card"><h4>ใจพร้อม ไม่ยอมป่วย | ดูแลใจผู้สูงวัยไม่ให้เครียด</h4><p>เหมาะกับครอบครัวที่ดูแลผู้สูงอายุ</p><div class="resource-meta"><span>ผู้สูงอายุ</span><span>เครียด</span></div><a class="resource-link" href="https://www.youtube.com/watch?v=fxO9wdUtiFQ" target="_blank" rel="noopener">เปิด YouTube</a></div>
+            <div class="resource-card"><h4>สุขภาพจิตเพื่อชุมชน ตอน โรคซึมเศร้า</h4><p>ความรู้สุขภาพจิตสำหรับชุมชน จากโรงพยาบาลในสังกัดกรมสุขภาพจิต</p><div class="resource-meta"><span>ชุมชน</span><span>ซึมเศร้า</span></div><a class="resource-link" href="https://www.youtube.com/watch?v=gHI0gme5pno" target="_blank" rel="noopener">เปิด YouTube</a></div>
+          </div>
+
+          <h3>📄 เอกสารที่ชาวบ้านควรอ่าน</h3>
+          <div class="resource-grid">
+            <div class="resource-card"><h4>แผ่นพับสำหรับพี่ อสม. และชาวบ้าน</h4><p>เอกสารสั้น อ่านง่าย ใช้ส่งต่อให้คนในบ้านหรือคนในชุมชนได้</p><div class="resource-meta"><span>แผ่นพับ</span><span>อ่านง่าย</span></div><a class="resource-link doc" href="https://drive.google.com/file/d/1bRBNuZ6_fyfjOufC8fCY0S4qT6Li_bpS/view?usp=sharing" target="_blank" rel="noopener">เปิดเอกสาร</a></div>
+            <div class="resource-card"><h4>เว็บไซต์นัดบริการปรึกษาปัญหาสุขภาพจิต 1323</h4><p>ใช้ดูข้อมูลบริการปรึกษาสุขภาพจิตและการลงทะเบียนนัดหมาย</p><div class="resource-meta"><span>1323</span><span>ปรึกษา</span></div><a class="resource-link doc" href="https://1323alltime.camri.go.th/" target="_blank" rel="noopener">เปิดเว็บไซต์</a></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer"><div>โรงพยาบาลบ้านนา | คลังสุขภาพใจสำหรับชาวบ้าน</div><div>หน้านี้เป็นความรู้ทั่วไป ไม่ใช่การวินิจฉัย หากกังวลหรือมีความเสี่ยง ให้ติดต่อเจ้าหน้าที่</div></footer>
+  </div>
+
+  <script>
+    let activeCategory = 'all';
+    function normalizeText(text) { return String(text || '').toLowerCase().replace(/\s+/g,' ').trim(); }
+    function setCategory(category) {
+      activeCategory = category || 'all';
+      document.querySelectorAll('.chip').forEach(chip => chip.classList.toggle('active', chip.dataset.category === activeCategory));
+      filterCards();
+    }
+    function clearSearch() { document.getElementById('searchInput').value=''; setCategory('all'); }
+    function filterCards() {
+      const keyword = normalizeText(document.getElementById('searchInput').value);
+      document.querySelectorAll('.card').forEach(card => {
+        const categories = (card.dataset.category || '').split(/\s+/);
+        const text = normalizeText(card.innerText + ' ' + (card.dataset.keywords || ''));
+        const matchCategory = activeCategory === 'all' || categories.includes(activeCategory);
+        const matchKeyword = !keyword || text.includes(keyword);
+        card.classList.toggle('hidden', !(matchCategory && matchKeyword));
+      });
+    }
+    function toggleGuide(id) {
+      const guide = document.getElementById(id);
+      if (!guide) return;
+      const content = guide.querySelector('.accordion-content');
+      if (content) content.classList.toggle('active');
+    }
+    function openGuide(id) {
+      const guide = document.getElementById(id);
+      if (!guide) return;
+      document.querySelectorAll('.accordion-content').forEach(el => el.classList.remove('active'));
+      const content = guide.querySelector('.accordion-content');
+      if (content) content.classList.add('active');
+      guide.scrollIntoView({ behavior:'smooth', block:'start' });
+    }
+  </script>
+</body>
+</html>
