@@ -810,6 +810,9 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
                     <div class="help-card"><b>คำปรึกษา/ขอความช่วยเหลือ</b><br>รับเรื่องจาก consult, urgent, self-check และ AI chat กดรับเรื่อง ติดต่อกลับ นัดหมาย ส่งต่อ หรือปิดเรื่องได้</div>
                     <div class="help-card"><b>งานระบบ</b><br>ใช้ตรวจสุขภาพระบบ ซ่อมหัวตาราง สำรองข้อมูล export รายงาน ดู session และตั้งค่า staging/production</div>
                     <div class="help-card"><b>ข้อควรระวัง</b><br>ไม่ควรแชร์ Google Sheet แบบ Anyone with the link และไม่ควรใส่ LINE token/OpenAI key ใน GitHub หรือไฟล์ HTML</div>
+                    <div class="system-controls-row" style="margin-top:12px;">
+                        <button class="btn-refresh" onclick="hideSystemPanel('adminHelpPanel')">⬆️ ย่อ/ซ่อนคู่มือฉบับย่อ</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2534,6 +2537,11 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
         if (el) el.classList.add('active');
     }
 
+    function hideSystemPanel(id) {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('active');
+    }
+
     async function runSystemHealthCheckFromWeb() {
         if (!currentAdminUsername || !currentAdminAuthToken) { alert('⚠️ session ผู้ดูแลไม่สมบูรณ์ กรุณา login ใหม่'); return; }
         const panel = document.getElementById('systemHealthPanel');
@@ -2683,6 +2691,11 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
     }
 
     function showAdminHelpPanel() {
+        const panel = document.getElementById('adminHelpPanel');
+        if (panel && panel.classList.contains('active')) {
+            hideSystemPanel('adminHelpPanel');
+            return;
+        }
         showSystemPanel('adminHelpPanel');
     }
 
