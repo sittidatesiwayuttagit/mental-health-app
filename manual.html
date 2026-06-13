@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>คู่มือ อสม. | ระบบคัดกรองสุขภาพจิต โรงพยาบาลบ้านนา</title>
+  <style>
+    :root {
+      --primary:#2563eb;
+      --primary-dark:#1d4ed8;
+      --green:#0f766e;
+      --red:#dc2626;
+      --orange:#d97706;
+      --purple:#7c3aed;
+      --bg:#eef2ff;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#64748b;
+      --line:#dbe4f0;
+      --soft:#f8fafc;
+      --shadow:0 16px 35px rgba(15,23,42,.12);
+    }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body {
+      margin:0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans Thai", Tahoma, sans-serif;
+      background: linear-gradient(135deg, #dbeafe 0%, #ecfeff 42%, #f8fafc 100%);
+      color:var(--text);
+      line-height:1.65;
+    }
+    .page { max-width:1160px; margin:0 auto; padding:18px 14px 46px; }
+    .hero {
+      background: linear-gradient(135deg, #1d4ed8, #0f766e);
+      color:#fff;
+      border-radius:28px;
+      padding:26px 18px;
+      box-shadow:var(--shadow);
+      position:relative;
+      overflow:hidden;
+    }
+    .hero::before, .hero::after { content:""; position:absolute; border-radius:999px; background:rgba(255,255,255,.13); }
+    .hero::before { width:260px; height:260px; right:-90px; top:-100px; }
+    .hero::after { width:150px; height:150px; left:-60px; bottom:-70px; }
+    .hero h1 { margin:0; font-size:clamp(24px,5vw,40px); line-height:1.2; position:relative; z-index:1; }
+    .hero p { margin:10px 0 0; color:rgba(255,255,255,.9); max-width:760px; font-size:15px; position:relative; z-index:1; }
+    .badge-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; position:relative; z-index:1; }
+    .badge { background:rgba(255,255,255,.18); color:#fff; padding:6px 10px; border-radius:999px; font-size:13px; font-weight:800; }
+    .top-actions { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; margin:16px 0; }
+    .btn {
+      border:0; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:8px;
+      padding:13px 14px; border-radius:16px; color:#fff; background:var(--primary); font-weight:900;
+      cursor:pointer; min-height:48px; text-align:center; box-shadow:0 8px 18px rgba(37,99,235,.18);
+    }
+    .btn:hover { background:var(--primary-dark); }
+    .btn.compact { flex:0 0 auto; min-height:42px; padding:9px 14px; box-shadow:none; }
+    .btn.green { background:var(--green); box-shadow:0 8px 18px rgba(15,118,110,.18); }
+    .btn.gray { background:#475569; box-shadow:none; }
+    .btn.red { background:var(--red); box-shadow:0 8px 18px rgba(220,38,38,.16); }
+    .btn.orange { background:var(--orange); box-shadow:0 8px 18px rgba(217,119,6,.16); }
+    .search-card, .notice, .danger-box, .summary-card {
+      background:var(--card); border:1px solid var(--line); border-radius:20px; padding:12px; box-shadow:0 8px 22px rgba(15,23,42,.06); margin:14px 0;
+    }
+    .search-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    input[type="search"], input[type="text"] {
+      flex:1 1 220px; width:auto; min-height:42px; padding:9px 12px; border-radius:12px; border:1.5px solid #cbd5e1; font-size:15px; outline:none;
+    }
+    input:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,.12); }
+    .chips { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+    .chip { border:1px solid #cbd5e1; background:#fff; color:#334155; border-radius:999px; padding:8px 11px; cursor:pointer; font-weight:800; font-size:13px; }
+    .chip.active { background:#dbeafe; border-color:#60a5fa; color:#1d4ed8; }
+    .notice { background:#fff7ed; border-color:#fed7aa; color:#7c2d12; }
+    .danger-box { background:#fef2f2; border-color:#fecaca; color:#7f1d1d; }
+    .summary-card { background:#f8fafc; }
+    .section-title { margin:26px 0 10px; font-size:23px; color:#0f172a; }
+    .subtle { color:var(--muted); font-size:14px; margin-top:0; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:14px; }
+    .manual-card {
+      background:var(--card); border:1px solid var(--line); border-radius:22px; padding:16px;
+      box-shadow:0 8px 24px rgba(15,23,42,.07); display:flex; flex-direction:column; gap:10px; min-height:205px;
+    }
+    .manual-card h3 { margin:0; font-size:18px; }
+    .manual-card p { margin:0; color:var(--muted); font-size:14px; }
+    .tag-line { display:flex; flex-wrap:wrap; gap:6px; margin-top:auto; }
+    .tag { font-size:12px; color:#334155; background:#f1f5f9; padding:4px 8px; border-radius:999px; }
+    .card-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+    .mini-btn { border:0; border-radius:12px; padding:9px 10px; background:#e0f2fe; color:#075985; font-weight:900; cursor:pointer; text-decoration:none; font-size:13px; }
+    .mini-btn.green { background:#dcfce7; color:#166534; }
+    .mini-btn.red { background:#fee2e2; color:#991b1b; }
+    .mini-btn.orange { background:#ffedd5; color:#9a3412; }
+    .accordion { background:var(--card); border:1px solid var(--line); border-radius:18px; margin:10px 0; overflow:hidden; box-shadow:0 6px 18px rgba(15,23,42,.05); }
+    .accordion > button { width:100%; text-align:left; border:0; background:#fff; padding:15px; font-weight:900; color:#1e293b; cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:15px; }
+    .accordion > button:hover { background:#f8fafc; }
+    .accordion-content { display:none; padding:0 15px 16px; color:#334155; }
+    .accordion-content.active { display:block; }
+    .two-col { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:12px; }
+    .mini-box { background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:12px; }
+    .mini-box h4 { margin:0 0 6px; color:#1e293b; }
+    .resource-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(245px,1fr)); gap:12px; margin-top:12px; }
+    .resource-card { background:#fff; border:1px solid #dbe4f0; border-radius:16px; padding:12px; display:flex; flex-direction:column; gap:8px; min-height:160px; box-shadow:0 5px 14px rgba(15,23,42,.05); }
+    .resource-card h4 { margin:0; color:#0f172a; font-size:15px; line-height:1.45; }
+    .resource-card p { margin:0; color:#64748b; font-size:13px; }
+    .resource-meta { display:flex; flex-wrap:wrap; gap:6px; margin-top:auto; }
+    .resource-meta span { background:#eef2ff; color:#1d4ed8; border-radius:999px; padding:4px 8px; font-size:12px; font-weight:800; }
+    .resource-link { display:inline-flex; align-items:center; justify-content:center; text-decoration:none; border-radius:12px; padding:9px 10px; background:#dc2626; color:#fff; font-weight:900; font-size:13px; margin-top:4px; }
+    .resource-link.doc { background:#0f766e; }
+    .resource-link.gray { background:#475569; }
+    .flow { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:10px 0; }
+    .flow span { background:#eff6ff; color:#1d4ed8; font-weight:900; border-radius:999px; padding:7px 10px; }
+    .flow b { color:#64748b; }
+    .checklist { padding-left:20px; }
+    .checklist li { margin:6px 0; }
+    .quote { border-left:4px solid #38bdf8; background:#f0f9ff; border-radius:12px; padding:10px 12px; color:#075985; margin:10px 0; }
+    .quiz-card { background:#fff; border:1px solid #dbe4f0; border-radius:18px; padding:14px; margin:10px 0; }
+    .quiz-card label { display:block; padding:6px 0; cursor:pointer; }
+    .result-box { display:none; border-radius:16px; padding:12px; margin-top:12px; background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; font-weight:800; }
+    .footer { text-align:center; color:#64748b; margin:30px 0 0; font-size:13px; }
+    .hidden { display:none !important; }
+    @media (max-width:640px) {
+      .page { padding:12px 10px 36px; }
+      .hero { border-radius:22px; padding:20px 15px; }
+      .top-actions { grid-template-columns:1fr; }
+      .search-row { flex-direction:column; align-items:stretch; }
+      input[type="search"], input[type="text"], .btn.compact { width:100%; }
+      .grid { grid-template-columns:1fr; }
+      .manual-card { min-height:unset; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <h1>คู่มือ อสม. ระบบคัดกรองสุขภาพจิต</h1>
+      <p>ศูนย์รวมความรู้ ทักษะ และวิธีใช้งานระบบสำหรับ อสม. และเจ้าหน้าที่ โรงพยาบาลบ้านนา ใช้เปิดจาก LINE Rich Menu ได้โดยตรง</p>
+      <div class="badge-row">
+        <span class="badge">ความรู้พื้นฐาน</span>
+        <span class="badge">ทักษะสื่อสาร</span>
+        <span class="badge">แบบคัดกรอง</span>
+        <span class="badge">ส่งต่อปลอดภัย</span>
+      </div>
+    </header>
+
+    <nav class="top-actions" aria-label="ลิงก์ด่วน">
+      <a class="btn" href="index.html">📝 แบบคัดกรองสุขภาพจิต</a>
+      <a class="btn green" href="consult.html">💬 ปรึกษาสุขภาพใจ</a>
+      <a class="btn red" href="urgent.html">🚨 ช่วยเหลือเร่งด่วน</a>
+      <a class="btn gray" href="feedback.html">💡 ข้อเสนอแนะระบบ</a>
+    </nav>
+
+    <section class="search-card">
+      <div class="search-row">
+        <input id="searchInput" type="search" placeholder="ค้นหา เช่น 2Q, 9Q, เคสแดง, ความลับ, ส่งต่อ, login" oninput="filterCards()" />
+        <button class="btn compact" type="button" onclick="clearSearch()">ล้างค้นหา</button>
+      </div>
+      <div class="chips" id="categoryChips">
+        <button class="chip active" data-category="all" onclick="setCategory('all')">ทั้งหมด</button>
+        <button class="chip" data-category="role" onclick="setCategory('role')">บทบาท อสม.</button>
+        <button class="chip" data-category="knowledge" onclick="setCategory('knowledge')">ความรู้สุขภาพจิต</button>
+        <button class="chip" data-category="screening" onclick="setCategory('screening')">แบบคัดกรอง</button>
+        <button class="chip" data-category="communication" onclick="setCategory('communication')">การพูดคุย</button>
+        <button class="chip" data-category="risk" onclick="setCategory('risk')">เคสเสี่ยง</button>
+        <button class="chip" data-category="system" onclick="setCategory('system')">ใช้ระบบ</button>
+        <button class="chip" data-category="ethics" onclick="setCategory('ethics')">ความลับ</button>
+        <button class="chip" data-category="download" onclick="setCategory('download')">เอกสาร/วิดีโอ</button>
+      </div>
+    </section>
+
+    <section class="danger-box">
+      <b>ขอบเขตสำคัญ:</b> อสม. ทำหน้าที่สังเกต คัดกรองเบื้องต้น รับฟัง ให้ข้อมูล และประสานส่งต่อ ไม่ใช่ผู้วินิจฉัยหรือรักษา หากมีความเสี่ยงต่อชีวิตหรือความปลอดภัย ให้ติดต่อเจ้าหน้าที่/ญาติ/หน่วยฉุกเฉินในพื้นที่ทันที ไม่รอการตอบกลับจากระบบเว็บ
+    </section>
+
+    <section class="summary-card">
+      <h2 style="margin:0 0 8px;">สรุป 5 เรื่องที่ อสม. ต้องแม่นก่อนใช้งานจริง</h2>
+      <div class="flow"><span>ใช้ระบบถูก</span><b>→</b><span>ถามไม่ชี้นำ</span><b>→</b><span>รู้จักเคสแดง</span><b>→</b><span>ส่งต่อเร็ว</span><b>→</b><span>รักษาความลับ</span></div>
+    </section>
+
+    <h2 class="section-title">เมนูความรู้และทักษะหลัก</h2>
+    <p class="subtle">กดค้นหา/กรองหมวด หรือกด “เปิดคู่มือ” เพื่ออ่านรายละเอียดด้านล่าง</p>
+
+    <main class="grid" id="manualGrid">
+      <article class="manual-card" data-category="role" data-keywords="บทบาท อสม ขอบเขต ไม่วินิจฉัย ส่งต่อ ชุมชน">
+        <h3>🤝 บทบาทของ อสม. ในระบบสุขภาพจิต</h3>
+        <p>รู้หน้าที่ของตนเอง เห็นขอบเขตงาน และรู้ว่าเมื่อไหร่ต้องส่งต่อเจ้าหน้าที่</p>
+        <div class="tag-line"><span class="tag">บทบาท</span><span class="tag">ขอบเขต</span></div>
+        <div class="card-actions"><button class="mini-btn" onclick="openGuide('guideRole')">เปิดคู่มือ</button></div>
+      </article>
+
+      <article class="manual-card" data-category="knowledge" data-keywords="สุขภาพจิต ซึมเศร้า เครียด วิตกกังวล นอนไม่หลับ สุรา สารเสพติด">
+        <h3>🧠 ความรู้พื้นฐานสุขภาพจิต</h3>
+        <p>อาการที่ควรสังเกต เช่น ซึมเศร้า เครียดมาก นอนไม่หลับ กังวล ใช้สุรา/สารเสพติด</p>
+        <div class="tag-line"><span class="tag">ความรู้</span><span class="tag">สังเกตอาการ</span></div>
+        <div class="card-actions"><button class="mini-btn" onclick="openGuide('guideKnowledge')">เปิดคู่มือ</button></div>
+      </article>
+
+      <article class="manual-card" data-category="system" data-keywords="login เข้าสู่ระบบ อสม line liff username password">
+        <h3>🔐 วิธีเข้าสู่ระบบสำหรับ อสม.</h3>
+        <p>ขั้นตอนเปิดจาก LINE, เข้าสู่ระบบ, ผูก LINE ID และแก้ปัญหาเข้าไม่ได้เบื้องต้น</p>
+        <div class="tag-line"><span class="tag">Login</span><span class="tag">LINE</span></div>
+        <div class="card-actions"><button class="mini-btn" onclick="openGuide('guideLogin')">เปิดคู่มือ</button><a class="mini-btn green" href="index.html">ไปหน้าคัดกรอง</a></div>
+      </article>
+
+      <article class="manual-card" data-category="screening" data-keywords="2q 2q+ สองคิว คัดกรอง ซึมเศร้า คำถาม">
+        <h3>📋 วิธีทำ 2Q+</h3>
+        <p>ใช้คัดกรองเบื้องต้น และเป็นจุดเริ่มต้นก่อนระบบพาไป 9Q หากมีความเสี่ยง</p>
+        <div class="tag-line"><span class="tag">2Q+</span><span class="tag">เริ่มประเมิน</span></div>
+        <div class="card-actions"><button class="mini-btn" onclick="openGuide('guide2q')">เปิดคู่มือ</button></div>
+      </article>
+
+      <article class="manual-card" data-category="screening" data-keywords="9q เก้าคิว คะแนน ระดับเสี่ยง ซึมเศร้า">
+        <h3>🧾 วิธีทำ 9Q และอ่านผล</h3>
+        <p>แนวทางกรอกคะแนน 9Q การดูผล และข้อควรระวังเมื่อมีความเสี่ยงในข้อสำคัญ</p>
+        <div class="tag-line"><span class="tag">9Q</span><span class="tag">คะแนน</span></div>
+        <div class="card-actions"><button class="mini-btn" onclick="openGuide('guide9q')">เปิดคู่มือ</button></div>
+      </article>
+
+      <article class="manual-card" data-category="screening risk" data-keywords="8q suicide ฆ่าตัวตาย ทำร้ายตนเอง เคสแดง">
+        <h3>🚨 วิธีทำ 8Q เมื่อมีความเสี่ยง</h3>
+        <p>ใช้เมื่อระบบพบความเสี่ยง และต้องระวังเรื่องความปลอดภัยเป็นอันดับแรก</p>
+        <div class="tag-line"><span class="tag">8Q</span><span class="tag">ความปลอดภัย</span></div>
+        <div class="card-actions"><button class="mini-btn red" onclick="openGuide('guide8q')">เปิดคู่มือ</button><a class="mini-btn red" href="urgent.html">ช่วยเหลือเร่งด่วน</a></div>
+      </article>
+
+      <article class="manual-card" data-category="screening" data-keywords="st5 stress ความเครียด ประเมินเสริม">
+        <h3>🌿 วิธีทำ ST-5</h3>
+        <p>แบบประเมินความเครียดเสริม ใช้เมื่อเหมาะสมและบันทึกแยกจากแบบคัดกรองหลัก</p>
+        <div class="tag-line"><span class="tag">ST-5</span><span class="tag">ความเครียด</span></div>
+        <div class="card-actions"><button class="mini-btn" onclick="openGuide('guideSt5')">เปิดคู่มือ</button></div>
+      </article>
+
+      <article class="manual-card" data-category="communication" data-keywords="พูดคุย รับฟัง ไม่ตัดสิน ไม่ชี้นำ empathy">
+        <h3>🗣️ ทักษะการพูดคุยและรับฟัง</h3>
+        <p>ฝึกฟังโดยไม่ตัดสิน ไม่ชี้นำ และใช้คำถามที่ปลอดภัยต่อผู้รับการประเมิน</p>
+        <div class="tag-line"><span class="tag">รับฟัง</span><span class="tag">ไม่ตัดสิน</span></div>
+        <div class="card-actions"><button class="mini-btn" onclick="openGuide('guideCommunication')">เปิดคู่มือ</button></div>
+      </article>
+
+      <article class="manual-card" data-category="risk" data-keywords="สัญญาณอันตราย เคสแดง เสี่ยงสูง อยู่ลำพัง อุปกรณ์เสี่ยง">
+        <h3>🔴 สัญญาณอันตรายที่ต้องรีบแจ้ง</h3>
+        <p>รู้สัญญาณที่ต้องแจ้งเจ้าหน้าที่ทันที เช่น พูดไม่อยากอยู่ มีแผนทำร้ายตนเอง หรืออยู่ลำพัง</p>
+        <div class="tag-line"><span class="tag">เคสแดง</span><span class="tag">เสี่ยงสูง</span></div>
+        <div class="card-actions"><button class="mini-btn red" onclick="openGuide('guideDangerSigns')">เปิดคู่มือ</button></div>
+      </article>
+
+      <article class="manual-card" data-category="risk" data-keywords="ส่งต่อ ประสานงาน รพ.สต hospital admin เคสแดง line alert">
+        <h3>📞 การส่งต่อและประสานงาน</h3>
+        <p>แนวทางส่งต่อเคสต่ำ/กลาง/สูง และการใช้ LINE alert หรือช่องทางในพื้นที่</p>
+        <div class="tag-line"><span class="tag">ส่งต่อ</span><span class="tag">ประสานงาน</span></div>
+        <div class="card-actions"><button class="mini-btn orange" onclick="openGuide('guideReferral')">เปิดคู่มือ</button></div>
+      </article>
+
+      <article class="manual-card" data-category="ethics" data-keywords="ความลับ ข้อมูลส่วนบุคคล privacy consent ไม่เผยแพร่">
+        <h3>🔒 ความลับและข้อมูลส่วนบุคคล</h3>
+        <p>การขออนุญาต เก็บข้อมูลเท่าที่จำเป็น และไม่เปิดเผยข้อมูลสุขภาพจิตในชุมชน</p>
+        <div class="tag-line"><span class="tag">Privacy</span><span class="tag">จริยธรรม</span></div>
+        <div class="card-actions"><button class="mini-btn" onclick="openGuide('guidePrivacy')">เปิดคู่มือ</button></div>
+      </article>
+
+      <article class="manual-card" data-category="system" data-keywords="offline draft internet อินเทอร์เน็ต เน็ตหลุด บันทึกไม่สำเร็จ sync">
+        <h3>📶 ถ้าเน็ตหลุด/ส่งข้อมูลไม่ได้</h3>
+        <p>วิธีตรวจ draft, ส่งซ้ำ และแจ้งเจ้าหน้าที่เมื่ออินเทอร์เน็ตไม่เสถียร</p>
+        <div class="tag-line"><span class="tag">Offline</span><span class="tag">Draft</span></div>
+        <div class="card-actions"><button class="mini-btn" onclick="openGuide('guideOffline')">เปิดคู่มือ</button></div>
+      </article>
+
+      <article class="manual-card" data-category="communication risk" data-keywords="ดูแลตนเอง อสม เครียด ภาระใจ burnout">
+        <h3>💚 การดูแลตนเองของ อสม.</h3>
+        <p>รู้ขอบเขต ไม่รับภาระคนเดียว และขอคำปรึกษาเมื่อเจอเคสหนัก</p>
+        <div class="tag-line"><span class="tag">Self-care</span><span class="tag">ขอบเขต</span></div>
+        <div class="card-actions"><button class="mini-btn green" onclick="openGuide('guideSelfCare')">เปิดคู่มือ</button></div>
+      </article>
+
+      <article class="manual-card" data-category="system" data-keywords="faq คำถามที่พบบ่อย ลืมรหัส เข้าไม่ได้ ส่งไม่ได้">
+        <h3>❓ ปัญหาที่พบบ่อย</h3>
+        <p>รวมคำถามที่เจอบ่อย เช่น เข้าไม่ได้ ลืมรหัส ส่งข้อมูลไม่ได้ เลือกหมู่ไม่ขึ้น</p>
+        <div class="tag-line"><span class="tag">FAQ</span><span class="tag">แก้ปัญหา</span></div>
+        <div class="card-actions"><button class="mini-btn" onclick="openGuide('guideFaq')">เปิดคู่มือ</button></div>
+      </article>
+
+      <article class="manual-card" data-category="download" data-keywords="วิดีโอ youtube เอกสาร pdf canva link ดาวน์โหลด 1323 กรมสุขภาพจิต อสม">
+        <h3>🎥 วิดีโอ/เอกสารประกอบ</h3>
+        <p>รวมวิดีโอ YouTube จากหน่วยงานไทย และรายการเอกสาร PDF ที่ควรใช้ประกอบการอบรม อสม.</p>
+        <div class="tag-line"><span class="tag">YouTube</span><span class="tag">PDF</span><span class="tag">หน่วยงานไทย</span></div>
+        <div class="card-actions"><button class="mini-btn" onclick="openGuide('guideDownloads')">เปิดรายการ</button></div>
+      </article>
+
+      <article class="manual-card" data-category="role screening risk ethics" data-keywords="แบบฝึก ทบทวน quiz ก่อนใช้งานจริง อบรม">
+        <h3>✅ แบบทบทวนก่อนใช้งานจริง</h3>
+        <p>เช็กลิสต์และคำถามสั้น ๆ เพื่อทบทวนก่อนเริ่มใช้ระบบในพื้นที่</p>
+        <div class="tag-line"><span class="tag">Training</span><span class="tag">Quiz</span></div>
+        <div class="card-actions"><button class="mini-btn green" onclick="openGuide('guideQuiz')">ทำแบบทบทวน</button></div>
+      </article>
+    </main>
+
+    <h2 class="section-title">คู่มือแบบละเอียด</h2>
+    <section id="guideArea">
+      <div class="accordion" id="guideRole">
+        <button onclick="toggleGuide('guideRole')"><span>🤝 บทบาทของ อสม. ในระบบสุขภาพจิต</span><span>▾</span></button>
+        <div class="accordion-content">
+          <div class="two-col">
+            <div class="mini-box"><h4>สิ่งที่ อสม. ทำได้</h4><ul class="checklist"><li>สังเกตอาการและพฤติกรรมที่เปลี่ยนไป</li><li>ใช้แบบคัดกรองตามขั้นตอน</li><li>รับฟังอย่างไม่ตัดสิน</li><li>ให้ข้อมูลช่องทางช่วยเหลือ</li><li>แจ้ง/ส่งต่อเจ้าหน้าที่เมื่อมีความเสี่ยง</li></ul></div>
+            <div class="mini-box"><h4>สิ่งที่ไม่ควรทำ</h4><ul class="checklist"><li>ไม่วินิจฉัยโรคเอง</li><li>ไม่สรุปว่า “เป็น/ไม่เป็น” จากความรู้สึกส่วนตัว</li><li>ไม่ตำหนิหรือบอกให้ผู้ป่วยเข้มแข็งเฉย ๆ</li><li>ไม่เผยแพร่ข้อมูลในชุมชนหรือกลุ่มที่ไม่เกี่ยวข้อง</li><li>ไม่รับเคสเสี่ยงสูงไว้คนเดียว</li></ul></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion" id="guideKnowledge">
+        <button onclick="toggleGuide('guideKnowledge')"><span>🧠 ความรู้พื้นฐานสุขภาพจิตที่ควรรู้</span><span>▾</span></button>
+        <div class="accordion-content">
+          <p>อสม. ควรรู้สัญญาณที่อาจเกี่ยวข้องกับปัญหาสุขภาพจิต เพื่อช่วยคัดกรองและส่งต่อเร็วขึ้น</p>
+          <div class="two-col">
+            <div class="mini-box"><h4>อาการที่ควรสังเกต</h4><ul class="checklist"><li>เศร้า เบื่อ ไม่อยากทำอะไร</li><li>นอนไม่หลับหรือหลับมากผิดปกติ</li><li>กินน้อยลงหรือกินมากขึ้นมาก</li><li>เครียด กังวล หงุดหงิดง่าย</li><li>แยกตัว ไม่เข้าสังคม</li><li>ใช้สุรา/สารเสพติดเพิ่มขึ้น</li></ul></div>
+            <div class="mini-box"><h4>คำเตือน</h4><p>อาการเหล่านี้เป็นเพียงสัญญาณที่ควรดูแลต่อ ไม่ใช่ข้อสรุปการวินิจฉัย ให้ใช้แบบคัดกรองและส่งต่อเมื่อจำเป็น</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion" id="guideLogin">
+        <button onclick="toggleGuide('guideLogin')"><span>🔐 วิธีเข้าสู่ระบบสำหรับ อสม.</span><span>▾</span></button>
+        <div class="accordion-content"><ol><li>เปิด LINE Rich Menu แล้วกด <b>แบบคัดกรองสุขภาพจิต</b></li><li>ระบบจะตรวจ LINE ID อัตโนมัติ ถ้ายังไม่ผูกให้กรอก Username/Password</li><li>ตรวจชื่อผู้ใช้งานด้านบนก่อนเริ่มคัดกรอง</li><li>ถ้าเข้าไม่ได้ ให้ตรวจตัวสะกดหรือใช้เมนูลืมรหัสผ่านด้วยรหัสลับ</li></ol></div>
+      </div>
+
+      <div class="accordion" id="guide2q">
+        <button onclick="toggleGuide('guide2q')"><span>📋 วิธีทำแบบคัดกรอง 2Q+</span><span>▾</span></button>
+        <div class="accordion-content"><ol><li>กรอกข้อมูลทั่วไปให้ครบก่อนถาม</li><li>ถามตามข้อความในระบบ ไม่ปรับคำถามจนความหมายเปลี่ยน</li><li>ไม่ชี้นำคำตอบ เช่น ไม่พูดว่า “ตอบไม่มีใช่ไหม”</li><li>ถ้าระบบพบความเสี่ยง จะเปิด 9Q ต่อโดยอัตโนมัติ</li><li>ตรวจสรุปก่อนกดส่งทุกครั้ง</li></ol></div>
+      </div>
+
+      <div class="accordion" id="guide9q">
+        <button onclick="toggleGuide('guide9q')"><span>🧾 วิธีทำ 9Q และอ่านผล</span><span>▾</span></button>
+        <div class="accordion-content"><ol><li>ถามให้ครบทุกข้อและเลือกคะแนนตามคำตอบจริง</li><li>อย่าแปลผลเกินบทบาท ให้ใช้ผลเพื่อส่งต่อ/ติดตาม</li><li>ถ้าระบบขึ้นให้ทำ 8Q ต่อ ให้ทำตามขั้นตอนทันที</li><li>หากผู้รับการประเมินไม่สบายใจ ให้หยุดพักและรับฟังอย่างสงบ</li></ol></div>
+      </div>
+
+      <div class="accordion" id="guide8q">
+        <button onclick="toggleGuide('guide8q')"><span>🚨 วิธีทำ 8Q เมื่อมีความเสี่ยง</span><span>▾</span></button>
+        <div class="accordion-content"><div class="danger-box"><b>สำคัญ:</b> ถ้ามีความเสี่ยงต่อชีวิตหรือความปลอดภัย อย่าปล่อยให้อยู่ลำพัง และให้ติดต่อเจ้าหน้าที่/ญาติ/หน่วยฉุกเฉินในพื้นที่ทันที</div><ol><li>ถามด้วยน้ำเสียงสงบ ไม่ตำหนิ ไม่ตัดสิน</li><li>กรอก 8Q ตามคำตอบจริง</li><li>กดส่งข้อมูลเพื่อให้ระบบแจ้งเตือนเจ้าหน้าที่</li><li>หากเป็นเหตุเฉพาะหน้า ใช้ช่องทางฉุกเฉินของพื้นที่ทันที</li></ol></div>
+      </div>
+
+      <div class="accordion" id="guideSt5">
+        <button onclick="toggleGuide('guideSt5')"><span>🌿 วิธีทำ ST-5</span><span>▾</span></button>
+        <div class="accordion-content"><ol><li>ใช้เมื่อเหมาะสมเพื่อประเมินความเครียดเพิ่มเติม</li><li>ถ้าไม่ได้ประเมิน ระบบจะบันทึกว่าไม่ได้ประเมิน ไม่ถือว่าผิด</li><li>ถ้าพบความเครียดสูง ให้พิจารณาแจ้งเจ้าหน้าที่ตามบริบทพื้นที่</li></ol></div>
+      </div>
+
+      <div class="accordion" id="guideCommunication">
+        <button onclick="toggleGuide('guideCommunication')"><span>🗣️ ทักษะการพูดคุยและรับฟัง</span><span>▾</span></button>
+        <div class="accordion-content">
+          <div class="two-col">
+            <div class="mini-box"><h4>ควรพูด</h4><div class="quote">“เล่าให้ฟังได้นะครับ/คะ ถ้าสะดวก”</div><div class="quote">“ข้อมูลนี้จะใช้เพื่อช่วยดูแลและส่งต่อให้เหมาะสม”</div><div class="quote">“ช่วงนี้รู้สึกเหนื่อยหรือเครียดมากขึ้นไหมครับ/คะ”</div></div>
+            <div class="mini-box"><h4>ควรหลีกเลี่ยง</h4><ul class="checklist"><li>“คิดมากไปเอง”</li><li>“คนอื่นหนักกว่านี้ยังทนได้”</li><li>“อย่าทำให้ครอบครัวเสียใจ”</li><li>“ตอบว่าไม่มีเถอะ จะได้จบเร็ว”</li></ul></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion" id="guideDangerSigns">
+        <button onclick="toggleGuide('guideDangerSigns')"><span>🔴 สัญญาณอันตรายที่ต้องรีบแจ้ง</span><span>▾</span></button>
+        <div class="accordion-content"><ul class="checklist"><li>พูดว่าไม่อยากมีชีวิตอยู่ หรืออยากหายไป</li><li>มีแผนหรือเตรียมวิธีทำร้ายตนเอง</li><li>เคยพยายามทำร้ายตนเอง</li><li>อยู่ลำพังและมีความเสี่ยง</li><li>เมาสุรา/ใช้สารเสพติดร่วมกับอารมณ์รุนแรง</li><li>มีพฤติกรรมก้าวร้าว ควบคุมตนเองไม่ได้ หรือมีอุปกรณ์เสี่ยงใกล้ตัว</li></ul></div>
+      </div>
+
+      <div class="accordion" id="guideReferral">
+        <button onclick="toggleGuide('guideReferral')"><span>📞 การส่งต่อและประสานงาน</span><span>▾</span></button>
+        <div class="accordion-content"><div class="flow"><span>เสี่ยงต่ำ</span><b>→</b><span>แนะนำ/ติดตาม</span><b>→</b><span>เสี่ยงปานกลาง</span><b>→</b><span>แจ้งเจ้าหน้าที่</span><b>→</b><span>เสี่ยงสูง</span><b>→</b><span>เร่งส่งต่อ</span></div><ol><li>บันทึกข้อมูลให้ครบก่อนส่ง หากสถานการณ์ปลอดภัย</li><li>แจ้งเจ้าหน้าที่ รพ.สต./Admin/Hospital ตามระบบ</li><li>ถ้ามีความเสี่ยงเฉพาะหน้า ให้ใช้ช่องทางฉุกเฉินของพื้นที่ทันที</li><li>ติดตามผลตามที่เจ้าหน้าที่มอบหมาย ไม่รับภาระคนเดียว</li></ol></div>
+      </div>
+
+      <div class="accordion" id="guidePrivacy">
+        <button onclick="toggleGuide('guidePrivacy')"><span>🔒 ความลับและข้อมูลส่วนบุคคล</span><span>▾</span></button>
+        <div class="accordion-content"><p><b>จำง่าย:</b> รู้เท่าที่จำเป็น ใช้เพื่อช่วยเหลือ ไม่เผยแพร่ต่อ</p><ul class="checklist"><li>แจ้งวัตถุประสงค์ก่อนเก็บข้อมูล</li><li>ไม่ส่งชื่อ/ผลคัดกรองในกลุ่มที่ไม่เกี่ยวข้อง</li><li>ไม่พูดต่อในชุมชน</li><li>ใช้ข้อมูลเพื่อดูแลและส่งต่อเท่านั้น</li><li>เปิดข้อมูลเฉพาะเจ้าหน้าที่ที่เกี่ยวข้องกับการดูแล</li></ul></div>
+      </div>
+
+      <div class="accordion" id="guideOffline">
+        <button onclick="toggleGuide('guideOffline')"><span>📶 ถ้าเน็ตหลุด/ส่งข้อมูลไม่ได้</span><span>▾</span></button>
+        <div class="accordion-content"><ol><li>อย่าปิดหน้าเว็บทันที ให้ดูว่ามี draft หรือข้อความแจ้งเตือนหรือไม่</li><li>เมื่ออินเทอร์เน็ตกลับมา ให้กดส่งซ้ำตามคำแนะนำของระบบ</li><li>ถ้าส่งซ้ำแล้วยังไม่ได้ ให้จดชื่อผู้รับการประเมินและแจ้งเจ้าหน้าที่</li><li>หากเป็นเคสเสี่ยงสูง ให้แจ้งเจ้าหน้าที่ทันที ไม่รอให้ระบบส่งสำเร็จ</li></ol></div>
+      </div>
+
+      <div class="accordion" id="guideSelfCare">
+        <button onclick="toggleGuide('guideSelfCare')"><span>💚 การดูแลตนเองของ อสม.</span><span>▾</span></button>
+        <div class="accordion-content"><ul class="checklist"><li>รู้ว่าตนเองเป็นผู้ช่วยคัดกรองและประสานงาน ไม่ใช่ผู้รักษาหลัก</li><li>เมื่อเจอเคสหนัก ให้แจ้งเจ้าหน้าที่ ไม่เก็บไว้คนเดียว</li><li>หลังรับฟังเรื่องเครียดมาก ควรพักและพูดคุยกับทีม</li><li>ถ้าเริ่มรู้สึกเครียด/นอนไม่หลับ/กังวลจากงาน ให้ขอคำปรึกษา</li></ul></div>
+      </div>
+
+      <div class="accordion" id="guideFaq">
+        <button onclick="toggleGuide('guideFaq')"><span>❓ ปัญหาที่พบบ่อย</span><span>▾</span></button>
+        <div class="accordion-content"><div class="two-col"><div class="mini-box"><h4>เข้าไม่ได้</h4><p>ตรวจ Username/Password, อินเทอร์เน็ต และลองปิดเปิดหน้าใหม่ หากยังไม่ได้ให้แจ้ง Admin</p></div><div class="mini-box"><h4>เลือกหมู่ไม่ขึ้น</h4><p>ตรวจว่าตำบลและ รพ.สต. ถูกต้อง เพราะระบบจะโชว์เฉพาะหมู่ที่อยู่ในพื้นที่รับผิดชอบ</p></div><div class="mini-box"><h4>ส่งข้อมูลไม่สำเร็จ</h4><p>ตรวจสัญญาณเน็ตและลองส่งซ้ำ ถ้าเป็นเคสเสี่ยงสูงให้แจ้งเจ้าหน้าที่ทันที</p></div><div class="mini-box"><h4>กรอกชื่ออย่างไร</h4><p>กรอกชื่อและนามสกุล ไม่ต้องใส่คำนำหน้า เช่น นาย/นาง/นางสาว</p></div></div></div>
+      </div>
+
+      <div class="accordion" id="guideDownloads">
+        <button onclick="toggleGuide('guideDownloads')"><span>🎥 วิดีโอ/เอกสารประกอบ</span><span>▾</span></button>
+        <div class="accordion-content">
+          <p>วิดีโอชุดนี้เลือกจากแหล่งในประเทศไทย/หน่วยงานไทย เพื่อใช้ประกอบการอบรม อสม. ก่อนใช้งานระบบจริง แนะนำให้เปิดดูร่วมกันในการอบรม และย้ำว่า อสม. ทำหน้าที่คัดกรองเบื้องต้นและประสานส่งต่อ ไม่ใช่วินิจฉัยหรือรักษาเอง</p>
+
+          <h3>🎬 วิดีโอแนะนำสำหรับ อสม.</h3>
+          <div class="resource-grid">
+            <div class="resource-card">
+              <h4>อยู่อย่างไร กับคนใกล้ตัวที่มี “ภาวะซึมเศร้า”</h4>
+              <p>ใช้สอนการอยู่ร่วมและพูดคุยกับคนที่มีภาวะซึมเศร้าอย่างไม่ตัดสิน</p>
+              <div class="resource-meta"><span>ซึมเศร้า</span><span>การรับฟัง</span></div>
+              <a class="resource-link" href="https://www.youtube.com/watch?v=WKbmN_g2qUc" target="_blank" rel="noopener">เปิด YouTube</a>
+            </div>
+            <div class="resource-card">
+              <h4>อสม.ดีเด่น สาขาสุขภาพจิตชุมชน ตอนที่ 1</h4>
+              <p>เหมาะกับหัวข้อบทบาท อสม. ในงานสุขภาพจิตชุมชนและการประสานช่วยเหลือ</p>
+              <div class="resource-meta"><span>บทบาท อสม.</span><span>ชุมชน</span></div>
+              <a class="resource-link" href="https://www.youtube.com/watch?v=8wF3CJJaErE" target="_blank" rel="noopener">เปิด YouTube</a>
+            </div>
+            <div class="resource-card">
+              <h4>อสม.ดีเด่น สาขาสุขภาพจิตชุมชน ตอนที่ 2</h4>
+              <p>ใช้ต่อเนื่องจากตอนที่ 1 เพื่อให้เห็นตัวอย่างการทำงานสุขภาพจิตในพื้นที่จริง</p>
+              <div class="resource-meta"><span>บทบาท อสม.</span><span>ชุมชน</span></div>
+              <a class="resource-link" href="https://www.youtube.com/watch?v=6SCfW57dPCs" target="_blank" rel="noopener">เปิด YouTube</a>
+            </div>
+            <div class="resource-card">
+              <h4>เครียด สิ้นหวัง ไม่อยากมีชีวิต ป่วยทางใจ ปรึกษาได้ โทร 1323</h4>
+              <p>ใช้ในหมวดเคสเสี่ยงสูง/เคสแดง เพื่อย้ำช่องทางขอความช่วยเหลือ</p>
+              <div class="resource-meta"><span>เคสแดง</span><span>1323</span></div>
+              <a class="resource-link" href="https://www.youtube.com/watch?v=4Ql34MmNcEk" target="_blank" rel="noopener">เปิด YouTube</a>
+            </div>
+            <div class="resource-card">
+              <h4>ตอนที่ 48 1323... เบอร์นี้เยียวยาใจ</h4>
+              <p>อธิบายบทบาทสายด่วนสุขภาพจิต 1323 ใช้ประกอบหัวข้อการส่งต่อ/ขอคำปรึกษา</p>
+              <div class="resource-meta"><span>1323</span><span>ส่งต่อ</span></div>
+              <a class="resource-link" href="https://www.youtube.com/watch?v=56dZGwXT9yw" target="_blank" rel="noopener">เปิด YouTube</a>
+            </div>
+            <div class="resource-card">
+              <h4>เช็คสุขภาพใจด้วยตัวเอง MENTAL HEALTH CHECK IN ง่ายๆ แค่คลิก</h4>
+              <p>เหมาะกับหมวด self-check/การชวนประชาชนประเมินสุขภาพใจตนเอง</p>
+              <div class="resource-meta"><span>Self-check</span><span>Mental Health Check In</span></div>
+              <a class="resource-link" href="https://www.youtube.com/watch?v=E26uwBzGuus" target="_blank" rel="noopener">เปิด YouTube</a>
+            </div>
+            <div class="resource-card">
+              <h4>พัฒนาแอปพลิเคชัน “อสม.ออนไลน์” คัดกรองผู้มีปัญหาสุขภาพจิตในชุมชน</h4>
+              <p>ใช้ประกอบการอธิบายแนวคิดให้ อสม. ช่วยคัดกรองและค้นหาผู้มีปัญหาสุขภาพจิตในชุมชน</p>
+              <div class="resource-meta"><span>อสม.ออนไลน์</span><span>คัดกรอง</span></div>
+              <a class="resource-link" href="https://www.youtube.com/watch?v=j3sOK6XU7es" target="_blank" rel="noopener">เปิด YouTube</a>
+            </div>
+            <div class="resource-card">
+              <h4>การคัดกรองโรคซึมเศร้า</h4>
+              <p>ใช้ประกอบหัวข้อแบบคัดกรองซึมเศร้า และย้ำว่าหากมีความเสี่ยงควรปรึกษาเจ้าหน้าที่</p>
+              <div class="resource-meta"><span>คัดกรอง</span><span>ซึมเศร้า</span></div>
+              <a class="resource-link" href="https://www.youtube.com/watch?v=65fdzVS-oA8" target="_blank" rel="noopener">เปิด YouTube</a>
+            </div>
+          </div>
+
+          <h3>📄 เอกสารประกอบสำหรับ อสม.</h3>
+          <div class="resource-grid">
+            <div class="resource-card">
+              <h4>คู่มือการใช้แบบคัดกรองและประเมินโรคซึมเศร้า</h4>
+              <p>ใช้ทบทวนวิธีใช้แบบคัดกรอง การประเมินโรคซึมเศร้า และแนวทางแปลผลเบื้องต้นก่อนใช้งานจริง</p>
+              <div class="resource-meta"><span>PDF</span><span>แบบคัดกรอง</span><span>ซึมเศร้า</span></div>
+              <a class="resource-link doc" href="https://drive.google.com/file/d/1HVnWSWUhfeUquMH588lX_iXYExTa6PuJ/view?usp=sharing" target="_blank" rel="noopener">เปิดเอกสาร</a>
+            </div>
+            <div class="resource-card">
+              <h4>คู่มือ อสม. นักจัดการสุขภาพจิตชุมชน</h4>
+              <p>ใช้ประกอบการอบรมบทบาท อสม. การดูแลสุขภาพจิตในชุมชน และการประสานส่งต่ออย่างเหมาะสม</p>
+              <div class="resource-meta"><span>PDF</span><span>อสม.</span><span>สุขภาพจิตชุมชน</span></div>
+              <a class="resource-link doc" href="https://drive.google.com/file/d/1C6REd02P6-_kqMxw7lZ_Sw2Wj4oOILHi/view?usp=sharing" target="_blank" rel="noopener">เปิดเอกสาร</a>
+            </div>
+            <div class="resource-card">
+              <h4>แนวทางการปฐมพยาบาลทางจิตใจ</h4>
+              <p>ใช้ทบทวนหลักการช่วยเหลือทางใจเบื้องต้น การรับฟังอย่างปลอดภัย และการช่วยเหลือก่อนส่งต่อเจ้าหน้าที่</p>
+              <div class="resource-meta"><span>PDF</span><span>ปฐมพยาบาลทางจิตใจ</span><span>รับฟัง</span></div>
+              <a class="resource-link doc" href="https://drive.google.com/file/d/1zaxYef9oXW04Y6f9eIY2R6JTR5ebgdjD/view?usp=sharing" target="_blank" rel="noopener">เปิดเอกสาร</a>
+            </div>
+            <div class="resource-card">
+              <h4>แผ่นพับสำหรับพี่ อสม. และชาวบ้าน</h4>
+              <p>ใช้เปิดอ่านหรือส่งต่อให้ประชาชนในพื้นที่ เพื่อสื่อสารความรู้สุขภาพจิตแบบสั้น กระชับ และเข้าใจง่าย</p>
+              <div class="resource-meta"><span>แผ่นพับ</span><span>ประชาชน</span><span>อ่านง่าย</span></div>
+              <a class="resource-link doc gray" href="https://drive.google.com/file/d/1bRBNuZ6_fyfjOufC8fCY0S4qT6Li_bpS/view?usp=sharing" target="_blank" rel="noopener">เปิดเอกสาร</a>
+            </div>
+          </div>
+
+          <div class="notice" style="margin-top:12px;">
+            <b>คำแนะนำ:</b> ถ้ามีเบอร์ส่วนตัวเจ้าหน้าที่หรือข้อมูลภายใน ไม่ควรใส่ไว้บน GitHub แบบสาธารณะ ให้ใช้ลิงก์ Google Drive ที่จำกัดสิทธิ์ หรือใส่เฉพาะเบอร์กลาง/เบอร์หน่วยงาน
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion" id="guideQuiz">
+        <button onclick="toggleGuide('guideQuiz')"><span>✅ แบบทบทวนก่อนใช้งานจริง</span><span>▾</span></button>
+        <div class="accordion-content">
+          <p>เลือกข้อที่ควรทำก่อนเริ่มใช้งานจริง แล้วกดตรวจคำตอบ</p>
+          <div class="quiz-card">
+            <label><input type="checkbox" class="quiz" data-correct="1"> ตรวจชื่อผู้ใช้งานด้านบนก่อนเริ่มคัดกรอง</label>
+            <label><input type="checkbox" class="quiz" data-correct="1"> ถามแบบไม่ชี้นำและไม่ตัดสิน</label>
+            <label><input type="checkbox" class="quiz" data-correct="0"> ถ้าคนตอบลังเล ให้ช่วยเลือกคำตอบแทนเพื่อให้เสร็จเร็ว</label>
+            <label><input type="checkbox" class="quiz" data-correct="1"> ถ้าเป็นเคสเสี่ยงสูง ให้รีบแจ้งเจ้าหน้าที่และไม่ปล่อยให้อยู่ลำพัง</label>
+            <label><input type="checkbox" class="quiz" data-correct="0"> สามารถส่งผลคัดกรองลงกลุ่มหมู่บ้านเพื่อให้คนช่วยกันดูแลได้</label>
+          </div>
+          <button class="btn green" type="button" onclick="checkQuiz()">ตรวจคำตอบ</button>
+          <div id="quizResult" class="result-box"></div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer"><div>โรงพยาบาลบ้านนา | คู่มือ อสม. ระบบคัดกรองสุขภาพจิต</div><div>ปรับปรุงหน้านี้ได้ผ่าน GitHub โดยไม่กระทบข้อมูลใน Google Sheet</div></footer>
+  </div>
+
+  <script>
+    let activeCategory = 'all';
+    function normalizeText(text) { return String(text || '').toLowerCase().replace(/\s+/g, ' ').trim(); }
+    function setCategory(category) {
+      activeCategory = category || 'all';
+      document.querySelectorAll('.chip').forEach(chip => chip.classList.toggle('active', chip.dataset.category === activeCategory));
+      filterCards();
+    }
+    function clearSearch() { document.getElementById('searchInput').value = ''; setCategory('all'); }
+    function filterCards() {
+      const keyword = normalizeText(document.getElementById('searchInput').value);
+      document.querySelectorAll('.manual-card').forEach(card => {
+        const categories = (card.dataset.category || '').split(/\s+/);
+        const text = normalizeText(card.innerText + ' ' + (card.dataset.keywords || ''));
+        const matchCategory = activeCategory === 'all' || categories.includes(activeCategory);
+        const matchKeyword = !keyword || text.includes(keyword);
+        card.classList.toggle('hidden', !(matchCategory && matchKeyword));
+      });
+    }
+    function toggleGuide(id) {
+      const guide = document.getElementById(id);
+      if (!guide) return;
+      const content = guide.querySelector('.accordion-content');
+      if (content) content.classList.toggle('active');
+    }
+    function openGuide(id) {
+      const guide = document.getElementById(id);
+      if (!guide) return;
+      document.querySelectorAll('.accordion-content').forEach(el => el.classList.remove('active'));
+      const content = guide.querySelector('.accordion-content');
+      if (content) content.classList.add('active');
+      guide.scrollIntoView({ behavior:'smooth', block:'start' });
+    }
+    function checkQuiz() {
+      const items = Array.from(document.querySelectorAll('.quiz'));
+      let correct = 0;
+      items.forEach(item => {
+        const shouldCheck = item.dataset.correct === '1';
+        if (item.checked === shouldCheck) correct++;
+      });
+      const result = document.getElementById('quizResult');
+      result.style.display = 'block';
+      if (correct === items.length) result.textContent = 'ยอดเยี่ยมครับ/ค่ะ ทบทวนครบถ้วน พร้อมใช้งานจริงอย่างปลอดภัย';
+      else result.textContent = 'ได้ ' + correct + '/' + items.length + ' ข้อ ลองทบทวนเรื่องการไม่ชี้นำคำตอบ การดูแลเคสเสี่ยงสูง และการรักษาความลับอีกครั้ง';
+    }
+  </script>
+</body>
+</html>
