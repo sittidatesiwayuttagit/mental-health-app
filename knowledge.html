@@ -108,6 +108,30 @@
     .checklist li { margin:6px 0; }
     .footer { text-align:center; color:#64748b; margin:30px 0 0; font-size:13px; }
     .hidden { display:none !important; }
+
+    .reader-tools { background:#ffffff; border:1px solid var(--line); border-radius:20px; padding:12px; box-shadow:0 8px 22px rgba(15,23,42,.06); margin:14px 0; }
+    .reader-tools h2 { margin:0 0 8px; font-size:19px; }
+    .tool-row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+    .tool-btn { border:1px solid #cbd5e1; background:#fff; color:#1e293b; border-radius:12px; padding:9px 11px; font-weight:900; cursor:pointer; min-height:40px; }
+    .tool-btn.active { background:#dbeafe; border-color:#60a5fa; color:#1d4ed8; }
+    .saved-panel { display:none; margin-top:10px; border-top:1px dashed #cbd5e1; padding-top:10px; }
+    .saved-panel.active { display:block; }
+    .saved-list { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:8px; }
+    .saved-item { border:1px solid #e2e8f0; background:#f8fafc; border-radius:14px; padding:10px; display:flex; flex-direction:column; gap:8px; }
+    .saved-item strong { font-size:14px; }
+    .saved-actions { display:flex; gap:6px; flex-wrap:wrap; }
+    .section-tools { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:0 0 12px; padding:10px; border-radius:14px; background:#f8fafc; border:1px solid #e2e8f0; }
+    .section-tools .mini-btn { margin:0; }
+    .toast { position:fixed; left:50%; bottom:22px; transform:translateX(-50%); background:#0f172a; color:#fff; border-radius:999px; padding:10px 14px; font-weight:900; font-size:14px; box-shadow:0 12px 30px rgba(15,23,42,.25); opacity:0; pointer-events:none; transition:.22s ease; z-index:50; max-width:92vw; text-align:center; }
+    .toast.show { opacity:1; bottom:30px; }
+    body.font-large { font-size:18px; }
+    body.font-xlarge { font-size:20px; }
+    body.font-large .hero p, body.font-large .card p, body.font-large .subtle, body.font-large .resource-card p, body.font-large .footer { font-size:16px; }
+    body.font-xlarge .hero p, body.font-xlarge .card p, body.font-xlarge .subtle, body.font-xlarge .resource-card p, body.font-xlarge .footer { font-size:18px; }
+    body.font-large .accordion > button { font-size:17px; }
+    body.font-xlarge .accordion > button { font-size:19px; }
+    body.font-large .mini-box, body.font-large .accordion-content { font-size:17px; }
+    body.font-xlarge .mini-box, body.font-xlarge .accordion-content { font-size:19px; }
     @media (max-width:640px) {
       .page { padding:12px 10px 36px; }
       .hero { border-radius:22px; padding:20px 15px; }
@@ -143,12 +167,32 @@
       </div>
       <div class="chips" id="categoryChips">
         <button class="chip active" data-category="all" onclick="setCategory('all')">ทั้งหมด</button>
+        <button class="chip" data-category="intro" onclick="setCategory('intro')">อ่านก่อน</button>
+        <button class="chip" data-category="selfcare" onclick="setCategory('selfcare')">ดูแลใจตัวเอง</button>
         <button class="chip" data-category="stress" onclick="setCategory('stress')">เครียด/นอน</button>
         <button class="chip" data-category="depression" onclick="setCategory('depression')">ซึมเศร้า</button>
         <button class="chip" data-category="risk" onclick="setCategory('risk')">สัญญาณอันตราย</button>
-        <button class="chip" data-category="family" onclick="setCategory('family')">ช่วยคนใกล้ตัว</button>
+        <button class="chip" data-category="family" onclick="setCategory('family')">ดูแลคนในบ้าน</button>
         <button class="chip" data-category="elderly" onclick="setCategory('elderly')">ผู้สูงอายุ</button>
+        <button class="chip" data-category="youth" onclick="setCategory('youth')">วัยรุ่น/ลูกหลาน</button>
+        <button class="chip" data-category="alcohol" onclick="setCategory('alcohol')">สุรา/สารเสพติด</button>
+        <button class="chip" data-category="faq" onclick="setCategory('faq')">คำถามพบบ่อย</button>
         <button class="chip" data-category="resource" onclick="setCategory('resource')">วิดีโอ/เอกสาร</button>
+      </div>
+    </section>
+
+    <section class="reader-tools">
+      <h2>เครื่องมืออ่านง่าย</h2>
+      <p class="subtle">ปรับขนาดตัวอักษร บันทึกหัวข้อไว้อ่านภายหลัง และคัดลอกลิงก์หัวข้อได้จากแต่ละบทความ</p>
+      <div class="tool-row" aria-label="เครื่องมืออ่าน">
+        <button id="fontNormalBtn" class="tool-btn" type="button" onclick="setFontLevel(0)">ก ปกติ</button>
+        <button id="fontLargeBtn" class="tool-btn" type="button" onclick="setFontLevel(1)">ก+ ใหญ่</button>
+        <button id="fontXLargeBtn" class="tool-btn" type="button" onclick="setFontLevel(2)">ก++ ใหญ่มาก</button>
+        <button class="tool-btn" type="button" onclick="toggleSavedPanel()">⭐ ดูหัวข้อที่บันทึกไว้</button>
+      </div>
+      <div id="savedPanel" class="saved-panel">
+        <h3 style="margin:0 0 8px;">⭐ หัวข้อที่บันทึกไว้</h3>
+        <div id="savedList" class="saved-list"></div>
       </div>
     </section>
 
@@ -199,6 +243,76 @@
         <div class="card-actions"><button class="mini-btn orange" onclick="openGuide('guideElderly')">อ่านต่อ</button></div>
       </article>
 
+      <article class="card" data-category="intro" data-keywords="อ่านก่อน สุขภาพใจ คืออะไร ใจ ปกติ ขอความช่วยเหลือ">
+        <h3>🌱 อ่านก่อน: สุขภาพใจคืออะไร</h3>
+        <p>ทำความเข้าใจสุขภาพใจแบบง่าย ๆ ว่าทุกคนมีวันที่ไหวและไม่ไหวได้</p>
+        <div class="tag-line"><span class="tag">อ่านก่อน</span><span class="tag">พื้นฐาน</span></div>
+        <div class="card-actions"><button class="mini-btn" onclick="openGuide('guideIntro')">อ่านต่อ</button></div>
+      </article>
+
+      <article class="card" data-category="selfcare stress" data-keywords="นอนไม่หลับ หลับยาก ตื่นกลางดึก พักผ่อน">
+        <h3>🌙 นอนไม่หลับต้องทำอย่างไร</h3>
+        <p>แนวทางง่าย ๆ ก่อนนอน และสัญญาณที่ควรปรึกษาเจ้าหน้าที่</p>
+        <div class="tag-line"><span class="tag">นอน</span><span class="tag">ดูแลใจตัวเอง</span></div>
+        <div class="card-actions"><button class="mini-btn" onclick="openGuide('guideInsomnia')">อ่านต่อ</button></div>
+      </article>
+
+      <article class="card" data-category="selfcare stress" data-keywords="หนี้สิน งาน ครอบครัว เครียด เงิน ทะเลาะ">
+        <h3>💬 เครียดจากหนี้สิน งาน หรือครอบครัว</h3>
+        <p>วิธีแบ่งปัญหาให้เล็กลง และหาคนช่วยโดยไม่ต้องแบกไว้คนเดียว</p>
+        <div class="tag-line"><span class="tag">เครียด</span><span class="tag">ชีวิตประจำวัน</span></div>
+        <div class="card-actions"><button class="mini-btn green" onclick="openGuide('guideStressDaily')">อ่านต่อ</button></div>
+      </article>
+
+      <article class="card" data-category="depression" data-keywords="เศร้าธรรมดา ซึมเศร้า ต่างกัน เบื่อ หมดหวัง">
+        <h3>☁️ ซึมเศร้าต่างจากเศร้าธรรมดาอย่างไร</h3>
+        <p>ช่วยแยกความเศร้าทั่วไปกับสัญญาณที่ควรขอคำปรึกษาเพิ่มเติม</p>
+        <div class="tag-line"><span class="tag">ซึมเศร้า</span><span class="tag">เข้าใจง่าย</span></div>
+        <div class="card-actions"><button class="mini-btn" onclick="openGuide('guideSadVsDepression')">อ่านต่อ</button></div>
+      </article>
+
+      <article class="card" data-category="family" data-keywords="ไม่ยอมพบเจ้าหน้าที่ ไม่ยอมรักษา คนในบ้าน ปฏิเสธ คุยอย่างไร">
+        <h3>🚪 คนในบ้านไม่ยอมพบเจ้าหน้าที่ ควรคุยอย่างไร</h3>
+        <p>วิธีชวนอย่างนุ่มนวล ไม่บังคับ และไม่ทำให้เขารู้สึกถูกตัดสิน</p>
+        <div class="tag-line"><span class="tag">ครอบครัว</span><span class="tag">ชวนรับความช่วยเหลือ</span></div>
+        <div class="card-actions"><button class="mini-btn green" onclick="openGuide('guideRefuseHelp')">อ่านต่อ</button></div>
+      </article>
+
+      <article class="card" data-category="elderly" data-keywords="ผู้สูงอายุ ซึมเศร้า แสดงออก หงุดหงิด เหงา ป่วยกาย">
+        <h3>👴 ผู้สูงอายุซึมเศร้ามักแสดงออกอย่างไร</h3>
+        <p>อาการในผู้สูงอายุอาจไม่ใช่แค่ร้องไห้ แต่อาจเป็นนอนไม่หลับ หงุดหงิด หรือบ่นปวดตามตัว</p>
+        <div class="tag-line"><span class="tag">ผู้สูงอายุ</span><span class="tag">สังเกต</span></div>
+        <div class="card-actions"><button class="mini-btn orange" onclick="openGuide('guideElderlySigns')">อ่านต่อ</button></div>
+      </article>
+
+      <article class="card" data-category="youth family" data-keywords="วัยรุ่น ลูกหลาน เก็บตัว เล่นมือถือ ไม่คุย ไม่ไปโรงเรียน">
+        <h3>📱 ลูกหลานเก็บตัว เล่นมือถือ ไม่คุยกับใคร</h3>
+        <p>สิ่งที่ผู้ใหญ่ควรสังเกต และวิธีเริ่มคุยโดยไม่ทำให้เด็กรู้สึกถูกดุ</p>
+        <div class="tag-line"><span class="tag">วัยรุ่น</span><span class="tag">ลูกหลาน</span></div>
+        <div class="card-actions"><button class="mini-btn" onclick="openGuide('guideYouthWithdrawn')">อ่านต่อ</button></div>
+      </article>
+
+      <article class="card" data-category="alcohol selfcare" data-keywords="สุรา เหล้า สารเสพติด อารมณ์รุนแรง เมา นอนไม่หลับ">
+        <h3>🍺 ดื่มสุราแล้วอารมณ์เปลี่ยน ควรระวังอะไร</h3>
+        <p>สุราและสารเสพติดอาจทำให้อารมณ์แกว่ง นอนแย่ และเพิ่มความเสี่ยงเมื่อทุกข์ใจ</p>
+        <div class="tag-line"><span class="tag">สุรา</span><span class="tag">สารเสพติด</span></div>
+        <div class="card-actions"><button class="mini-btn orange" onclick="openGuide('guideAlcohol')">อ่านต่อ</button></div>
+      </article>
+
+      <article class="card" data-category="risk family" data-keywords="ห้ามพูด ควรพูด ไม่อยากอยู่แล้ว คิดสั้น ฆ่าตัวตาย ทำร้ายตนเอง">
+        <h3>🛟 ถ้าคนใกล้ตัวพูดว่า “ไม่อยากอยู่แล้ว”</h3>
+        <p>ประโยคที่ควรพูด ประโยคที่ควรเลี่ยง และสิ่งที่ต้องทำเพื่อความปลอดภัย</p>
+        <div class="tag-line"><span class="tag">สัญญาณอันตราย</span><span class="tag">ครอบครัว</span></div>
+        <div class="card-actions"><button class="mini-btn red" onclick="openGuide('guideSafeWords')">อ่านต่อ</button></div>
+      </article>
+
+      <article class="card" data-category="faq" data-keywords="คำถาม พบบ่อย FAQ สุขภาพใจ ปรึกษา อาย ข้อมูลลับ">
+        <h3>❓ คำถามที่พบบ่อย</h3>
+        <p>คำตอบสั้น ๆ สำหรับข้อสงสัยเรื่องสุขภาพใจ การปรึกษา และความเป็นส่วนตัว</p>
+        <div class="tag-line"><span class="tag">FAQ</span><span class="tag">อ่านเร็ว</span></div>
+        <div class="card-actions"><button class="mini-btn" onclick="openGuide('guideFAQ')">อ่านต่อ</button></div>
+      </article>
+
       <article class="card" data-category="resource" data-keywords="วิดีโอ เอกสาร ยูทูป 1323 แผ่นพับ">
         <h3>🎥 คลิปและเอกสารความรู้สุขภาพใจ</h3>
         <p>รวมคลิปและเอกสารความรู้สำหรับอ่าน/ดูเพิ่มเติม เพื่อเข้าใจสุขภาพใจง่ายขึ้น</p>
@@ -231,8 +345,8 @@
       <div class="accordion" id="guideRisk">
         <button onclick="toggleGuide('guideRisk')"><span>🚨 เมื่อมีคำพูดว่า “ไม่อยากอยู่แล้ว”</span><span>▾</span></button>
         <div class="accordion-content">
-          <div class="danger-box"><b>อย่าปล่อยให้อยู่ลำพัง</b> ถ้ามีความเสี่ยงเฉพาะหน้า ให้รีบติดต่อคนใกล้ชิด เจ้าหน้าที่ในพื้นที่ หรือกดปุ่มติดต่อฉุกเฉิน</div>
-          <ol class="checklist"><li>อยู่เป็นเพื่อน พูดด้วยน้ำเสียงสงบ</li><li>เก็บของที่อาจใช้ทำร้ายตนเองออกจากบริเวณใกล้ตัว หากทำได้อย่างปลอดภัย</li><li>โทรหาญาติ คนที่ไว้ใจ หรือเจ้าหน้าที่ทันที</li><li>หลีกเลี่ยงการตำหนิ ขู่ หรือบอกให้เขา “คิดบวก” อย่างเดียว</li><li>เปิดหน้าติดต่อฉุกเฉินในระบบนี้เมื่อสถานการณ์ไม่ปลอดภัย</li></ol>
+          <div class="danger-box"><b>อย่าปล่อยให้อยู่ลำพัง</b> ถ้ามีความเสี่ยงเฉพาะหน้า ให้รีบติดต่อคนใกล้ชิด เจ้าหน้าที่ในพื้นที่ หรือช่องทางฉุกเฉินในพื้นที่</div>
+          <ol class="checklist"><li>อยู่เป็นเพื่อน พูดด้วยน้ำเสียงสงบ</li><li>เก็บของที่อาจใช้ทำร้ายตนเองออกจากบริเวณใกล้ตัว หากทำได้อย่างปลอดภัย</li><li>โทรหาญาติ คนที่ไว้ใจ หรือเจ้าหน้าที่ทันที</li><li>หลีกเลี่ยงการตำหนิ ขู่ หรือบอกให้เขา “คิดบวก” อย่างเดียว</li><li>ติดต่อช่องทางฉุกเฉินในพื้นที่เมื่อสถานการณ์ไม่ปลอดภัย</li></ol>
         </div>
       </div>
 
@@ -248,7 +362,111 @@
 
       <div class="accordion" id="guideElderly">
         <button onclick="toggleGuide('guideElderly')"><span>👵 ดูแลใจผู้สูงอายุในบ้าน</span><span>▾</span></button>
-        <div class="accordion-content"><ul class="checklist"><li>ชวนคุยอย่างสม่ำเสมอ แม้เป็นเรื่องเล็ก ๆ</li><li>สังเกตการนอน การกิน การแยกตัว และอารมณ์หงุดหงิด</li><li>ชวนทำกิจกรรมเบา ๆ ตามกำลัง เช่น รดน้ำต้นไม้ เดินสั้น ๆ สวดมนต์ หรือฟังเพลง</li><li>หากพูดเรื่องตาย หมดหวัง หรือไม่อยากเป็นภาระ ควรรับฟังจริงจังและขอความช่วยเหลือ</li><li>พาใช้บริการศูนย์ชาวบ้านหรือแจ้ง อสม./เจ้าหน้าที่เมื่อกังวล</li></ul></div>
+        <div class="accordion-content"><ul class="checklist"><li>ชวนคุยอย่างสม่ำเสมอ แม้เป็นเรื่องเล็ก ๆ</li><li>สังเกตการนอน การกิน การแยกตัว และอารมณ์หงุดหงิด</li><li>ชวนทำกิจกรรมเบา ๆ ตามกำลัง เช่น รดน้ำต้นไม้ เดินสั้น ๆ สวดมนต์ หรือฟังเพลง</li><li>หากพูดเรื่องตาย หมดหวัง หรือไม่อยากเป็นภาระ ควรรับฟังจริงจังและขอความช่วยเหลือ</li><li>แจ้ง อสม./เจ้าหน้าที่ หรือคนที่ไว้ใจเมื่อกังวล</li></ul></div>
+      </div>
+
+      <div class="accordion" id="guideIntro">
+        <button onclick="toggleGuide('guideIntro')"><span>🌱 อ่านก่อน: สุขภาพใจคืออะไร</span><span>▾</span></button>
+        <div class="accordion-content">
+          <p>สุขภาพใจคือความสามารถในการรับมือกับชีวิตประจำวัน ความเครียด ความสัมพันธ์ และการเปลี่ยนแปลงต่าง ๆ ได้ในระดับหนึ่ง ทุกคนมีวันที่ใจเหนื่อยได้ ไม่ได้แปลว่าอ่อนแอ</p>
+          <div class="two-col">
+            <div class="mini-box"><h4>เรื่องที่ควรรู้</h4><ul class="checklist"><li>ความเครียดเล็กน้อยเกิดขึ้นได้ แต่ถ้ากระทบการนอน การกิน หรือการใช้ชีวิต ควรดูแลจริงจัง</li><li>การขอคำปรึกษาเร็วช่วยลดโอกาสที่ปัญหาจะหนักขึ้น</li><li>สุขภาพใจและสุขภาพกายเกี่ยวข้องกัน เช่น นอนไม่หลับ ปวดหัว ใจสั่น หรืออ่อนเพลีย</li></ul></div>
+            <div class="mini-box"><h4>ประโยคจำง่าย</h4><div class="quote">“ไม่ต้องรอให้หนักมาก จึงค่อยขอความช่วยเหลือ”</div><div class="quote">“การพูดคุยกับคนที่ไว้ใจ เป็นจุดเริ่มต้นของการดูแลใจ”</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion" id="guideInsomnia">
+        <button onclick="toggleGuide('guideInsomnia')"><span>🌙 นอนไม่หลับต้องทำอย่างไร</span><span>▾</span></button>
+        <div class="accordion-content">
+          <div class="two-col">
+            <div class="mini-box"><h4>ลองปรับใน 7 วัน</h4><ul class="checklist"><li>เข้านอนและตื่นเวลาใกล้เคียงเดิม</li><li>ลดชา กาแฟ น้ำอัดลม และแอลกอฮอล์ช่วงเย็น</li><li>วางมือถือก่อนนอน 30 นาที หรือเปิดโหมดแสงน้อย</li><li>ถ้านอนไม่หลับเกิน 20–30 นาที ให้ลุกไปทำกิจกรรมเบา ๆ แล้วค่อยกลับมานอน</li><li>ฝึกหายใจช้า ๆ หรือผ่อนคลายกล้ามเนื้อก่อนนอน</li></ul></div>
+            <div class="mini-box"><h4>ควรปรึกษาเมื่อ</h4><ul class="checklist"><li>นอนไม่หลับหลายคืนต่อสัปดาห์และกระทบงาน/ชีวิต</li><li>ตื่นกลางดึกพร้อมความกังวลมาก</li><li>ต้องพึ่งสุราหรือยาเพื่อให้หลับ</li><li>นอนไม่หลับร่วมกับความเศร้า หมดหวัง หรือคิดไม่อยากอยู่</li></ul></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion" id="guideStressDaily">
+        <button onclick="toggleGuide('guideStressDaily')"><span>💬 เครียดจากหนี้สิน งาน หรือครอบครัว</span><span>▾</span></button>
+        <div class="accordion-content">
+          <p>ปัญหาหนี้ งาน หรือครอบครัวมักแก้ไม่ได้ในวันเดียว แต่สามารถเริ่มจากการทำให้ปัญหา “เล็กลงและเห็นชัดขึ้น” ก่อน</p>
+          <ol class="checklist"><li>เขียนปัญหาออกมาเป็นข้อ ๆ แยก “เรื่องที่ควบคุมได้” กับ “เรื่องที่ยังควบคุมไม่ได้”</li><li>เลือกทำสิ่งเล็กที่สุดหนึ่งอย่างในวันนี้ เช่น โทรถามข้อมูล นัดคุย หรือจัดเอกสาร</li><li>บอกคนที่ไว้ใจว่า “ตอนนี้ฉันกำลังเครียด ขอคุยด้วยหน่อย”</li><li>อย่าตัดสินใจสำคัญตอนอารมณ์รุนแรงหรือเมาสุรา</li><li>ถ้าเริ่มกินไม่ได้ นอนไม่ได้ หรือคิดทำร้ายตนเอง ให้ขอความช่วยเหลือทันที</li></ol>
+          <div class="quote">การขอความช่วยเหลือไม่ใช่การรบกวนคนอื่น แต่เป็นการเพิ่มความปลอดภัยให้ตัวเองและครอบครัว</div>
+        </div>
+      </div>
+
+      <div class="accordion" id="guideSadVsDepression">
+        <button onclick="toggleGuide('guideSadVsDepression')"><span>☁️ ซึมเศร้าต่างจากเศร้าธรรมดาอย่างไร</span><span>▾</span></button>
+        <div class="accordion-content">
+          <div class="two-col">
+            <div class="mini-box"><h4>เศร้าธรรมดาอาจเป็นแบบนี้</h4><ul class="checklist"><li>มีเหตุการณ์ชัดเจน เช่น ผิดหวัง ทะเลาะ สูญเสีย</li><li>ยังพอมีช่วงที่รู้สึกดีขึ้นได้</li><li>ยังทำกิจวัตรประจำวันได้พอสมควร</li></ul></div>
+            <div class="mini-box"><h4>สัญญาณที่ควรระวัง</h4><ul class="checklist"><li>เศร้า เบื่อ หมดแรงต่อเนื่องหลายวันหรือหลายสัปดาห์</li><li>ไม่สนใจสิ่งที่เคยชอบ</li><li>นอนและกินเปลี่ยนมาก</li><li>รู้สึกไร้ค่า เป็นภาระ หรือคิดเรื่องความตาย</li><li>กระทบงาน ครอบครัว หรือการดูแลตัวเอง</li></ul></div>
+          </div>
+          <p>ไม่จำเป็นต้องตัดสินเองว่าเป็นโรคหรือไม่ แค่รู้สึกว่าอาการเริ่มกระทบชีวิต ก็ควรคุยกับเจ้าหน้าที่หรือคนที่ไว้ใจได้แล้ว</p>
+        </div>
+      </div>
+
+      <div class="accordion" id="guideRefuseHelp">
+        <button onclick="toggleGuide('guideRefuseHelp')"><span>🚪 คนในบ้านไม่ยอมพบเจ้าหน้าที่ ควรคุยอย่างไร</span><span>▾</span></button>
+        <div class="accordion-content">
+          <div class="two-col">
+            <div class="mini-box"><h4>แนวทางคุย</h4><ul class="checklist"><li>เริ่มจากความห่วงใย ไม่ใช่การกล่าวหา</li><li>เลือกเวลาที่เขาสงบ ไม่คุยตอนทะเลาะหรือเมา</li><li>เสนอทางเลือกเล็ก ๆ เช่น “คุยสัก 10 นาที” หรือ “ให้เรานั่งเป็นเพื่อน”</li><li>ชวนไปด้วยกัน แทนการสั่งให้ไปคนเดียว</li><li>ถ้าเสี่ยงต่อชีวิต ให้ความปลอดภัยมาก่อนความสมัครใจ</li></ul></div>
+            <div class="mini-box"><h4>ตัวอย่างคำพูด</h4><div class="quote">“เราไม่ได้จะว่าอะไร แค่อยากให้มีคนช่วยดูแลเพิ่ม”</div><div class="quote">“ลองคุยกับเจ้าหน้าที่สักครั้ง ถ้าไม่สบายใจเราจะอยู่ด้วย”</div><div class="quote">“ช่วงนี้เราเป็นห่วงเรื่องการนอนและความเหนื่อยของเธอ”</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion" id="guideElderlySigns">
+        <button onclick="toggleGuide('guideElderlySigns')"><span>👴 ผู้สูงอายุซึมเศร้ามักแสดงออกอย่างไร</span><span>▾</span></button>
+        <div class="accordion-content">
+          <p>ผู้สูงอายุบางคนไม่ได้พูดตรง ๆ ว่าเศร้า แต่อาจแสดงออกผ่านร่างกาย พฤติกรรม หรือคำพูดซ้ำ ๆ</p>
+          <ul class="checklist"><li>บ่นนอนไม่หลับ เบื่ออาหาร น้ำหนักลด หรือปวดตามตัวบ่อย</li><li>หงุดหงิดง่าย เงียบลง ไม่อยากคุย</li><li>พูดว่า “เป็นภาระ” “อยู่ไปก็ไม่มีประโยชน์”</li><li>ไม่อยากทำกิจกรรมที่เคยชอบ</li><li>ดูแลตัวเองน้อยลง ลืมกินยา หรือไม่อยากไปพบแพทย์</li></ul>
+          <div class="quote">สิ่งที่ช่วยได้คือการเยี่ยมเยียนสม่ำเสมอ ชวนคุยสั้น ๆ ให้รู้สึกมีคุณค่า และขอคำปรึกษาเมื่อกังวล</div>
+        </div>
+      </div>
+
+      <div class="accordion" id="guideYouthWithdrawn">
+        <button onclick="toggleGuide('guideYouthWithdrawn')"><span>📱 ลูกหลานเก็บตัว เล่นมือถือ ไม่คุยกับใคร</span><span>▾</span></button>
+        <div class="accordion-content">
+          <div class="two-col">
+            <div class="mini-box"><h4>สังเกตเพิ่ม</h4><ul class="checklist"><li>ไม่ไปเรียน/ไม่อยากออกจากบ้าน</li><li>นอนกลางวันมาก กลางคืนไม่นอน</li><li>หงุดหงิดหรือร้องไห้ง่าย</li><li>ผลการเรียนหรือความรับผิดชอบเปลี่ยนชัดเจน</li><li>โพสต์ข้อความหมดหวังหรือไม่อยากอยู่</li></ul></div>
+            <div class="mini-box"><h4>เริ่มคุยอย่างไร</h4><ul class="checklist"><li>อย่าเริ่มด้วยการดุเรื่องมือถือทันที</li><li>ถามเรื่องความเหนื่อย ความกดดัน หรือปัญหากับเพื่อน</li><li>ฟังให้จบก่อนแนะนำ</li><li>ชมความพยายามเล็ก ๆ เช่น ยอมคุยหรือยอมออกมากินข้าว</li><li>หากมีคำพูดเสี่ยง ให้รีบขอความช่วยเหลือ</li></ul></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion" id="guideAlcohol">
+        <button onclick="toggleGuide('guideAlcohol')"><span>🍺 ดื่มสุราแล้วอารมณ์เปลี่ยน ควรระวังอะไร</span><span>▾</span></button>
+        <div class="accordion-content">
+          <p>สุราและสารเสพติดอาจทำให้ควบคุมอารมณ์ยากขึ้น นอนแย่ลง ทะเลาะง่ายขึ้น และทำให้ตัดสินใจเสี่ยงมากขึ้น โดยเฉพาะในช่วงเครียดหรือเศร้า</p>
+          <ul class="checklist"><li>หลีกเลี่ยงการคุยเรื่องหนักตอนอีกฝ่ายเมา</li><li>ถ้าเมาและมีคำพูดทำร้ายตนเองหรือผู้อื่น ให้หาคนช่วยทันที</li><li>ถ้าดื่มเพื่อให้หลับหรือให้ลืมปัญหา ควรปรึกษาเจ้าหน้าที่</li><li>ชวนลดปริมาณอย่างปลอดภัย ไม่ตำหนิหรือประจาน</li><li>เก็บอุปกรณ์เสี่ยงให้พ้น หากสถานการณ์ไม่ปลอดภัย</li></ul>
+          <div class="quote">หากสุราทำให้อารมณ์รุนแรงขึ้น ให้มองเป็นสัญญาณเตือน ไม่ใช่เรื่องปกติที่ต้องทน</div>
+        </div>
+      </div>
+
+      <div class="accordion" id="guideSafeWords">
+        <button onclick="toggleGuide('guideSafeWords')"><span>🛟 ถ้าคนใกล้ตัวพูดว่า “ไม่อยากอยู่แล้ว” ห้ามพูดอะไร และควรพูดอะไร</span><span>▾</span></button>
+        <div class="accordion-content">
+          <div class="two-col">
+            <div class="mini-box"><h4>ควรพูด</h4><div class="quote">“ขอบคุณที่บอก เราจะอยู่กับเธอก่อนนะ”</div><div class="quote">“ตอนนี้ปลอดภัยไหม มีอะไรที่ทำให้เสี่ยงอยู่ใกล้ตัวไหม”</div><div class="quote">“เราไปหาคนช่วยด้วยกันได้ ไม่ต้องอยู่คนเดียว”</div></div>
+            <div class="mini-box"><h4>ควรเลี่ยง</h4><ul class="checklist"><li>“อย่าพูดแบบนี้ เดี๋ยวเป็นลาง”</li><li>“ทำไปก็เป็นบาป/ทำให้ครอบครัวอาย”</li><li>“คนอื่นหนักกว่าเธออีก”</li><li>“คิดบวกสิ”</li><li>“ถ้าจะทำจริงคงไม่มาบอก”</li></ul></div>
+          </div>
+          <p>หลังรับฟังแล้ว ให้พาไปหาคนช่วยที่เชื่อถือได้ทันที โดยเฉพาะถ้ามีแผน มีอุปกรณ์เสี่ยง หรืออยู่ลำพัง</p>
+        </div>
+      </div>
+
+      <div class="accordion" id="guideFAQ">
+        <button onclick="toggleGuide('guideFAQ')"><span>❓ คำถามที่พบบ่อย</span><span>▾</span></button>
+        <div class="accordion-content">
+          <div class="two-col">
+            <div class="mini-box"><h4>ถาม: สุขภาพจิตไม่ดีแปลว่าบ้าไหม?</h4><p>ไม่ใช่ครับ/ค่ะ ความเครียด เศร้า วิตกกังวล หรือหมดแรงใจเกิดขึ้นได้กับทุกคน และดูแลได้</p></div>
+            <div class="mini-box"><h4>ถาม: คุยกับเจ้าหน้าที่แล้วข้อมูลจะถูกเปิดเผยไหม?</h4><p>ข้อมูลสุขภาพเป็นเรื่องส่วนตัว ควรใช้เพื่อการดูแลเท่าที่จำเป็น และไม่ควรเผยแพร่ในกลุ่มที่ไม่เกี่ยวข้อง</p></div>
+            <div class="mini-box"><h4>ถาม: ยังไม่แน่ใจว่าเป็นซึมเศร้าหรือไม่ ควรทำอย่างไร?</h4><p>ไม่ต้องวินิจฉัยเอง หากอาการกระทบชีวิตหรือคนรอบตัวกังวล ควรเริ่มคุยกับคนที่ไว้ใจหรือเจ้าหน้าที่</p></div>
+            <div class="mini-box"><h4>ถาม: คนในบ้านไม่ยอมคุย ควรทำอย่างไร?</h4><p>ลดการกดดัน เริ่มจากอยู่เป็นเพื่อน สังเกตความปลอดภัย และขอคำปรึกษาจากเจ้าหน้าที่เมื่อไม่มั่นใจ</p></div>
+            <div class="mini-box"><h4>ถาม: ถ้ามีความคิดทำร้ายตนเอง ต้องรอให้สงบก่อนค่อยบอกใครไหม?</h4><p>ไม่ควรรอครับ/ค่ะ ควรบอกคนใกล้ตัวหรือเจ้าหน้าที่ทันที และไม่ควรอยู่ลำพัง</p></div>
+            <div class="mini-box"><h4>ถาม: อ่านความรู้ในหน้านี้พอแทนการพบเจ้าหน้าที่ไหม?</h4><p>หน้านี้เป็นความรู้ทั่วไป ไม่ใช่การวินิจฉัยหรือรักษา หากกังวลหรือมีความเสี่ยง ควรปรึกษาเจ้าหน้าที่</p></div>
+          </div>
+        </div>
       </div>
 
       <div class="accordion" id="guideResources">
@@ -280,15 +498,25 @@
 
   <script>
     let activeCategory = 'all';
+    const STORAGE_KEYS = { font:'ban_na_knowledge_font_level', saved:'ban_na_knowledge_saved_guides' };
+
     function normalizeText(text) { return String(text || '').toLowerCase().replace(/\s+/g,' ').trim(); }
+
     function setCategory(category) {
       activeCategory = category || 'all';
       document.querySelectorAll('.chip').forEach(chip => chip.classList.toggle('active', chip.dataset.category === activeCategory));
       filterCards();
     }
-    function clearSearch() { document.getElementById('searchInput').value=''; setCategory('all'); }
+
+    function clearSearch() {
+      const input = document.getElementById('searchInput');
+      if (input) input.value='';
+      setCategory('all');
+    }
+
     function filterCards() {
-      const keyword = normalizeText(document.getElementById('searchInput').value);
+      const input = document.getElementById('searchInput');
+      const keyword = normalizeText(input ? input.value : '');
       document.querySelectorAll('.card').forEach(card => {
         const categories = (card.dataset.category || '').split(/\s+/);
         const text = normalizeText(card.innerText + ' ' + (card.dataset.keywords || ''));
@@ -297,12 +525,14 @@
         card.classList.toggle('hidden', !(matchCategory && matchKeyword));
       });
     }
+
     function toggleGuide(id) {
       const guide = document.getElementById(id);
       if (!guide) return;
       const content = guide.querySelector('.accordion-content');
       if (content) content.classList.toggle('active');
     }
+
     function openGuide(id) {
       const guide = document.getElementById(id);
       if (!guide) return;
@@ -310,7 +540,148 @@
       const content = guide.querySelector('.accordion-content');
       if (content) content.classList.add('active');
       guide.scrollIntoView({ behavior:'smooth', block:'start' });
+      if (history && history.replaceState) history.replaceState(null, '', '#' + id);
     }
+
+    function setFontLevel(level) {
+      const value = Math.max(0, Math.min(2, Number(level) || 0));
+      document.body.classList.remove('font-large','font-xlarge');
+      if (value === 1) document.body.classList.add('font-large');
+      if (value === 2) document.body.classList.add('font-xlarge');
+      localStorage.setItem(STORAGE_KEYS.font, String(value));
+      document.getElementById('fontNormalBtn')?.classList.toggle('active', value === 0);
+      document.getElementById('fontLargeBtn')?.classList.toggle('active', value === 1);
+      document.getElementById('fontXLargeBtn')?.classList.toggle('active', value === 2);
+      showToast(value === 0 ? 'ใช้ตัวอักษรขนาดปกติ' : 'ปรับขนาดตัวอักษรแล้ว');
+    }
+
+    function getSavedGuides() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.saved) || '[]') || []; }
+      catch (err) { return []; }
+    }
+
+    function setSavedGuides(items) {
+      localStorage.setItem(STORAGE_KEYS.saved, JSON.stringify(items || []));
+      renderSavedGuides();
+    }
+
+    function saveGuide(id, title) {
+      if (!id) return;
+      const items = getSavedGuides();
+      const cleanTitle = title || getGuideTitle(id) || id;
+      if (!items.some(item => item.id === id)) items.unshift({ id, title: cleanTitle });
+      setSavedGuides(items.slice(0, 30));
+      showToast('บันทึกหัวข้อไว้อ่านภายหลังแล้ว');
+    }
+
+    function removeSavedGuide(id) {
+      setSavedGuides(getSavedGuides().filter(item => item.id !== id));
+      showToast('ลบออกจากรายการบันทึกแล้ว');
+    }
+
+    function getGuideTitle(id) {
+      const guide = document.getElementById(id);
+      const span = guide?.querySelector('button span');
+      return span ? span.textContent.trim() : id;
+    }
+
+    function renderSavedGuides() {
+      const list = document.getElementById('savedList');
+      if (!list) return;
+      const items = getSavedGuides();
+      if (!items.length) {
+        list.innerHTML = '<div class="mini-box">ยังไม่มีหัวข้อที่บันทึกไว้ กดปุ่ม ⭐ ในบทความที่อยากกลับมาอ่านอีกครั้ง</div>';
+        return;
+      }
+      list.innerHTML = items.map(item => `
+        <div class="saved-item">
+          <strong>${escapeHtml(item.title || item.id)}</strong>
+          <div class="saved-actions">
+            <button class="mini-btn" type="button" onclick="openGuide('${escapeAttr(item.id)}')">เปิดอ่าน</button>
+            <button class="mini-btn red" type="button" onclick="removeSavedGuide('${escapeAttr(item.id)}')">ลบ</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function toggleSavedPanel() {
+      const panel = document.getElementById('savedPanel');
+      if (!panel) return;
+      renderSavedGuides();
+      panel.classList.toggle('active');
+    }
+
+    function copyGuideLink(id) {
+      if (!id) return;
+      const url = window.location.href.split('#')[0] + '#' + id;
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(url).then(() => showToast('คัดลอกลิงก์หัวข้อแล้ว')).catch(() => fallbackCopy(url));
+      } else {
+        fallbackCopy(url);
+      }
+    }
+
+    function fallbackCopy(text) {
+      const input = document.createElement('textarea');
+      input.value = text;
+      input.setAttribute('readonly','');
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      input.select();
+      try { document.execCommand('copy'); showToast('คัดลอกลิงก์หัวข้อแล้ว'); }
+      catch (err) { showToast('คัดลอกไม่ได้ กรุณาคัดลอกจากแถบที่อยู่'); }
+      document.body.removeChild(input);
+    }
+
+    function initGuideTools() {
+      document.querySelectorAll('.accordion').forEach(guide => {
+        const content = guide.querySelector('.accordion-content');
+        if (!content || content.querySelector('.section-tools')) return;
+        const id = guide.id;
+        const title = getGuideTitle(id);
+        const tools = document.createElement('div');
+        tools.className = 'section-tools';
+        tools.innerHTML = `
+          <button class="mini-btn green" type="button">⭐ บันทึกไว้อ่านภายหลัง</button>
+          <button class="mini-btn" type="button">🔗 คัดลอกลิงก์หัวข้อนี้</button>
+        `;
+        const buttons = tools.querySelectorAll('button');
+        buttons[0].addEventListener('click', () => saveGuide(id, title));
+        buttons[1].addEventListener('click', () => copyGuideLink(id));
+        content.insertBefore(tools, content.firstChild);
+      });
+    }
+
+    function showToast(message) {
+      let toast = document.getElementById('toast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast';
+        toast.className = 'toast';
+        document.body.appendChild(toast);
+      }
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+    }
+
+    function escapeHtml(text) {
+      return String(text || '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    }
+
+    function escapeAttr(text) {
+      return String(text || '').replace(/['\\]/g, '\\$&');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initGuideTools();
+      setFontLevel(Number(localStorage.getItem(STORAGE_KEYS.font) || '0'));
+      renderSavedGuides();
+      const hashId = decodeURIComponent(window.location.hash || '').replace(/^#/, '');
+      if (hashId && document.getElementById(hashId)) setTimeout(() => openGuide(hashId), 120);
+    });
   </script>
 </body>
 </html>
