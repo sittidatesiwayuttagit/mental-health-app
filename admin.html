@@ -104,6 +104,11 @@
         .tool-pill { display:inline-block; padding:5px 9px; border-radius:999px; background:#eff6ff; color:#1d4ed8; font-weight:bold; font-size:12px; margin:2px; }
         .assessment-detail-panel { display:none; margin-top:12px; border-top:1px dashed #cbd5e1; padding-top:12px; }
         .assessment-detail-panel.active { display:block; }
+        .assessment-fullpage { display:none; background:#ffffff; border:2px solid #bfdbfe; border-radius:16px; padding:16px; margin-top:14px; }
+        .assessment-fullpage-header { display:flex; gap:12px; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; border-bottom:1px solid #e2e8f0; padding-bottom:12px; margin-bottom:14px; }
+        .assessment-fullpage-title h3 { margin:0; color:#1d4ed8; font-size:20px; }
+        .assessment-fullpage-time { margin-top:6px; color:#334155; font-weight:700; }
+        .assessment-fullpage-note { color:#64748b; font-size:13px; margin-top:4px; line-height:1.45; }
         .compare-panel { background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:14px; margin-bottom:18px; }
         .compare-table { width:100%; border-collapse:collapse; font-size:13px; margin-top:10px; }
         .compare-table th, .compare-table td { border:1px solid #e2e8f0; padding:8px; text-align:left; vertical-align:top; }
@@ -488,17 +493,28 @@
                 </div>
 
                 <div id="detailAssessmentSubSection" class="detail-subsection active">
-                    <div class="search-container" style="background-color: #ffffff; border: 1px solid #cbd5e1; margin-bottom: 25px;">
+                    <div class="search-container assessment-list-view" style="background-color: #ffffff; border: 1px solid #cbd5e1; margin-bottom: 25px;">
                         <h4 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">🔍 ตัวกรอง: เลือกดูประวัติตามวันที่ตรวจ</h4>
-                        <p class="case-status-muted" style="margin-top:0;">หน้านี้แสดงรายการประเมินแบบย่อก่อน เพื่อให้เห็นว่าวัน/เวลานั้นทำแบบประเมินอะไรบ้าง กด “ดูรายละเอียดผลประเมิน” เพื่อเปิดคะแนน สถานะจองคิว และ Referral/Follow-up</p>
+                        <p class="case-status-muted" style="margin-top:0;">หน้านี้แสดงรายการประเมินแบบย่อก่อน เพื่อให้เห็นว่าวัน/เวลานั้นทำแบบประเมินอะไรบ้าง กด “ดูรายละเอียดผลประเมิน” เพื่อเปิดหน้าแยกที่แสดงคะแนน สถานะจองคิว และ Referral/Follow-up</p>
                         <div class="inputs-row" style="margin-top: 10px;">
                             <input type="date" id="detailDateFilter">
                             <button class="btn-search" onclick="renderPatientDetail()">🔍 ค้นหาตามวันที่</button>
                             <button class="btn-refresh" onclick="clearDetailDateFilter()" style="background-color: #64748b;">🔄 แสดงทั้งหมด</button>
                         </div>
                     </div>
-                    <h3 style="color: #334155; border-left: 4px solid #3b82f6; padding-left: 10px; margin-bottom: 15px;">📋 ประวัติการบันทึกประเมินสุขภาพจิตทั้งหมด</h3>
-                    <div id="patientHistoryCards"></div>
+                    <h3 class="assessment-list-view" style="color: #334155; border-left: 4px solid #3b82f6; padding-left: 10px; margin-bottom: 15px;">📋 ประวัติการบันทึกประเมินสุขภาพจิตทั้งหมด</h3>
+                    <div id="patientHistoryCards" class="assessment-list-view"></div>
+                    <div id="assessmentDetailPage" class="assessment-fullpage">
+                        <div class="assessment-fullpage-header">
+                            <button type="button" class="small-btn gray" onclick="backToAssessmentHistoryList()">⬅️ กลับรายการประเมิน</button>
+                            <div class="assessment-fullpage-title">
+                                <h3>🔎 รายละเอียดผลประเมิน</h3>
+                                <div id="assessmentDetailPageTimestamp" class="assessment-fullpage-time"></div>
+                                <div class="assessment-fullpage-note">หน้านี้แสดงรายละเอียดของผลประเมินรายการเดียว เพื่อให้อ่านง่ายและไม่ต่อท้ายการ์ดประวัติ</div>
+                            </div>
+                        </div>
+                        <div id="assessmentDetailPageContent"></div>
+                    </div>
                 </div>
 
                 <div id="detailProfileSubSection" class="detail-subsection">
@@ -2243,10 +2259,7 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
     }
 
     function toggleAssessmentDetail(rowId) {
-        const el = document.getElementById('assessmentDetail_' + rowId);
-        if (!el) return;
-        el.classList.toggle('active');
-        logAuditEvent('VIEW_ASSESSMENT_DETAIL', currentSelectedPatientName, currentSelectedPatientGender, currentSelectedPatientVillage, rowId, 'เปิด/ปิดรายละเอียดผลประเมิน');
+        openAssessmentDetailPage(rowId);
     }
 
     function getComparisonRecords(topic) {
@@ -2320,36 +2333,25 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
             <div class="referral-box"><h4 style="margin:0 0 10px 0; color:#334155;">🏥 Referral & Outcome / Follow-up</h4><div class="referral-edit-box"></div></div>`;
     }
 
-    function renderPatientDetail() {
-        document.getElementById('patientListSection').style.display = 'none';
-        document.getElementById('patientDetailSection').style.display = 'block';
-        const historyCardsDiv = document.getElementById('patientHistoryCards');
-        historyCardsDiv.innerHTML = '';
-        let patientRecords = getPatientGroupRecords();
-        if (patientRecords.length === 0) return;
-        renderPatientProfileDisplay(patientRecords);
-        renderPatientDetailMiniHeader(patientRecords);
-        renderAssessmentComparison();
-        switchPatientDetailSubTab(currentPatientDetailSubTab || 'assessment');
+    function setAssessmentDetailPageVisible(show) {
+        document.querySelectorAll('#detailAssessmentSubSection .assessment-list-view').forEach(el => {
+            el.style.display = show ? 'none' : '';
+        });
+        const detailPage = document.getElementById('assessmentDetailPage');
+        if (detailPage) detailPage.style.display = show ? 'block' : 'none';
+    }
 
-        const dateFilterVal = document.getElementById('detailDateFilter').value;
-        if (dateFilterVal) {
-            const parts = dateFilterVal.split('-');
-            const formattedFilterDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
-            patientRecords = patientRecords.filter(item => safeText(item.timestamp).split(' ')[0] === formattedFilterDate);
-        }
-        if (patientRecords.length === 0) {
-            historyCardsDiv.innerHTML = '<p style="text-align:center; color:#64748b; padding:20px;">❌ ไม่พบประวัติการตรวจสุขภาพจิตในวันที่เลือกครับ</p>';
-            return;
-        }
-        patientRecords.forEach(item => {
-            const card = document.createElement('div');
-            card.className = 'history-summary-card';
-            const tools = getAssessmentTools(item).map(t => `<span class="tool-pill">${escapeHTML(t)}</span>`).join('');
-            const bookingPill = renderBookingStatusPill(item);
-            card.innerHTML = `<div class="history-summary-line"><div><b>📅 ${escapeHTML(item.timestamp || '-')}</b><div style="margin-top:6px;">${tools}</div><div style="margin-top:8px;">${bookingPill}</div></div><button type="button" class="small-btn" onclick="toggleAssessmentDetail('${escapeHTML(item.rowId)}')">🔎 ดูรายละเอียดผลประเมิน</button></div><div id="assessmentDetail_${escapeHTML(item.rowId)}" class="assessment-detail-panel">${renderFullAssessmentDetail(item)}</div>`;
-            const panel = card.querySelector('.assessment-detail-panel');
-            const buttons = card.querySelector('.case-status-buttons');
+    function backToAssessmentHistoryList() {
+        setAssessmentDetailPageVisible(false);
+        const listTitle = document.getElementById('patientHistoryCards');
+        if (listTitle) listTitle.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function hydrateAssessmentDetailContainer(root, item) {
+        if (!root || !item) return;
+        const buttons = root.querySelector('.case-status-buttons');
+        if (buttons) {
+            buttons.innerHTML = '';
             if (normalizeAdminRole(currentAdminRole) === 'hospital') {
                 const caseStatus = normalizeCaseStatus(item.alertStatus);
                 if (caseStatus !== 'จองคิวแล้ว') {
@@ -2372,9 +2374,65 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
                 const readonly = document.createElement('span'); readonly.className = 'booking-readonly'; readonly.textContent = '🔒 เฉพาะบัญชี Hospital เท่านั้นที่กดรับจองคิวได้'; buttons.appendChild(readonly);
             }
             if (!item.rowId) { const warning = document.createElement('span'); warning.className = 'case-status-muted'; warning.textContent = 'ไม่พบ rowId กรุณารีเฟรชข้อมูลจาก Google Sheet'; buttons.appendChild(warning); }
-            renderReferralEditor(card.querySelector('.referral-edit-box'), item);
+        }
+        renderReferralEditor(root.querySelector('.referral-edit-box'), item);
+    }
+
+    function openAssessmentDetailPage(rowId) {
+        const rowIdText = safeText(rowId);
+        const item = getPatientGroupRecords().find(rec => safeText(rec.rowId) === rowIdText);
+        if (!item) {
+            alert('ไม่พบรายละเอียดผลประเมินรายการนี้ กรุณารีเฟรชข้อมูลแล้วลองใหม่');
+            return;
+        }
+        const timeBox = document.getElementById('assessmentDetailPageTimestamp');
+        const content = document.getElementById('assessmentDetailPageContent');
+        if (!timeBox || !content) return;
+        timeBox.innerHTML = `วันที่และเวลาที่ประเมิน: <b>${escapeHTML(item.timestamp || '-')}</b>`;
+        content.innerHTML = renderFullAssessmentDetail(item);
+        hydrateAssessmentDetailContainer(content, item);
+        setAssessmentDetailPageVisible(true);
+        logAuditEvent('VIEW_ASSESSMENT_DETAIL', currentSelectedPatientName, currentSelectedPatientGender, currentSelectedPatientVillage, rowIdText, 'เปิดหน้าแยกรายละเอียดผลประเมิน');
+        const page = document.getElementById('assessmentDetailPage');
+        if (page) page.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+
+    function renderPatientDetail() {
+        document.getElementById('patientListSection').style.display = 'none';
+        document.getElementById('patientDetailSection').style.display = 'block';
+        const historyCardsDiv = document.getElementById('patientHistoryCards');
+        historyCardsDiv.innerHTML = '';
+        setAssessmentDetailPageVisible(false);
+        let patientRecords = getPatientGroupRecords();
+        if (patientRecords.length === 0) return;
+        renderPatientProfileDisplay(patientRecords);
+        renderPatientDetailMiniHeader(patientRecords);
+        renderAssessmentComparison();
+        switchPatientDetailSubTab(currentPatientDetailSubTab || 'assessment');
+
+        const dateFilterVal = document.getElementById('detailDateFilter').value;
+        if (dateFilterVal) {
+            const parts = dateFilterVal.split('-');
+            const formattedFilterDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+            patientRecords = patientRecords.filter(item => safeText(item.timestamp).split(' ')[0] === formattedFilterDate);
+        }
+        if (patientRecords.length === 0) {
+            historyCardsDiv.innerHTML = '<p style="text-align:center; color:#64748b; padding:20px;">❌ ไม่พบประวัติการตรวจสุขภาพจิตในวันที่เลือกครับ</p>';
+            return;
+        }
+        patientRecords.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'history-summary-card';
+            const tools = getAssessmentTools(item).map(t => `<span class="tool-pill">${escapeHTML(t)}</span>`).join('');
+            const bookingPill = renderBookingStatusPill(item);
+            const detailBtn = item.rowId
+                ? `<button type="button" class="small-btn" onclick="openAssessmentDetailPage('${escapeHTML(item.rowId)}')">🔎 ดูรายละเอียดผลประเมิน</button>`
+                : `<button type="button" class="small-btn gray" disabled>ยังไม่มีรายละเอียดผลประเมิน</button>`;
+            card.innerHTML = `<div class="history-summary-line"><div><b>📅 ${escapeHTML(item.timestamp || '-')}</b><div style="margin-top:6px;">${tools}</div><div style="margin-top:8px;">${bookingPill}</div></div>${detailBtn}</div>`;
             historyCardsDiv.appendChild(card);
         });
+
     }
 
 
@@ -3084,7 +3142,7 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
             .catch(err => { loading.style.display = 'none'; alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อเพื่อบันทึกวันเกิด: " + err.message); });
     }
 
-    function backToPatientList() { document.getElementById('patientListSection').style.display = 'block'; document.getElementById('patientDetailSection').style.display = 'none'; processData(); }
+    function backToPatientList() { setAssessmentDetailPageVisible(false); document.getElementById('patientListSection').style.display = 'block'; document.getElementById('patientDetailSection').style.display = 'none'; processData(); }
 
 
 
