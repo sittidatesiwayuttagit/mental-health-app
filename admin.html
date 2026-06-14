@@ -308,10 +308,15 @@
         .quality-item { background:#fff; border:1px solid #fde68a; border-left:5px solid #f59e0b; border-radius:12px; padding:10px; }
         .assign-box { background:#eff6ff; border:1px solid #bfdbfe; border-radius:14px; padding:12px; margin:10px 0; }
 
-        .add-patient-panel { background:#ffffff; border:2px solid #bbf7d0; border-radius:16px; padding:16px; margin-top:14px; box-shadow:0 2px 10px rgba(16,185,129,0.08); }
-        .add-patient-panel h3 { margin:0 0 6px 0; color:#047857; }
-        .add-patient-panel .helper-text { margin:0 0 12px 0; color:#64748b; font-size:13px; line-height:1.5; }
-        .profile-only-note { background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; border-radius:12px; padding:14px; margin:10px 0; line-height:1.6; }
+        .followup-plan-box, .case-close-box, .print-summary-box, .duplicate-box, .meeting-report-box, .tracking-registry-box { background:#ffffff; border:1px solid #dbeafe; border-radius:14px; padding:14px; margin:12px 0; }
+        .case-close-box { border-color:#fecaca; background:#fff7f7; }
+        .field-label { display:block; font-weight:700; color:#334155; font-size:13px; margin:0 0 6px 2px; }
+        .form-cell { flex:1; min-width:180px; }
+        .form-cell.wide { min-width:260px; }
+        .duplicate-item, .registry-item, .plan-item, .closure-item, .meeting-line { border:1px solid #e2e8f0; border-radius:12px; padding:12px; margin-bottom:8px; background:#f8fafc; }
+        .registry-item.overdue { border-left:5px solid #ef4444; }
+        .registry-item.today { border-left:5px solid #f59e0b; }
+        .registry-item.waiting { border-left:5px solid #3b82f6; }
     </style>
 </head>
 <body>
@@ -390,6 +395,16 @@
                 <h4 style="margin-top:0; color:#334155;">รายการงานค้าง/งานด่วน</h4>
                 <div id="workTodayList" class="task-list"></div>
             </div>
+            <div class="search-container tracking-registry-box">
+                <div class="history-summary-line">
+                    <div>
+                        <h4 style="margin:0; color:#334155;">📌 ทะเบียนเคสที่ต้องติดตาม</h4>
+                        <p class="case-status-muted" style="margin:6px 0 0 0;">รวมเคสที่ยังไม่ปิด เคสครบกำหนดติดตาม และเคสที่ควรดูแลต่อเนื่อง</p>
+                    </div>
+                    <button class="small-btn" onclick="renderTrackingRegistry()">🔄 รีเฟรชทะเบียนติดตาม</button>
+                </div>
+                <div id="trackingRegistryList" class="task-list" style="margin-top:10px;"></div>
+            </div>
             <div class="search-container">
                 <h4 style="margin-top:0; color:#334155;">⚠️ ข้อมูลที่ควรตรวจสอบ</h4>
                 <p class="case-status-muted">ช่วยตรวจข้อมูลที่อาจทำให้แจ้งเตือนผิดพื้นที่ ติดตามไม่ได้ หรือรายงานไม่สมบูรณ์</p>
@@ -416,54 +431,18 @@
                         </select>
                         <button class="btn-search" onclick="processData()">🔍 ค้นหา</button>
                         <button class="btn-refresh" onclick="fetchPatientData()">🔄 รีเฟรช</button>
-                        <button class="btn-search" onclick="showAddPatientPanel()">➕ เพิ่มผู้ป่วยใหม่</button>
                         <button class="btn-search" onclick="fetchPatientPageFromWeb()">⚡ ค้นหาแบบ backend 50 รายการ</button>
                     </div>
                 </div>
-
-                <div id="addPatientPanel" class="add-patient-panel" style="display:none;">
-                    <div class="history-summary-line" style="margin-bottom:10px;">
+                <div id="duplicatePatientPanel" class="duplicate-box" style="display:none;">
+                    <div class="history-summary-line">
                         <div>
-                            <h3>➕ เพิ่มผู้ป่วยเข้าสู่ระบบ</h3>
-                            <p class="helper-text">ใช้สำหรับเพิ่มข้อมูลทั่วไปของผู้ป่วยก่อนมีประวัติการคัดกรอง เพื่อให้ค้นหา/เลือกคัดกรองซ้ำได้ง่ายขึ้นในภายหลัง</p>
+                            <h3 style="margin:0; color:#334155;">🔎 รายชื่อที่อาจซ้ำกัน</h3>
+                            <p class="case-status-muted" style="margin:6px 0 0 0;">ระบบช่วยคัดกรองชื่อ/เพศ/หมู่ที่คล้ายกัน เจ้าหน้าที่ควรตรวจสอบก่อนกดรวมเคส</p>
                         </div>
-                        <button type="button" class="small-btn gray" onclick="hideAddPatientPanel()">✖️ ปิด</button>
+                        <button type="button" class="small-btn gray" onclick="hideDuplicatePatientPanel()">✖️ ปิด</button>
                     </div>
-                    <div class="inputs-row">
-                        <input type="text" id="addPatientName" placeholder="ชื่อ-นามสกุลผู้ป่วย (ไม่ต้องใส่คำนำหน้า)">
-                        <select id="addPatientGender"><option value="">-- เพศ --</option><option value="ชาย">ชาย</option><option value="หญิง">หญิง</option><option value="อื่นๆ">อื่นๆ</option></select>
-                    </div>
-                    <div class="inputs-row">
-                        <select id="addPatientSubdistrict" onchange="updateAddPatientFacilityOptions()"><option value="">-- เลือกตำบล --</option></select>
-                        <select id="addPatientFacility" onchange="updateAddPatientVillageOptions()"><option value="">-- เลือก รพ.สต. --</option></select>
-                        <select id="addPatientVillage"><option value="">-- เลือกหมู่บ้าน --</option></select>
-                    </div>
-                    <div class="inputs-row">
-                        <select id="addBirthDay"><option value="">-- วันที่เกิด --</option></select>
-                        <select id="addBirthMonth"><option value="">-- เดือนเกิด --</option><option value="1">มกราคม (1)</option><option value="2">กุมภาพันธ์ (2)</option><option value="3">มีนาคม (3)</option><option value="4">เมษายน (4)</option><option value="5">พฤษภาคม (5)</option><option value="6">มิถุนายน (6)</option><option value="7">กรกฎาคม (7)</option><option value="8">สิงหาคม (8)</option><option value="9">กันยายน (9)</option><option value="10">ตุลาคม (10)</option><option value="11">พฤศจิกายน (11)</option><option value="12">ธันวาคม (12)</option></select>
-                        <input type="number" id="addBirthYear" placeholder="ปี พ.ศ. เกิด เช่น 2515" min="2400" max="2600">
-                    </div>
-                    <div class="inputs-row">
-                        <select id="addTreatmentRights">
-                            <option value="">-- สิทธิการรักษา --</option>
-                            <option value="บัตรทอง / หลักประกันสุขภาพถ้วนหน้า">บัตรทอง / หลักประกันสุขภาพถ้วนหน้า</option>
-                            <option value="ประกันสังคม">ประกันสังคม</option>
-                            <option value="ข้าราชการ / เบิกต้นสังกัด">ข้าราชการ / เบิกต้นสังกัด</option>
-                            <option value="ชำระเงินเอง">ชำระเงินเอง</option>
-                            <option value="อื่นๆ / ไม่ทราบ">อื่นๆ / ไม่ทราบ</option>
-                        </select>
-                        <input type="text" id="addAllergies" placeholder="ประวัติแพ้ยา/แพ้อาหาร">
-                        <input type="text" id="addChronicDiseases" placeholder="โรคประจำตัว">
-                    </div>
-                    <div class="inputs-row">
-                        <input type="text" id="addRegisteredAddress" placeholder="ที่อยู่ตามทะเบียนบ้าน">
-                        <input type="text" id="addCurrentAddress" placeholder="ที่อยู่ปัจจุบัน">
-                    </div>
-                    <div class="profile-actions">
-                        <button type="button" class="small-btn green" id="btnSaveNewPatient" onclick="saveNewPatientProfile()">💾 บันทึกผู้ป่วยใหม่</button>
-                        <button type="button" class="small-btn gray" onclick="clearAddPatientForm()">ล้างฟอร์ม</button>
-                        <button type="button" class="small-btn red" onclick="hideAddPatientPanel()">ยกเลิก</button>
-                    </div>
+                    <div id="duplicatePatientList" style="margin-top:10px;"></div>
                 </div>
                 <div id="patientListView"></div>
             </div>
@@ -567,6 +546,14 @@
                         <h4 style="margin-top:0; color:#334155;">🕘 Timeline รวม / Note ภายในเจ้าหน้าที่</h4>
                         <p class="case-status-muted" style="margin-top:0;">แสดงประวัติสำคัญของผู้ป่วยรายนี้ เช่น การคัดกรอง การจองคิว เลื่อนนัด Referral/Follow-up และบันทึกภายในทีม</p>
                         <div id="caseAssignmentPanel"></div>
+                        <div id="caseFollowupPlanPanel"></div>
+                        <div id="caseClosePanel"></div>
+                        <div class="print-summary-box">
+                            <div class="history-summary-line">
+                                <div><h4 style="margin:0; color:#334155;">🖨️ สรุปผู้ป่วยรายคน</h4><p class="case-status-muted" style="margin:6px 0 0 0;">พิมพ์สรุป 1 หน้าเพื่อใช้ส่งต่อหรือประชุมทีม</p></div>
+                                <button type="button" class="small-btn" onclick="printCurrentPatientSummary()">🖨️ พิมพ์สรุปผู้ป่วย</button>
+                            </div>
+                        </div>
                         <div class="note-box">
                             <label style="font-weight:700; color:#334155;">เพิ่มบันทึกภายในเจ้าหน้าที่</label>
                             <textarea id="caseInternalNoteText" rows="3" placeholder="เช่น โทรแล้วไม่รับสาย, ญาติแจ้งว่าสะดวกวันศุกร์, ผู้ป่วยขอเลื่อนนัด..." style="margin-top:8px;"></textarea>
@@ -590,6 +577,17 @@
                     <div class="summary-card"><h4>🔴 สีแดงปัจจุบัน</h4><div class="big-number" id="sumRedCases">0</div><div class="case-status-muted">ผู้ป่วยที่ผลล่าสุดควรจัดการเร่งด่วน</div></div>
                 </div>
                 <div id="villageRiskSummary" class="search-container" style="background:#ffffff;"></div>
+                <div class="search-container meeting-report-box">
+                    <h3 style="margin-top:0; color:#334155;">📊 รายงานประชุมทีม</h3>
+                    <p class="case-status-muted">เลือกช่วงวันที่เพื่อสรุปจำนวนคัดกรอง เคสค้าง เคสติดตาม ส่งต่อ และปิดเคส สำหรับประชุมทีม</p>
+                    <div class="inputs-row">
+                        <input type="date" id="meetingReportStartDate">
+                        <input type="date" id="meetingReportEndDate">
+                        <button type="button" class="btn-search" onclick="renderMeetingReport()">📊 สร้างรายงาน</button>
+                        <button type="button" class="btn-refresh" onclick="printMeetingReport()">🖨️ พิมพ์รายงาน</button>
+                    </div>
+                    <div id="meetingReportBox"></div>
+                </div>
 
                 <h3 style="color:#1e293b; margin: 22px 0 12px 0;">📚 สรุปเคสรวมทั้งหมดจากทุกรายการคัดกรอง</h3>
                 <div id="dashboardTotalSummaryPanel" class="summary-panel">
@@ -890,7 +888,7 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
     let currentPatientPhotoDataUrl = "";
     let comparisonPageOffset = 0;
     let currentPatientDetailSubTab = "assessment";
-    let currentCaseSupportData = { assignment: null, notes: [] };
+    let currentCaseSupportData = { assignment: null, notes: [], plans: [], closures: [] };
     let dataQualityCache = [];
 
     function safeText(value) { return value === undefined || value === null ? "" : String(value); }
@@ -920,8 +918,6 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
         return 1;
     }
     function deriveRiskLevel(item) {
-        if (item && item.profileOnly) return 'ยังไม่มีการประเมิน';
-        if (item.riskLevel && safeText(item.riskLevel).includes('ยังไม่มี')) return 'ยังไม่มีการประเมิน';
         if (item.riskLevel) return getRiskLevel(item.riskLevel);
         const q9 = parseInt((safeText(item.q9Score).match(/\d+/) || ['0'])[0], 10) || 0;
         const q8 = parseInt((safeText(item.q8Result).match(/\d+/) || ['0'])[0], 10) || 0;
@@ -1276,14 +1272,6 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
         return Array.from(new Set(SERVICE_AREA_LIST.map(x => x.tambon))).sort((a, b) => a.localeCompare(b, 'th'));
     }
 
-    function getFacilitiesByTambon(tambon) {
-        return Array.from(new Set(SERVICE_AREA_LIST.filter(x => x.tambon === tambon).map(x => x.facility))).filter(Boolean).sort((a, b) => a.localeCompare(b, 'th'));
-    }
-
-    function getVillagesByTambonFacility(tambon, facility) {
-        return Array.from(new Set(SERVICE_AREA_LIST.filter(x => x.tambon === tambon && x.facility === facility).flatMap(x => x.villages))).sort((a, b) => parseInt(a.replace(/\D/g,''),10) - parseInt(b.replace(/\D/g,''),10));
-    }
-
 
     const STAFF_POSITION_OPTIONS = [
         'เจ้าพนักงานทันตสาธารณสุขชำนาญงาน',
@@ -1440,7 +1428,7 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
     }
 
     window.onload = async () => {
-        ['profBirthDay', 'addBirthDay'].forEach(id => {
+        ['profBirthDay'].forEach(id => {
             const daySelect = document.getElementById(id);
             if (!daySelect) return;
             for (let i = 1; i <= 31; i++) {
@@ -1709,23 +1697,18 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
     }
 
     function getPatientCaseSummary(records) {
-        const sortedAll = [...records].sort((a, b) => parseTimestamp(b.timestamp) - parseTimestamp(a.timestamp));
-        const realRecords = sortedAll.filter(record => !record.profileOnly);
-        const sorted = realRecords.length ? realRecords : sortedAll;
+        const sorted = [...records].sort((a, b) => parseTimestamp(b.timestamp) - parseTimestamp(a.timestamp));
         const latest = sorted[0] || {};
         const counts = { "ยังไม่รับเคส": 0, "จองคิวแล้ว": 0 };
-        realRecords.forEach(record => { const status = normalizeCaseStatus(record.alertStatus); counts[status] = (counts[status] || 0) + 1; });
-        if (!realRecords.length) {
-            return { latestStatus: 'ยังไม่มีการประเมิน', latestTimestamp: safeText(latest.timestamp) || '-', latestBookingDateTime: '-', latestBookingBy: '-', total: 0, counts };
-        }
-        const bookedRecords = realRecords.filter(record => normalizeCaseStatus(record.alertStatus) === "จองคิวแล้ว" && safeText(record.bookingDateTime) && safeText(record.bookingDateTime) !== "-");
+        sorted.forEach(record => { const status = normalizeCaseStatus(record.alertStatus); counts[status] = (counts[status] || 0) + 1; });
+        const bookedRecords = sorted.filter(record => normalizeCaseStatus(record.alertStatus) === "จองคิวแล้ว" && safeText(record.bookingDateTime) && safeText(record.bookingDateTime) !== "-");
         const latestBooking = bookedRecords[0] || {};
         return {
             latestStatus: normalizeCaseStatus(latest.alertStatus),
             latestTimestamp: safeText(latest.timestamp) || "-",
             latestBookingDateTime: safeText(latestBooking.bookingDateTime) || "-",
             latestBookingBy: safeText(latestBooking.bookingBy) || "-",
-            total: realRecords.length,
+            total: sorted.length,
             counts
         };
     }
@@ -1782,14 +1765,11 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
             const p = groupMap.get(key);
             const summary = getPatientCaseSummary(p.records);
             const ageText = calculateAge(p.day, p.month, p.year);
-            const profileOnlyGroup = p.records.every(rec => rec.profileOnly);
             const statusClass = getCaseStatusClass(summary.latestStatus);
-            const highestRisk = profileOnlyGroup ? 'ยังไม่มีการประเมิน' : p.records.reduce((max, rec) => riskRank(deriveRiskLevel(rec)) > riskRank(max) ? deriveRiskLevel(rec) : max, '🟢 เขียว');
+            const highestRisk = p.records.reduce((max, rec) => riskRank(deriveRiskLevel(rec)) > riskRank(max) ? deriveRiskLevel(rec) : max, '🟢 เขียว');
             const highestRiskClass = getRiskClass(highestRisk);
-            const trajectoryInfo = profileOnlyGroup ? null : getTrajectoryInfo(p.records);
-            const bookingSummaryText = profileOnlyGroup ? '🗂️ เพิ่มข้อมูลทั่วไปแล้ว รอคัดกรองครั้งแรก' : renderBookingTimeText(summary);
-            const bookingStatusHtml = profileOnlyGroup ? '<span class="booking-status-pill booking-unbooked">🗂️ ยังไม่มีการประเมิน</span>' : renderBookingStatusPill(summary);
-            const totalText = profileOnlyGroup ? 'ยังไม่มีประวัติการประเมิน' : `รวม ${summary.total} เคส | จองคิวแล้ว ${summary.counts['จองคิวแล้ว'] || 0} | ยังไม่จองคิว ${summary.counts['ยังไม่รับเคส'] || 0}`;
+            const trajectoryInfo = getTrajectoryInfo(p.records);
+            const bookingSummaryText = renderBookingTimeText(summary);
             const rowCard = document.createElement('div');
             rowCard.className = 'patient-row-card';
             rowCard.addEventListener('click', () => showPatientDetail(p.name, p.gender, p.village, p.id));
@@ -1802,11 +1782,11 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
                     </div>
                     <div class="case-status-summary">
                         <span>📌 สถานะการรับเคสล่าสุด:</span>
-                        ${bookingStatusHtml}
-                        <span class="case-status-muted">${escapeHTML(totalText)}</span>
+                        ${renderBookingStatusPill(summary)}
+                        <span class="case-status-muted">รวม ${summary.total} เคส | จองคิวแล้ว ${summary.counts['จองคิวแล้ว'] || 0} | ยังไม่จองคิว ${summary.counts['ยังไม่รับเคส'] || 0}</span>
                         <span class="case-status-muted">${escapeHTML(bookingSummaryText)}</span>
                         <span class="risk-pill ${highestRiskClass}">ความเสี่ยงสูงสุด: ${escapeHTML(highestRisk)}</span>
-                        ${profileOnlyGroup ? '' : renderTrajectoryPill(trajectoryInfo)}
+                        ${renderTrajectoryPill(trajectoryInfo)}
                     </div>
                 </div>
                 <div class="patient-row-right">
@@ -1901,8 +1881,6 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
             patientName: currentSelectedPatientName || safeText(latest.patientName),
             patientGender: currentSelectedPatientGender || safeText(latest.patientGender),
             villageNo: currentSelectedPatientVillage || safeText(latest.villageNo),
-            patientSubdistrict: safeText(latest.patientSubdistrict),
-            patientFacility: safeText(latest.patientFacility),
             birthDay: safeText(latest.birthDay),
             birthMonth: safeText(latest.birthMonth),
             birthYear: safeText(latest.birthYear),
@@ -1933,8 +1911,6 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
                     <div class="profile-info-item"><b>ชื่อ-นามสกุล</b>${escapeHTML(p.patientName || '-')}</div>
                     <div class="profile-info-item"><b>เพศ</b>${escapeHTML(p.patientGender || '-')}</div>
                     <div class="profile-info-item"><b>อายุคำนวณ</b>${escapeHTML(ageText)}</div>
-                    <div class="profile-info-item"><b>ตำบล</b>${escapeHTML(p.patientSubdistrict || '-')}</div>
-                    <div class="profile-info-item"><b>รพ.สต./หน่วยบริการ</b>${escapeHTML(p.patientFacility || '-')}</div>
                     <div class="profile-info-item"><b>หมู่ที่</b>${escapeHTML(p.villageNo || '-')}</div>
                     <div class="profile-info-item"><b>วันเดือนปีเกิด</b>${escapeHTML(birthText)}</div>
                     <div class="profile-info-item"><b>ประวัติแพ้ยา/อาหาร</b>${escapeHTML(p.allergies || 'ยังไม่ระบุ')}</div>
@@ -1998,108 +1974,6 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
             img.src = e.target.result;
         };
         reader.readAsDataURL(file);
-    }
-
-    function populateAddPatientAreaOptions() {
-        const sub = document.getElementById('addPatientSubdistrict');
-        if (!sub) return;
-        const current = sub.value;
-        sub.innerHTML = '<option value="">-- เลือกตำบล --</option>' + getTambonList().map(t => `<option value="${escapeHTML(t)}">${escapeHTML(t)}</option>`).join('');
-        if (current) sub.value = current;
-        updateAddPatientFacilityOptions();
-    }
-
-    function updateAddPatientFacilityOptions() {
-        const tambon = document.getElementById('addPatientSubdistrict')?.value || '';
-        const facility = document.getElementById('addPatientFacility');
-        const village = document.getElementById('addPatientVillage');
-        if (!facility || !village) return;
-        const currentFacility = facility.value;
-        const facilities = getFacilitiesByTambon(tambon);
-        facility.innerHTML = '<option value="">-- เลือก รพ.สต. --</option>' + facilities.map(f => `<option value="${escapeHTML(f)}">${escapeHTML(f)}</option>`).join('');
-        if (currentFacility && facilities.includes(currentFacility)) facility.value = currentFacility;
-        updateAddPatientVillageOptions();
-    }
-
-    function updateAddPatientVillageOptions() {
-        const tambon = document.getElementById('addPatientSubdistrict')?.value || '';
-        const facility = document.getElementById('addPatientFacility')?.value || '';
-        const village = document.getElementById('addPatientVillage');
-        if (!village) return;
-        const currentVillage = village.value;
-        const villages = getVillagesByTambonFacility(tambon, facility);
-        const placeholder = !tambon ? '-- เลือกตำบลก่อน --' : (!facility ? '-- เลือก รพ.สต. ก่อน --' : '-- เลือกหมู่บ้าน --');
-        village.innerHTML = `<option value="">${placeholder}</option>` + villages.map(v => `<option value="${escapeHTML(v)}">${escapeHTML(v)}</option>`).join('');
-        if (currentVillage && villages.includes(currentVillage)) village.value = currentVillage;
-    }
-
-    function showAddPatientPanel() {
-        const panel = document.getElementById('addPatientPanel');
-        if (!panel) return;
-        panel.style.display = 'block';
-        populateAddPatientAreaOptions();
-        window.scrollTo({ top: panel.offsetTop - 10, behavior: 'smooth' });
-    }
-
-    function hideAddPatientPanel() {
-        const panel = document.getElementById('addPatientPanel');
-        if (panel) panel.style.display = 'none';
-    }
-
-    function clearAddPatientForm() {
-        ['addPatientName','addBirthYear','addAllergies','addChronicDiseases','addRegisteredAddress','addCurrentAddress'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-        ['addPatientGender','addPatientSubdistrict','addPatientFacility','addPatientVillage','addBirthDay','addBirthMonth','addTreatmentRights'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-        updateAddPatientFacilityOptions();
-    }
-
-    async function saveNewPatientProfile() {
-        const nameCheck = validateAdminPatientName(document.getElementById('addPatientName')?.value || '');
-        if (!nameCheck.valid) { alert('⚠️ ' + nameCheck.message); return; }
-        const gender = document.getElementById('addPatientGender')?.value || '';
-        const subdistrict = document.getElementById('addPatientSubdistrict')?.value || '';
-        const facility = document.getElementById('addPatientFacility')?.value || '';
-        const village = document.getElementById('addPatientVillage')?.value || '';
-        if (!gender || !subdistrict || !facility || !village) { alert('⚠️ กรุณากรอกเพศ ตำบล รพ.สต. และหมู่บ้านให้ครบถ้วน'); return; }
-        if (!confirm(`ยืนยันเพิ่มผู้ป่วยเข้าสู่ระบบหรือไม่?\n\nชื่อ: ${nameCheck.name}\nพื้นที่: ${subdistrict} / ${facility} / ${village}`)) return;
-        const btn = document.getElementById('btnSaveNewPatient');
-        const oldText = btn ? btn.textContent : '';
-        if (btn) { btn.disabled = true; btn.textContent = 'กำลังบันทึก...'; }
-        const adminName = getCurrentAdminNameForCase();
-        const params = new URLSearchParams({
-            action: 'createPatientProfile',
-            actorUsername: currentAdminUsername,
-            authToken: currentAdminAuthToken,
-            updatedBy: adminName,
-            patientName: nameCheck.name,
-            patientGender: gender,
-            patientSubdistrict: subdistrict,
-            patientFacility: facility,
-            villageNo: village,
-            birthDay: document.getElementById('addBirthDay')?.value || '',
-            birthMonth: document.getElementById('addBirthMonth')?.value || '',
-            birthYear: (document.getElementById('addBirthYear')?.value || '').trim(),
-            registeredAddress: (document.getElementById('addRegisteredAddress')?.value || '').trim(),
-            currentAddress: (document.getElementById('addCurrentAddress')?.value || '').trim(),
-            allergies: (document.getElementById('addAllergies')?.value || '').trim(),
-            chronicDiseases: (document.getElementById('addChronicDiseases')?.value || '').trim(),
-            treatmentRights: (document.getElementById('addTreatmentRights')?.value || '').trim()
-        });
-        try {
-            const res = await fetch(GOOGLE_SCRIPT_URL, { method:'POST', headers:{ 'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8' }, body: params });
-            if (!res.ok) throw new Error('HTTP Status ' + res.status);
-            const result = await res.json();
-            if (!result.success) { alert('❌ เพิ่มผู้ป่วยไม่สำเร็จ: ' + (result.message || 'ไม่ทราบสาเหตุ')); return; }
-            alert('✅ เพิ่มผู้ป่วยเข้าสู่ระบบสำเร็จ\nPatient ID: ' + (result.patientId || '-'));
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) searchInput.value = nameCheck.name;
-            hideAddPatientPanel();
-            clearAddPatientForm();
-            await fetchPatientData();
-        } catch (err) {
-            alert('❌ เกิดข้อผิดพลาดในการเพิ่มผู้ป่วย: ' + err.message);
-        } finally {
-            if (btn) { btn.disabled = false; btn.textContent = oldText || '💾 บันทึกผู้ป่วยใหม่'; }
-        }
     }
 
     function validateAdminPatientName(name) {
@@ -2178,7 +2052,6 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
     }
 
     function getAssessmentTools(item) {
-        if (item && item.profileOnly) return ['ข้อมูลทั่วไป'];
         const tools = ['2Q+'];
         const type = safeText(item.assessmentType);
         if (type.includes('9Q') || safeText(item.q9Score).includes('คะแนน')) tools.push('9Q');
@@ -2289,11 +2162,6 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
             historyCardsDiv.innerHTML = '<p style="text-align:center; color:#64748b; padding:20px;">❌ ไม่พบประวัติการตรวจสุขภาพจิตในวันที่เลือกครับ</p>';
             return;
         }
-        if (patientRecords.every(item => item.profileOnly)) {
-            historyCardsDiv.innerHTML = '<div class="profile-only-note"><b>🗂️ ผู้ป่วยรายนี้ถูกเพิ่มเข้าสู่ระบบแล้ว</b><br>ยังไม่มีประวัติการประเมินสุขภาพจิตในระบบ เมื่อ อสม. หรือเจ้าหน้าที่คัดกรองครั้งแรก ประวัติการประเมินจะแสดงในหน้านี้อัตโนมัติ</div>';
-            return;
-        }
-        patientRecords = patientRecords.filter(item => !item.profileOnly);
         patientRecords.forEach(item => {
             const card = document.createElement('div');
             card.className = 'history-summary-card';
@@ -2399,13 +2267,115 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
             if (!res.ok) throw new Error('HTTP Status ' + res.status);
             const result = await res.json();
             if (!result.success) throw new Error(result.message || 'โหลดข้อมูลไม่สำเร็จ');
-            currentCaseSupportData = { assignment: result.assignment || null, notes: result.notes || [] };
+            currentCaseSupportData = { assignment: result.assignment || null, notes: result.notes || [], plans: result.plans || [], closures: result.closures || [] };
+            renderCaseFollowupPlansAndClosures(latest);
             renderCaseNotes();
             renderPatientTimeline();
         } catch (err) {
             if (notesEl) notesEl.innerHTML = `<p style="color:#ef4444;">โหลด Note ไม่สำเร็จ: ${escapeHTML(err.message)}</p>`;
+            renderCaseFollowupPlansAndClosures(latest);
             renderPatientTimeline();
         }
+    }
+
+    function renderCaseFollowupPlansAndClosures(latest) {
+        const planPanel = document.getElementById('caseFollowupPlanPanel');
+        const closePanel = document.getElementById('caseClosePanel');
+        if (planPanel) {
+            const plans = currentCaseSupportData.plans || [];
+            const latestPlan = plans[0] || {};
+            planPanel.innerHTML = `<div class="followup-plan-box">
+                <h4 style="margin:0 0 8px 0; color:#1d4ed8;">📅 แผนติดตามผู้ป่วย</h4>
+                <p class="case-status-muted" style="margin:0 0 10px 0;">ใช้ตั้งแผนติดตามรายคน เช่น โทรติดตาม อสม.เยี่ยมบ้าน หรือนัด รพ.สต.</p>
+                <div class="inputs-row">
+                    <div class="form-cell"><label class="field-label">วันที่ติดตามครั้งถัดไป</label><input type="date" id="planNextFollowupDate"></div>
+                    <div class="form-cell"><label class="field-label">ผู้ติดตามหลัก</label><select id="planFollowupBy"><option value="เจ้าหน้าที่ รพ.สต.">เจ้าหน้าที่ รพ.สต.</option><option value="อสม.พื้นที่">อสม.พื้นที่</option><option value="Hospital">Hospital</option><option value="ทีมสุขภาพจิต">ทีมสุขภาพจิต</option></select></div>
+                    <div class="form-cell"><label class="field-label">ช่องทางติดตาม</label><select id="planFollowupChannel"><option value="โทรศัพท์">โทรศัพท์</option><option value="เยี่ยมบ้านโดย อสม.">เยี่ยมบ้านโดย อสม.</option><option value="นัดที่ รพ.สต.">นัดที่ รพ.สต.</option><option value="นัดที่โรงพยาบาล">นัดที่โรงพยาบาล</option><option value="LINE/ข้อความ">LINE/ข้อความ</option></select></div>
+                </div>
+                <div class="inputs-row">
+                    <div class="form-cell"><label class="field-label">สถานะแผน</label><select id="planStatus"><option value="รอติดตาม">รอติดตาม</option><option value="ติดตามแล้ว">ติดตามแล้ว</option><option value="เลื่อนติดตาม">เลื่อนติดตาม</option><option value="ยกเลิกแผน">ยกเลิกแผน</option></select></div>
+                    <div class="form-cell wide"><label class="field-label">หมายเหตุแผนติดตาม</label><input type="text" id="planNote" placeholder="เช่น โทรอีก 7 วัน / ให้ อสม.เยี่ยมบ้าน / นัดญาติมาคุย"></div>
+                </div>
+                <div style="text-align:right;"><button class="small-btn green" onclick="savePatientFollowupPlanFromWeb()">💾 บันทึกแผนติดตาม</button></div>
+                <div id="caseFollowupPlanList" style="margin-top:10px;">${plans.length ? plans.map(p => `<div class="plan-item"><b>📅 ${escapeHTML(p.nextFollowupDate || '-')}</b> · ${escapeHTML(p.followupBy || '-')} · ${escapeHTML(p.followupChannel || '-')}<br><span class="case-status-muted">สถานะ: ${escapeHTML(p.planStatus || '-')} | ${escapeHTML(p.planNote || '')} | บันทึกโดย ${escapeHTML(p.createdByName || p.createdByUsername || '-')}</span></div>`).join('') : '<p class="case-status-muted">ยังไม่มีแผนติดตามรายคน</p>'}</div>
+            </div>`;
+            if (latestPlan.nextFollowupDate) document.getElementById('planNextFollowupDate').value = toInputDateValue(latestPlan.nextFollowupDate);
+        }
+        if (closePanel) {
+            const closures = currentCaseSupportData.closures || [];
+            closePanel.innerHTML = `<div class="case-close-box">
+                <h4 style="margin:0 0 8px 0; color:#991b1b;">✅ ปิดเคสแบบมีเหตุผล</h4>
+                <p class="case-status-muted" style="margin:0 0 10px 0;">ใช้เมื่อทีมพิจารณาแล้วว่าจบการติดตามในระบบนี้ ควรกรอกเหตุผลและหมายเหตุทุกครั้ง</p>
+                <div class="inputs-row">
+                    <div class="form-cell"><label class="field-label">เหตุผลการปิดเคส</label><select id="caseCloseReason"><option value="">-- เลือกเหตุผล --</option><option value="อาการดีขึ้น">อาการดีขึ้น</option><option value="ส่งต่อสำเร็จ">ส่งต่อสำเร็จ</option><option value="อยู่ระหว่างรักษาต่อ">อยู่ระหว่างรักษาต่อ</option><option value="ติดต่อไม่ได้">ติดต่อไม่ได้</option><option value="ย้ายที่อยู่">ย้ายที่อยู่</option><option value="เสียชีวิต">เสียชีวิต</option><option value="ไม่ประสงค์รับบริการ">ไม่ประสงค์รับบริการ</option><option value="อื่นๆ">อื่นๆ</option></select></div>
+                    <div class="form-cell wide"><label class="field-label">หมายเหตุการปิดเคส</label><input type="text" id="caseCloseNote" placeholder="สรุปสั้น ๆ ว่าทำไมปิดเคส"></div>
+                </div>
+                <div style="text-align:right;"><button class="small-btn red" onclick="closeCurrentPatientCaseFromWeb()">✅ ปิดเคสนี้</button></div>
+                <div id="caseClosureList" style="margin-top:10px;">${closures.length ? closures.map(c => `<div class="closure-item"><b>✅ ${escapeHTML(c.closedAt || '-')}</b> · ${escapeHTML(c.closeReason || '-')}<br><span class="case-status-muted">${escapeHTML(c.closeNote || '')} | โดย ${escapeHTML(c.closedByName || c.closedByUsername || '-')}</span></div>`).join('') : '<p class="case-status-muted">ยังไม่มีประวัติปิดเคส</p>'}</div>
+            </div>`;
+        }
+    }
+
+    async function savePatientFollowupPlanFromWeb() {
+        const records = getPatientGroupRecords();
+        if (!records.length) { alert('ไม่พบข้อมูลผู้ป่วย'); return; }
+        const latest = records[0];
+        const nextFollowupDate = document.getElementById('planNextFollowupDate')?.value || '';
+        if (!nextFollowupDate) { alert('กรุณาเลือกวันที่ติดตามครั้งถัดไป'); return; }
+        const params = new URLSearchParams({
+            action: 'savePatientFollowupPlan', authToken: currentAdminAuthToken, actorUsername: currentAdminUsername, actorName: getCurrentAdminNameForCase(),
+            patientId: latest.patientId || '', patientName: latest.patientName || '', patientGender: latest.patientGender || '', villageNo: latest.villageNo || '',
+            nextFollowupDate, followupBy: document.getElementById('planFollowupBy')?.value || '', followupChannel: document.getElementById('planFollowupChannel')?.value || '', planStatus: document.getElementById('planStatus')?.value || '', planNote: document.getElementById('planNote')?.value.trim() || ''
+        });
+        try {
+            const res = await fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`);
+            if (!res.ok) throw new Error('HTTP Status ' + res.status);
+            const result = await res.json();
+            if (!result.success) throw new Error(result.message || 'บันทึกแผนไม่สำเร็จ');
+            alert('✅ บันทึกแผนติดตามแล้ว');
+            const planNoteText = document.getElementById('planNote')?.value.trim() || '';
+            allData = allData.map(r => buildPatientKeyForClient(r) === buildPatientKeyForClient(latest) ? { ...r, nextFollowupDate: result.nextFollowupDate || nextFollowupDate, followupStatus: 'ต้องติดตามครั้งถัดไป', followupNote: planNoteText } : r);
+            renderDashboardSummary(allData);
+            await loadPatientSupportData(true);
+            renderTrackingRegistry();
+        } catch (err) { alert('❌ บันทึกแผนติดตามไม่สำเร็จ: ' + err.message); }
+    }
+
+    async function closeCurrentPatientCaseFromWeb() {
+        const records = getPatientGroupRecords();
+        if (!records.length) { alert('ไม่พบข้อมูลผู้ป่วย'); return; }
+        const latest = records[0];
+        const reason = document.getElementById('caseCloseReason')?.value || '';
+        const note = document.getElementById('caseCloseNote')?.value.trim() || '';
+        if (!reason) { alert('กรุณาเลือกเหตุผลการปิดเคส'); return; }
+        if (!note) { alert('กรุณากรอกหมายเหตุการปิดเคส'); return; }
+        if (!confirm(`ยืนยันปิดเคสของ ${latest.patientName || currentSelectedPatientName} หรือไม่?\n\nเหตุผล: ${reason}\nหมายเหตุ: ${note}`)) return;
+        const params = new URLSearchParams({ action:'closePatientCase', authToken:currentAdminAuthToken, actorUsername:currentAdminUsername, actorName:getCurrentAdminNameForCase(), patientId:latest.patientId || '', patientName:latest.patientName || '', patientGender:latest.patientGender || '', villageNo:latest.villageNo || '', closeReason:reason, closeNote:note });
+        try {
+            const res = await fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`);
+            if (!res.ok) throw new Error('HTTP Status ' + res.status);
+            const result = await res.json();
+            if (!result.success) throw new Error(result.message || 'ปิดเคสไม่สำเร็จ');
+            alert(`✅ ปิดเคสแล้ว\nอัปเดตรายการประเมิน ${result.updatedRows || 0} รายการ`);
+            await fetchPatientData();
+            setTimeout(() => { renderPatientDetail(); if (currentPatientDetailSubTab === 'timeline') loadPatientSupportData(true); }, 200);
+        } catch (err) { alert('❌ ปิดเคสไม่สำเร็จ: ' + err.message); }
+    }
+
+    function printCurrentPatientSummary() {
+        const records = getPatientGroupRecords();
+        if (!records.length) { alert('ไม่พบข้อมูลผู้ป่วย'); return; }
+        const latest = records[0];
+        const p = getLatestProfileRecord(records);
+        const risk = deriveRiskLevel(latest);
+        const summary = getPatientCaseSummary(records);
+        const notes = (currentCaseSupportData.notes || []).slice(0,5).map(n => `<li>${escapeHTML(n.createdAt || '-')} · ${escapeHTML(n.noteText || '-')}</li>`).join('');
+        const plans = (currentCaseSupportData.plans || []).slice(0,5).map(pl => `<li>${escapeHTML(pl.nextFollowupDate || '-')} · ${escapeHTML(pl.followupBy || '-')} · ${escapeHTML(pl.followupChannel || '-')} · ${escapeHTML(pl.planStatus || '-')}</li>`).join('');
+        const rows = records.filter(r => !r.profileOnly).slice(0,8).map(r => `<tr><td>${escapeHTML(r.timestamp || '-')}</td><td>${escapeHTML(deriveRiskLevel(r))}</td><td>${escapeHTML(r.q9Score || '-')}</td><td>${escapeHTML(r.q8Result || '-')}</td><td>${escapeHTML(r.st5Level || '-')}</td><td>${escapeHTML(r.followupStatus || '-')}</td></tr>`).join('');
+        const html = `<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>สรุปผู้ป่วย</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111827}h2{margin:0 0 12px}table{width:100%;border-collapse:collapse;margin-top:12px}td,th{border:1px solid #d1d5db;padding:8px;text-align:left;vertical-align:top}.box{border:1px solid #d1d5db;border-radius:12px;padding:12px;margin:10px 0}.muted{color:#6b7280;font-size:13px}@media print{button{display:none}}</style></head><body><button onclick="window.print()">พิมพ์</button><h2>สรุปผู้ป่วยรายคน</h2><div class="muted">พิมพ์จากระบบข้อมูลสุขภาพจิต โรงพยาบาลบ้านนา</div><div class="box"><b>ชื่อ:</b> ${escapeHTML(p.patientName || '-')}<br><b>Patient ID:</b> ${escapeHTML(p.patientId || '-')}<br><b>เพศ:</b> ${escapeHTML(p.patientGender || '-')} | <b>หมู่:</b> ${escapeHTML(p.villageNo || '-')} | <b>ตำบล:</b> ${escapeHTML(p.patientSubdistrict || '-')}<br><b>อายุ:</b> ${escapeHTML(calculateAgeDetailed(p.birthDay,p.birthMonth,p.birthYear))}<br><b>สิทธิ:</b> ${escapeHTML(p.treatmentRights || '-')}<br><b>โรคประจำตัว:</b> ${escapeHTML(p.chronicDiseases || '-')}<br><b>แพ้ยา/อาหาร:</b> ${escapeHTML(p.allergies || '-')}</div><div class="box"><b>Risk ล่าสุด:</b> ${escapeHTML(risk)}<br><b>สถานะรับเคส:</b> ${escapeHTML(summary.latestStatus || '-')}<br><b>Follow-up ล่าสุด:</b> ${escapeHTML(latest.followupStatus || '-')} | ${escapeHTML(latest.nextFollowupDate || '-')}<br><b>Referral:</b> ${escapeHTML(latest.referralStatus || '-')} | ${escapeHTML(latest.referralPlace || '-')}</div><h3>ประวัติการประเมินล่าสุด</h3><table><tr><th>วันที่</th><th>Risk</th><th>9Q</th><th>8Q</th><th>ST-5</th><th>ติดตาม</th></tr>${rows || '<tr><td colspan="6">ยังไม่มีประวัติการประเมิน</td></tr>'}</table><h3>แผนติดตาม</h3><ul>${plans || '<li>ยังไม่มีแผนติดตาม</li>'}</ul><h3>Note ภายในล่าสุด</h3><ul>${notes || '<li>ยังไม่มี Note</li>'}</ul></body></html>`;
+        const w = window.open('', '_blank');
+        if (!w) { alert('เบราว์เซอร์บล็อก popup กรุณาอนุญาต popup แล้วลองใหม่'); return; }
+        w.document.open(); w.document.write(html); w.document.close();
     }
 
     function renderCaseNotes() {
@@ -2450,6 +2420,8 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
             if (safeText(r.referralStatus) && safeText(r.referralStatus) !== 'ยังไม่ระบุ') events.push({ date:r.timestamp, type:'Referral', text:`${safeText(r.referralStatus)} | ${safeText(r.referralPlace || '')} | ${safeText(r.outcomeStage || '')}` });
             if (safeText(r.followupStatus) && safeText(r.followupStatus) !== 'ยังไม่ระบุ') events.push({ date:r.nextFollowupDate || r.timestamp, type:'Follow-up', text:`${safeText(r.followupStatus)} | ${safeText(r.followupNote || '')}` });
         });
+        (currentCaseSupportData.plans || []).forEach(p => events.push({ date:p.nextFollowupDate || p.createdAt, type:'แผนติดตาม', text:`${safeText(p.planStatus || '-')} | ${safeText(p.followupBy || '-')} | ${safeText(p.followupChannel || '-')} | ${safeText(p.planNote || '')}` }));
+        (currentCaseSupportData.closures || []).forEach(c => events.push({ date:c.closedAt, type:'ปิดเคส', text:`${safeText(c.closeReason || '-')} | ${safeText(c.closeNote || '')} | โดย ${safeText(c.closedByName || c.closedByUsername || '-')}` }));
         (currentCaseSupportData.notes || []).forEach(n => events.push({ date:n.createdAt, type:'Note', text:`${safeText(n.noteText)} | โดย ${safeText(n.createdByName || n.createdByUsername)}` }));
         events.sort((a,b) => parseTimestamp(b.date) - parseTimestamp(a.date));
         timelineEl.innerHTML = events.length ? events.map(e => `<div class="timeline-item"><b>${escapeHTML(e.date || '-')} · ${escapeHTML(e.type)}</b><br>${escapeHTML(e.text || '-')}</div>`).join('') : '<p class="case-status-muted">ยังไม่มีเหตุการณ์</p>';
@@ -2529,6 +2501,33 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
         if (list) list.innerHTML = tasks.length ? tasks.slice(0,80).map(t => `<div class="task-item ${t.cls}"><b>${escapeHTML(t.title)}</b><br><span class="case-status-muted">${escapeHTML(t.detail || '-')}</span>${t.item ? `<div class="task-actions"><button class="small-btn" onclick="openPatientFromTask('${escapeHTML(t.item.patientName)}','${escapeHTML(t.item.patientGender)}','${escapeHTML(t.item.villageNo)}')">เปิดเคส</button></div>` : ''}</div>`).join('') : '<p class="case-status-muted">ยังไม่มีงานค้างสำคัญในขณะนี้</p>';
         const q = document.getElementById('dataQualityList');
         if (q) q.innerHTML = (dataQualityCache || []).length ? dataQualityCache.map(x => `<div class="quality-item"><b>${escapeHTML(x.title || 'ข้อมูลควรตรวจสอบ')}</b><br><span class="case-status-muted">${escapeHTML(x.detail || '-')}</span></div>`).join('') : '<p class="case-status-muted">ยังไม่พบข้อมูลที่ควรตรวจสอบ</p>';
+        renderTrackingRegistry();
+    }
+
+    function renderTrackingRegistry() {
+        const box = document.getElementById('trackingRegistryList');
+        if (!box) return;
+        const latest = getLatestPatientRecords(allData || []);
+        const today = new Date();
+        const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const rows = latest.filter(item => {
+            if (item.profileOnly) return false;
+            const f = safeText(item.followupStatus);
+            const o = safeText(item.outcomeStage);
+            if (['ปิดเคสแล้ว','ไม่ต้องติดตาม'].includes(f) || o === 'ปิดเคส') return false;
+            return deriveRiskLevel(item).includes('แดง') || deriveRiskLevel(item).includes('เหลือง') || safeText(item.nextFollowupDate) || ['ติดต่อไม่ได้','หลุดติดตาม'].includes(f) || normalizeCaseStatus(item.alertStatus) !== 'จองคิวแล้ว';
+        }).sort((a,b) => parseTimestamp(a.nextFollowupDate || a.timestamp) - parseTimestamp(b.nextFollowupDate || b.timestamp));
+        if (!rows.length) { box.innerHTML = '<p class="case-status-muted">ยังไม่มีเคสที่ต้องติดตามในขณะนี้</p>'; return; }
+        box.innerHTML = rows.slice(0,80).map(item => {
+            const d = toInputDateValue(item.nextFollowupDate);
+            let cls = 'waiting';
+            if (d) {
+                const due = new Date(d + 'T00:00:00');
+                if (due < todayOnly) cls = 'overdue';
+                else if (due.getTime() === todayOnly.getTime()) cls = 'today';
+            }
+            return `<div class="registry-item ${cls}"><b>${escapeHTML(item.patientName || '-')}</b> · ${escapeHTML(item.villageNo || '-')} · <span class="risk-pill ${getRiskClass(deriveRiskLevel(item))}">${escapeHTML(deriveRiskLevel(item))}</span><br><span class="case-status-muted">Follow-up: ${escapeHTML(item.nextFollowupDate || 'ยังไม่ตั้งวัน')} · สถานะติดตาม: ${escapeHTML(item.followupStatus || '-')} · Outcome: ${escapeHTML(item.outcomeStage || '-')}</span><div class="task-actions"><button class="small-btn" onclick="openPatientFromTask('${escapeHTML(item.patientName)}','${escapeHTML(item.patientGender)}','${escapeHTML(item.villageNo)}')">เปิดเคส</button></div></div>`;
+        }).join('');
     }
 
     function openPatientFromTask(name, gender, village) {
@@ -2549,22 +2548,37 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
         container.innerHTML = `
             <div class="explain-box"><b>ส่วนนี้ใช้ทำอะไร?</b><br>ใช้บันทึกการส่งต่อและการติดตามหลังพบเคสเสี่ยงหรือหลังจองคิว เช่น ส่งต่อ รพ.ชุมชน/รพ.ศูนย์ หรือให้ รพ.สต. ติดตามเอง ระบุผลการรักษาเบื้องต้น วันนัดติดตามครั้งถัดไป และสถานะว่าติดตามแล้ว/หลุดติดตาม/ปิดเคสแล้ว เพื่อไม่ให้เคสหลุดจากระบบ</div>
             <div class="inputs-row">
-                <select class="referral-status">
-                    ${['ยังไม่ระบุ','ยังไม่ส่งต่อ','นัดแล้ว','ส่งต่อ รพ.ชุมชน','ส่งต่อ รพ.ศูนย์','พบแพทย์แล้ว','ได้รับยา','ติดตามโดย รพ.สต.','ปฏิเสธการรักษา','ติดต่อไม่ได้','ไม่ประสงค์ส่งต่อ','ปิดเคส'].map(v => `<option value="${escapeHTML(v)}" ${referralStatus === v ? 'selected' : ''}>${escapeHTML(v)}</option>`).join('')}
-                </select>
-                <input type="text" class="referral-place" placeholder="สถานที่ส่งต่อ/หน่วยบริการ" value="${escapeHTML(item.referralPlace || '')}">
+                <div class="form-cell">
+                    <label class="field-label">สถานะการส่งต่อ/การดูแลต่อ</label>
+                    <select class="referral-status">
+                        ${['ยังไม่ระบุ','ยังไม่ส่งต่อ','นัดแล้ว','ส่งต่อ รพ.ชุมชน','ส่งต่อ รพ.ศูนย์','พบแพทย์แล้ว','ได้รับยา','ติดตามโดย รพ.สต.','ปฏิเสธการรักษา','ติดต่อไม่ได้','ไม่ประสงค์ส่งต่อ','ปิดเคส'].map(v => `<option value="${escapeHTML(v)}" ${referralStatus === v ? 'selected' : ''}>${v === 'ยังไม่ระบุ' ? 'ยังไม่ระบุสถานะส่งต่อ' : escapeHTML(v)}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-cell">
+                    <label class="field-label">สถานที่/หน่วยบริการที่เกี่ยวข้อง</label>
+                    <input type="text" class="referral-place" placeholder="เช่น รพ.สต. / รพ.บ้านนา / รพ.ศูนย์" value="${escapeHTML(item.referralPlace || '')}">
+                </div>
             </div>
             <textarea class="referral-outcome" rows="2" placeholder="ผลการรักษาเบื้องต้น/ผลการพิจารณา/คำแนะนำจากแพทย์">${escapeHTML(item.referralOutcome || '')}</textarea>
             <div class="inputs-row" style="margin-top:10px;">
-                <select class="outcome-stage">
-                    ${['รอดำเนินการ','นัดแล้ว','พบแพทย์แล้ว','ได้รับยา','ส่งต่อแล้ว','ติดตามแล้ว','ติดต่อไม่ได้/หลุดติดตาม','ปฏิเสธการรักษา','ปิดเคส'].map(v => `<option value="${escapeHTML(v)}" ${outcomeStage === v ? 'selected' : ''}>${escapeHTML(v)}</option>`).join('')}
-                </select>
+                <div class="form-cell">
+                    <label class="field-label">ระยะผลลัพธ์ของเคส</label>
+                    <select class="outcome-stage">
+                        ${['รอดำเนินการ','นัดแล้ว','พบแพทย์แล้ว','ได้รับยา','ส่งต่อแล้ว','ติดตามแล้ว','ติดต่อไม่ได้/หลุดติดตาม','ปฏิเสธการรักษา','ปิดเคส'].map(v => `<option value="${escapeHTML(v)}" ${outcomeStage === v ? 'selected' : ''}>${escapeHTML(v)}</option>`).join('')}
+                    </select>
+                </div>
             </div>
             <div class="inputs-row" style="margin-top:10px;">
-                <input type="date" class="next-followup-date" value="${toInputDateValue(item.nextFollowupDate)}">
-                <select class="followup-status">
-                    ${['ยังไม่ระบุ','ต้องติดตามครั้งถัดไป','ติดตามแล้ว','ติดต่อไม่ได้','หลุดติดตาม','ปิดเคสแล้ว','ไม่ต้องติดตาม'].map(v => `<option value="${escapeHTML(v)}" ${followupStatus === v ? 'selected' : ''}>${escapeHTML(v)}</option>`).join('')}
-                </select>
+                <div class="form-cell">
+                    <label class="field-label">วันที่นัดติดตามครั้งถัดไป</label>
+                    <input type="date" class="next-followup-date" value="${toInputDateValue(item.nextFollowupDate)}">
+                </div>
+                <div class="form-cell">
+                    <label class="field-label">สถานะการติดตาม</label>
+                    <select class="followup-status">
+                        ${['ยังไม่ระบุ','ต้องติดตามครั้งถัดไป','ติดตามแล้ว','ติดต่อไม่ได้','หลุดติดตาม','ปิดเคสแล้ว','ไม่ต้องติดตาม'].map(v => `<option value="${escapeHTML(v)}" ${followupStatus === v ? 'selected' : ''}>${v === 'ยังไม่ระบุ' ? 'ยังไม่ระบุสถานะติดตาม' : escapeHTML(v)}</option>`).join('')}
+                    </select>
+                </div>
             </div>
             <textarea class="followup-note" rows="2" placeholder="หมายเหตุการติดตาม เช่น โทรไม่ติด/เยี่ยมบ้านแล้ว/อาการดีขึ้น" style="margin-top:10px;">${escapeHTML(item.followupNote || '')}</textarea>
             <div style="text-align:right; margin-top:10px;"><button class="btn-search save-referral-btn">💾 บันทึก Referral / Follow-up</button></div>
@@ -3740,6 +3754,81 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
         } catch (err) { alert('❌ สลับ environment ไม่สำเร็จ: ' + err.message); }
     }
 
+
+    function showDuplicatePatientPanel() {
+        const panel = document.getElementById('duplicatePatientPanel');
+        if (!panel) return;
+        panel.style.display = 'block';
+        renderDuplicatePatientCandidates();
+        window.scrollTo({ top: panel.offsetTop - 10, behavior: 'smooth' });
+    }
+
+    function hideDuplicatePatientPanel() {
+        const panel = document.getElementById('duplicatePatientPanel');
+        if (panel) panel.style.display = 'none';
+    }
+
+    function renderDuplicatePatientCandidates() {
+        const box = document.getElementById('duplicatePatientList');
+        if (!box) return;
+        const latest = getLatestPatientRecords(allData || []);
+        const groups = new Map();
+        latest.forEach(item => {
+            const name = safeText(item.patientName).replace(/\s+/g,'').toLowerCase();
+            if (!name) return;
+            const key = `${name}|${safeText(item.patientGender)}`;
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(item);
+        });
+        const candidates = Array.from(groups.values()).filter(arr => {
+            const ids = new Set(arr.map(x => safeText(x.patientId) || `${x.patientName}|${x.villageNo}`));
+            return ids.size > 1;
+        });
+        if (!candidates.length) { box.innerHTML = '<p class="case-status-muted">ยังไม่พบรายชื่อที่น่าสงสัยว่าซ้ำกัน</p>'; return; }
+        box.innerHTML = candidates.slice(0,80).map(arr => `<div class="duplicate-item"><b>อาจเป็นคนเดียวกัน: ${escapeHTML(arr[0].patientName || '-')}</b><br>${arr.map(x => `<span class="mini-profile-pill">ID: ${escapeHTML(x.patientId || '-')} · ${escapeHTML(x.patientGender || '-')} · ${escapeHTML(x.villageNo || '-')} · ล่าสุด ${escapeHTML(x.timestamp || '-')}</span>`).join(' ')}<br><span class="case-status-muted">ตรวจสอบรายละเอียดก่อนใช้เมนูรวมเคส/merge patient</span></div>`).join('');
+    }
+
+    function getRecordsInMeetingRange() {
+        const startVal = document.getElementById('meetingReportStartDate')?.value || '';
+        const endVal = document.getElementById('meetingReportEndDate')?.value || '';
+        const start = startVal ? new Date(startVal + 'T00:00:00') : null;
+        const end = endVal ? new Date(endVal + 'T23:59:59') : null;
+        return (allData || []).filter(r => {
+            if (r.profileOnly) return false;
+            const t = parseTimestamp(r.timestamp);
+            if (start && t < start) return false;
+            if (end && t > end) return false;
+            return true;
+        });
+    }
+
+    function renderMeetingReport() {
+        const box = document.getElementById('meetingReportBox');
+        if (!box) return;
+        const rows = getRecordsInMeetingRange();
+        const latest = getLatestPatientRecords(rows);
+        const riskCounts = getRiskCounts(latest);
+        const sent = rows.filter(r => safeText(r.referralStatus).includes('ส่งต่อ') || safeText(r.outcomeStage).includes('ส่งต่อ')).length;
+        const followed = rows.filter(r => ['ติดตามแล้ว','ปิดเคสแล้ว'].includes(safeText(r.followupStatus))).length;
+        const closed = rows.filter(r => safeText(r.followupStatus) === 'ปิดเคสแล้ว' || safeText(r.outcomeStage) === 'ปิดเคส').length;
+        const pending = latest.filter(r => !['ปิดเคสแล้ว','ไม่ต้องติดตาม'].includes(safeText(r.followupStatus)) && safeText(r.outcomeStage) !== 'ปิดเคส').length;
+        const byVillage = buildVillageRiskMap(latest);
+        const villageText = Object.keys(byVillage).sort((a,b)=>a.localeCompare(b,'th')).map(v => `${v}: รวม ${byVillage[v].total}, แดง ${byVillage[v].red}, เหลือง ${byVillage[v].yellow}, เขียว ${byVillage[v].green}`).join('<br>');
+        box.innerHTML = `<div class="meeting-line"><b>จำนวนรายการคัดกรอง:</b> ${rows.length}<br><b>ผู้ป่วยไม่ซ้ำในช่วงนี้:</b> ${latest.length}<br><b>เขียว/เหลือง/แดง:</b> ${riskCounts.green} / ${riskCounts.yellow} / ${riskCounts.red}<br><b>ส่งต่อ:</b> ${sent} · <b>ติดตามแล้ว/ปิด:</b> ${followed} · <b>ปิดเคส:</b> ${closed} · <b>ยังค้าง:</b> ${pending}</div><div class="meeting-line"><b>แยกตามหมู่บ้าน</b><br>${villageText || 'ไม่มีข้อมูล'}</div>`;
+    }
+
+    function printMeetingReport() {
+        renderMeetingReport();
+        const box = document.getElementById('meetingReportBox');
+        const content = box ? box.innerHTML : '';
+        if (!content) { alert('กรุณากดสร้างรายงานก่อน'); return; }
+        const start = document.getElementById('meetingReportStartDate')?.value || 'ไม่ระบุ';
+        const end = document.getElementById('meetingReportEndDate')?.value || 'ไม่ระบุ';
+        const html = `<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>รายงานประชุมทีม</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111827}.meeting-line{border:1px solid #d1d5db;border-radius:12px;padding:12px;margin-bottom:10px}button{margin-bottom:12px}@media print{button{display:none}}</style></head><body><button onclick="window.print()">พิมพ์</button><h2>รายงานประชุมทีมสุขภาพจิต</h2><div>ช่วงวันที่ ${escapeHTML(start)} ถึง ${escapeHTML(end)}</div>${content}</body></html>`;
+        const w = window.open('', '_blank');
+        if (!w) { alert('เบราว์เซอร์บล็อก popup กรุณาอนุญาต popup แล้วลองใหม่'); return; }
+        w.document.open(); w.document.write(html); w.document.close();
+    }
 
     async function fetchPatientPageFromWeb(page = 1) {
         if (!currentAdminUsername || !currentAdminAuthToken) { alert('session ไม่สมบูรณ์ กรุณา login ใหม่'); return; }
