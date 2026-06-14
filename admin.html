@@ -451,6 +451,7 @@
                         <button class="btn-search" onclick="processData()">🔍 ค้นหา</button>
                         <button class="btn-refresh" onclick="fetchPatientData()">🔄 รีเฟรช</button>
                         <button class="btn-refresh" style="background:#10b981;" onclick="toggleAddPatientPanel()">➕ เพิ่มผู้ป่วยใหม่</button>
+                        <button class="btn-refresh" style="background:#7c2d12;" onclick="togglePatientTrashPanel()">🗑️ ถังขยะผู้ป่วย</button>
                         <button class="btn-search" onclick="fetchPatientPageFromWeb()">⚡ ค้นหาแบบ backend 50 รายการ</button>
                     </div>
                 </div>
@@ -508,11 +509,27 @@
                     </div>
                     <div id="duplicatePatientPanel" class="quality-list" style="margin-top:10px;"></div>
                 </div>
+                <div id="patientTrashPanel" class="search-container" style="display:none; background:#fff7ed; border-left:6px solid #9a3412;">
+                    <div class="history-summary-line">
+                        <div>
+                            <h3 style="margin:0; color:#7c2d12;">🗑️ ถังขยะผู้ป่วย</h3>
+                            <p class="case-status-muted" style="margin:6px 0 0 0;">เฉพาะ Hospital เท่านั้น ใช้กู้คืนผู้ป่วยภายใน 30 วัน หรือลบถาวรจากถังขยะ</p>
+                        </div>
+                        <div class="controls-row">
+                            <button class="small-btn" onclick="loadPatientTrashList()">รีเฟรชถังขยะ</button>
+                            <button class="small-btn gray" onclick="togglePatientTrashPanel(false)">ปิดถังขยะ</button>
+                        </div>
+                    </div>
+                    <div id="patientTrashList" class="quality-list" style="margin-top:12px;"></div>
+                </div>
                 <div id="patientListView"></div>
             </div>
 
             <div id="patientDetailSection" style="display: none;">
-                <button class="btn-refresh" onclick="backToPatientList()" style="margin-bottom: 20px; background-color: #475569; display: inline-flex; align-items: center; gap: 5px;">⬅️ กลับไปหน้าประวัติรายชื่อ</button>
+                <div class="controls-row" style="margin-bottom:20px; justify-content:space-between; align-items:center;">
+                    <button class="btn-refresh" onclick="backToPatientList()" style="background-color: #475569; display: inline-flex; align-items: center; gap: 5px;">⬅️ กลับไปหน้าประวัติรายชื่อ</button>
+                    <button id="btnDeleteCurrentPatient" class="small-btn red" onclick="startDeleteCurrentPatientFlow()" style="display:none;">🗑️ ลบผู้ป่วยออกจากระบบ</button>
+                </div>
                 <div id="patientDetailMiniHeader" class="patient-detail-mini"></div>
                 <div class="detail-subtabs">
                     <button id="detailSubAssessmentBtn" class="detail-subtab-btn active" onclick="switchPatientDetailSubTab('assessment')">📋 ข้อมูลการประเมิน</button>
@@ -1897,6 +1914,89 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
         }
     }
 
+
+    async function postAdminAction(payload) {
+        const params = new URLSearchParams(payload);
+        const res = await fetch(GOOGLE_SCRIPT_URL, { method:'POST', headers:{ 'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8' }, body: params });
+        if (!res.ok) throw new Error('HTTP Status ' + res.status);
+        const result = await res.json();
+        if (!result.success) throw new Error(result.message || 'ดำเนินการไม่สำเร็จ');
+        return result;
+    }
+
+    function togglePatientTrashPanel(forceOpen) {
+        const panel = document.getElementById('patientTrashPanel');
+        if (!panel) return;
+        const isOpen = panel.style.display !== 'none';
+        const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !isOpen;
+        panel.style.display = shouldOpen ? 'block' : 'none';
+        if (shouldOpen) loadPatientTrashList();
+    }
+
+    async function loadPatientTrashList() {
+        const box = document.getElementById('patientTrashList');
+        if (!box) return;
+        if (normalizeAdminRole(currentAdminRole) !== 'hospital') {
+            box.innerHTML = '<div class="quality-item"><b>จำกัดสิทธิ์</b><br><span class="case-status-muted">เฉพาะบัญชี Hospital เท่านั้นที่ดูถังขยะผู้ป่วยได้</span></div>';
+            return;
+        }
+        box.innerHTML = '<p class="case-status-muted">กำลังโหลดถังขยะผู้ป่วย...</p>';
+        try {
+            const params = new URLSearchParams({ action:'listPatientTrash', authToken:currentAdminAuthToken, actorUsername:currentAdminUsername });
+            const res = await fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`);
+            if (!res.ok) throw new Error('HTTP Status ' + res.status);
+            const result = await res.json();
+            if (!result.success) throw new Error(result.message || 'โหลดถังขยะไม่สำเร็จ');
+            const rows = result.records || [];
+            box.innerHTML = rows.length ? rows.map(r => `<div class="quality-item"><b>${escapeHTML(r.patientName || '-')} · ${escapeHTML(r.patientId || '-')}</b><br><span class="case-status-muted">เพศ ${escapeHTML(r.gender || '-')} · ${escapeHTML(r.village || '-')} · ลบเมื่อ ${escapeHTML(r.deletedAt || '-')} · กู้คืนได้ถึง ${escapeHTML(r.expiresAt || '-')}</span><div class="task-actions"><button class="small-btn green" onclick="restorePatientFromTrash('${escapeHTML(r.trashId)}')">กู้คืน</button><button class="small-btn red" onclick="permanentlyDeletePatientTrash('${escapeHTML(r.trashId)}','${escapeHTML(r.patientName || '-')}', '${escapeHTML(r.patientId || '-')}')">ลบถาวร</button></div></div>`).join('') : '<p class="case-status-muted">ถังขยะว่าง หรือรายการเกิน 30 วันถูกลบถาวรแล้ว</p>';
+            if (result.purged) box.innerHTML += `<p class="case-status-muted">ระบบลบถาวรรายการที่เกิน 30 วันแล้ว ${escapeHTML(String(result.purged))} รายการ</p>`;
+        } catch (err) { box.innerHTML = `<div class="quality-item"><b>โหลดถังขยะไม่สำเร็จ</b><br><span class="case-status-muted">${escapeHTML(err.message)}</span></div>`; }
+    }
+
+    async function restorePatientFromTrash(trashId) {
+        if (!confirm('ต้องการกู้คืนผู้ป่วยรายการนี้กลับเข้าสู่ระบบใช่หรือไม่?')) return;
+        try {
+            const result = await postAdminAction({ action:'restorePatientFromTrash', authToken:currentAdminAuthToken, actorUsername:currentAdminUsername, actorName:getCurrentAdminNameForCase(), trashId });
+            alert('✅ ' + (result.message || 'กู้คืนแล้ว'));
+            await loadPatientTrashList();
+            fetchPatientData();
+        } catch (err) { alert('❌ กู้คืนไม่สำเร็จ: ' + err.message); }
+    }
+
+    async function permanentlyDeletePatientTrash(trashId, patientName, patientId) {
+        const msg = `ยืนยันลบถาวรผู้ป่วยนี้จริงหรือไม่?\n\nชื่อ: ${patientName || '-'}\nPatient ID: ${patientId || '-'}\n\nเมื่อลบถาวรแล้วจะกู้คืนจากถังขยะไม่ได้ และ Patient ID นี้อาจถูกนำไปใช้กับผู้ป่วยใหม่ได้`;
+        if (!confirm(msg)) return;
+        try {
+            const result = await postAdminAction({ action:'permanentlyDeletePatientTrash', authToken:currentAdminAuthToken, actorUsername:currentAdminUsername, actorName:getCurrentAdminNameForCase(), trashId });
+            alert('✅ ' + (result.message || 'ลบถาวรแล้ว'));
+            await loadPatientTrashList();
+        } catch (err) { alert('❌ ลบถาวรไม่สำเร็จ: ' + err.message); }
+    }
+
+    async function startDeleteCurrentPatientFlow() {
+        if (normalizeAdminRole(currentAdminRole) !== 'hospital') { alert('เฉพาะบัญชี Hospital เท่านั้นที่ลบผู้ป่วยได้'); return; }
+        const records = getPatientGroupRecords();
+        if (!records.length) { alert('ไม่พบข้อมูลผู้ป่วยที่จะลบ'); return; }
+        const latest = getLatestProfileRecord(records) || records[0];
+        const patientName = latest.patientName || currentSelectedPatientName || '-';
+        const patientId = latest.patientId || currentSelectedPatientId || '-';
+        const password = prompt(`ยืนยันชั้นที่ 1: กรุณาใส่รหัสผ่านที่ใช้ล็อกอิน\n\nผู้ป่วย: ${patientName}\nPatient ID: ${patientId}`);
+        if (password === null) return;
+        if (!password.trim()) { alert('กรุณาใส่รหัสผ่านก่อนลบผู้ป่วย'); return; }
+        const confirmText = `ยืนยันชั้นที่ 2: ต้องการย้ายผู้ป่วยนี้ไปถังขยะจริงหรือไม่?\n\nชื่อ: ${patientName}\nPatient ID: ${patientId}\n\nหลังลบจะกู้คืนได้ภายใน 30 วัน จากเมนูถังขยะผู้ป่วย`;
+        if (!confirm(confirmText)) return;
+        try {
+            const result = await postAdminAction({ action:'softDeletePatient', authToken:currentAdminAuthToken, actorUsername:currentAdminUsername, actorName:getCurrentAdminNameForCase(), password:password, patientId:latest.patientId || currentSelectedPatientId || '', patientName:patientName, patientGender:latest.patientGender || currentSelectedPatientGender || '', villageNo:latest.villageNo || currentSelectedPatientVillage || '' });
+            alert('✅ ' + (result.message || 'ย้ายไปถังขยะแล้ว'));
+            currentSelectedPatientName = '';
+            currentSelectedPatientGender = '';
+            currentSelectedPatientVillage = '';
+            currentSelectedPatientId = '';
+            backToPatientList();
+            fetchPatientData();
+        } catch (err) { alert('❌ ลบผู้ป่วยไม่สำเร็จ: ' + err.message); }
+    }
+
     function populateAddPatientTambonOptions() {
         const tambonSel = document.getElementById('addPatientTambonInput');
         if (!tambonSel) return;
@@ -2489,6 +2589,8 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
         historyCardsDiv.innerHTML = '';
         setAssessmentDetailPageVisible(false);
         let patientRecords = getPatientGroupRecords();
+        const deleteBtn = document.getElementById('btnDeleteCurrentPatient');
+        if (deleteBtn) deleteBtn.style.display = normalizeAdminRole(currentAdminRole) === 'hospital' ? 'inline-flex' : 'none';
         if (patientRecords.length === 0) return;
         renderPatientProfileDisplay(patientRecords);
         renderPatientDetailMiniHeader(patientRecords);
