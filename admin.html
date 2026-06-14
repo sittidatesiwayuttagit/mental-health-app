@@ -991,7 +991,8 @@
                     <div id="sysSectionHelp" class="system-section-body">
                         <p class="system-section-desc">เปิดดูคำอธิบายการใช้งานแต่ละส่วนของระบบแบบย่อ</p>
                         <div class="system-controls-row">
-                            <button class="btn-search" onclick="showAdminHelpPanel()">❓ เปิดคู่มือใช้งานระบบ</button>
+                            <button class="btn-search" onclick="openUserManual()">📘 เปิดคู่มือ PDF ฉบับเต็ม</button>
+                            <button class="btn-refresh" onclick="showAdminHelpPanel()">❓ เปิดคู่มือใช้งานระบบแบบย่อ</button>
                         </div>
                     </div>
                 </div>
@@ -1047,6 +1048,7 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
                     <div class="help-card"><b>งานระบบ</b><br>ใช้ตรวจสุขภาพระบบ ซ่อมหัวตาราง สำรองข้อมูล export รายงาน ดู session และตั้งค่า staging/production</div>
                     <div class="help-card"><b>ข้อควรระวัง</b><br>ไม่ควรแชร์ Google Sheet แบบ Anyone with the link และไม่ควรใส่ LINE token/OpenAI key ใน GitHub หรือไฟล์ HTML</div>
                     <div class="system-controls-row" style="margin-top:12px;">
+                        <button class="btn-search" onclick="openUserManual()">📘 เปิดคู่มือ PDF ฉบับเต็ม</button>
                         <button class="btn-refresh" onclick="hideSystemPanel('adminHelpPanel')">⬆️ ย่อ/ซ่อนคู่มือฉบับย่อ</button>
                     </div>
                 </div>
@@ -1059,6 +1061,7 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySImkthOaj1K3yK3QtFsc0qUNx7wFMF9gNaPjO_IL86H6JaywSU2ZnF4NPic_ypsW8ew/exec';
     const LIFF_ID = "2010303347-RJSlJ1lV";
     const ADMIN_LOGIN_REDIRECT_URI = "https://mental-health-app-lovat.vercel.app/admin.html";
+    const MANUAL_PDF_URL = new URL('manuals/manual_mental_health_app_updated_2026-06-14.pdf', window.location.href).href;
 
     let allData = [];
     let allStaffData = [];
@@ -1079,6 +1082,12 @@ admin001,1234,สมพร,ใจงาม,8888,admin,พยาบาลวิ�
     let dataQualityCache = [];
 
     function safeText(value) { return value === undefined || value === null ? "" : String(value); }
+
+
+    function openUserManual() {
+        const w = window.open(MANUAL_PDF_URL, '_blank', 'noopener');
+        if (!w) window.location.href = MANUAL_PDF_URL;
+    }
 
     function escapeHTML(value) {
         return safeText(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#039;");
