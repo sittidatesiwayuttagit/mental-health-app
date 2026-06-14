@@ -139,7 +139,7 @@
                 <button class="home-btn green" onclick="toggleMyPatientsPanel()">👥 รายชื่อในหมู่ของฉัน</button>
                 <button class="home-btn orange" onclick="toggleOfflineQueuePanel()">📦 ดูร่างรอส่ง</button>
                 <button class="home-btn red" onclick="window.location.href='urgent.html'">🚨 แจ้งเหตุเร่งด่วน</button>
-                <button class="home-btn purple" onclick="window.location.href='manual.html'">📚 คู่มือ อสม.</button>
+                <button class="home-btn purple" onclick="openUserManual()">📚 คู่มือ อสม.</button>
                 <button class="home-btn gray" onclick="syncOfflineDrafts()">🔄 ส่งร่างค้าง</button>
             </div>
         </div>
@@ -174,7 +174,7 @@
         <div class="post-submit-actions">
             <button class="btn-nav btn-next" onclick="startNewScreeningFromHome()">📝 คัดกรองรายใหม่</button>
             <button class="btn-nav btn-back" onclick="goHome()">🏠 กลับหน้าแรก อสม.</button>
-            <button class="btn-nav btn-submit" onclick="window.location.href='manual.html'">📚 เปิดคู่มือ อสม.</button>
+            <button class="btn-nav btn-submit" onclick="openUserManual()">📚 เปิดคู่มือ อสม.</button>
             <button class="btn-nav btn-back" onclick="window.location.href='urgent.html'">🚨 ช่วยเหลือเร่งด่วน</button>
         </div>
     </div>
@@ -480,6 +480,7 @@
     const LIFF_ID = '2010303347-dja2J8TA';
     const APP_BASE_URL = 'https://mental-health-app-lovat.vercel.app';
     const INDEX_PAGE_URL = `${APP_BASE_URL}/index.html`;
+    const MANUAL_PDF_URL = new URL('manuals/manual_mental_health_app_updated_2026-06-14.pdf', window.location.href).href;
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySImkthOaj1K3yK3QtFsc0qUNx7wFMF9gNaPjO_IL86H6JaywSU2ZnF4NPic_ypsW8ew/exec';
     const OFFLINE_DRAFT_STORAGE_KEY = 'banthonglang_mh_screening_offline_drafts_v2';
 
@@ -496,6 +497,12 @@
 
     function safeText(value) {
         return value === undefined || value === null ? "" : String(value);
+    }
+
+
+    function openUserManual() {
+        const w = window.open(MANUAL_PDF_URL, '_blank', 'noopener');
+        if (!w) window.location.href = MANUAL_PDF_URL;
     }
 
     const SERVICE_AREA_LIST = [
